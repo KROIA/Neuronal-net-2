@@ -433,7 +433,7 @@ void Net::buildDevice()
 		case Hardware::gpu_cuda:
 		{
 			NeuronalNet::GPU_CUDA_allocMem(d_inputSignalList, m_inputs * sizeof(float));
-			NeuronalNet::GPU_CUDA_allocMem(d_weightsList, m_weightsCount * sizeof(float));
+			NeuronalNet::GPU_CUDA_allocMem(d_weightsList, (m_weightsCount+16) * sizeof(float));
 			NeuronalNet::GPU_CUDA_allocMem(d_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}

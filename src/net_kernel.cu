@@ -3,12 +3,165 @@
 namespace NeuronalNet 
 {
     __host__ 
+        void GPU_CUDA_memcpyTest()
+    {
+        {
+            size_t count = 8;
+            float* h_original = new float[count];
+            float* h_check = new float[count];
+
+            float* d_original;
+            float* d_check;
+
+            cudaMalloc(&d_original, count * sizeof(float));
+            cudaMalloc(&d_check, count * sizeof(float));
+
+
+            for (size_t i = 0; i < count; ++i)
+            {
+                h_original[i] = 1.11 * (i + 1);
+            }
+
+            std::cout << "origninal: \n";
+            for (size_t i = 0; i < count; ++i)
+            {
+                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
+            }
+
+            cudaMemcpy(d_original, h_original, count * sizeof(float), cudaMemcpyHostToDevice);
+            std::cout << "Kernel call: \n";
+            kernel_memcpyTest1 << <1, 1 >> > (d_original, d_check, count);
+            cudaDeviceSynchronize();
+            cudaMemcpy(h_check, d_check, count * sizeof(float), cudaMemcpyDeviceToHost);
+
+            std::cout << "check: \n";
+            for (size_t i = 0; i < count; ++i)
+            {
+                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
+            }
+
+            cudaFree(d_original);
+            cudaFree(d_check);
+            delete[] h_original;
+            delete[] h_check;
+        }
+        {
+            size_t count = 8;
+            float* h_original = new float[count];
+            float* h_check = new float[count];
+
+            float* d_original;
+            float* d_check;
+
+            cudaMalloc(&d_original, count * sizeof(float));
+            cudaMalloc(&d_check, count * sizeof(float));
+
+
+            for (size_t i = 0; i < count; ++i)
+            {
+                h_original[i] = 1.11 * (i + 1);
+            }
+
+            std::cout << "origninal: \n";
+            for (size_t i = 0; i < count; ++i)
+            {
+                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
+            }
+
+            cudaMemcpy(d_original, h_original, count * sizeof(float), cudaMemcpyHostToDevice);
+            std::cout << "Kernel call: \n";
+            kernel_memcpyTest2 << <1, 1 >> > (d_original, d_check, count);
+            cudaDeviceSynchronize();
+            cudaMemcpy(h_check, d_check, count * sizeof(float), cudaMemcpyDeviceToHost);
+
+            std::cout << "check: \n";
+            for (size_t i = 0; i < count; ++i)
+            {
+                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
+            }
+
+            cudaFree(d_original);
+            cudaFree(d_check);
+            delete[] h_original;
+            delete[] h_check;
+        }
+
+    }
+    struct Storage
+    {
+        float a1;
+     //   float a2;
+      //  float a3;
+      //  float a4;
+        //float a5;
+        //float a6;
+       // float a7;
+      //  float a8;
+    };
+    __global__ 
+        void kernel_memcpyTest1(float* ptrA, float* ptrB, size_t count)
+    {
+        Storage* dest = (Storage*)ptrB;
+        *dest = *(Storage*)ptrA;
+    }
+    __global__
+        void kernel_memcpyTest2(float* ptrA, float* ptrB, size_t count)
+    {
+       /* float a0;
+        asm volatile ("mov.f32 %0, %1;"
+            : "=f"(a0)
+            : "f"(*ptrA));
+
+
+        asm volatile ("mov.f32 %0, %1;"
+            : "=f"(a0)
+            : "f"(a0));
+
+        double x;
+        double x1 = 11;
+
+        asm volatile ("mov.f64 %0, %1;"
+            : "=d"(x)
+            : "d"(x1));
+
+        //printf("size: %i\n", sizeof(float));
+        //printf("size: %i\n", sizeof(double));
+
+        float a1 = ptrA[1];
+        float a2 = ptrA[2];
+        float a3 = ptrA[3];
+        float a4 = ptrA[4];
+        float a5 = ptrA[5];
+        float a6 = ptrA[6];
+        float a7 = ptrA[7];*/
+
+        ptrB[0] = ptrA[0];
+        ptrB[1] = ptrA[1];
+        ptrB[2] = ptrA[2];
+        ptrB[3] = ptrA[3];
+        ptrB[4] = ptrA[4];
+        ptrB[5] = ptrA[5];
+        ptrB[6] = ptrA[6];
+        ptrB[7] = ptrA[7];
+    }
+
+
+    __host__ 
+        void GPU_CUDA_getSpecs()
+    {
+        cudaDeviceProp h_deviceProp;
+        cudaGetDeviceProperties(&h_deviceProp, 0);
+    }
+    __host__ 
         void GPU_CUDA_calculateNet(float* weights, float* signals, float* outpuSignals,
                                size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation)
     {
+        nvtxRangePush(__FUNCTION__);
+        nvtxMark("Waiting...");
         kernel_calculateNet << <1, 1 >> > (weights, signals, outpuSignals,
                                            inputCount, hiddenX, hiddenY, outputCount, activation);
         cudaDeviceSynchronize();
+        nvtxRangePop();
     }
     __host__
         void GPU_CUDA_getRandomWeight(float min, float max, float* h_list, size_t elements)
@@ -116,19 +269,41 @@ namespace NeuronalNet
         size_t index = blockIdx.x * blockDim.x + threadIdx.x;
         
         
+
+        
         if (neuronCount == 0 || index >= neuronCount)
             return;
 
-        const size_t tileSize = 2048*2;
-        __shared__ float sharedSignals[tileSize];
-        //printf("B %i   Bd %i  T %i  Index: %i\n", blockIdx.x, blockDim.x, threadIdx.x, index);
+      
+        size_t storageCount = 0;
+        Storage storage;
+        Storage *ramStorage;
+
         float res = 0;
+        weights += index * inputSignalCount;
+
+       // ramStorage = (Storage*)weights;
+       // storage = *ramStorage;
+       
+       
+       
+       /*
+        for (size_t i = 0; i < inputSignalCount; ++i)
+        {
+            res += weights[i] * inputSignals[i];
+        }*/
+
+        const short tileSize = 32;
+        __shared__ float sharedSignals[tileSize];
+        
         size_t signalsBegin = 0;
         size_t signalsEnd   = 0;
-        size_t tiles = inputSignalCount / tileSize + 1;
-        size_t loadCount = tileSize / neuronCount + 1;
-        //float delta;
-        for (size_t tile = 0; tile <tiles; ++tile)
+        short tiles = inputSignalCount / tileSize + 1;
+        short loadCount = tileSize / neuronCount + 1;
+        short loadIndex = loadCount * threadIdx.x;
+
+
+        for (short tile = 0; tile <tiles; ++tile)
         {
             signalsBegin = signalsEnd;
             if (tile == tiles - 1)
@@ -136,58 +311,56 @@ namespace NeuronalNet
             else
                 signalsEnd = (tile + 1) * tileSize;
 
-            /*if (index < signalsEnd - signalsBegin)
-            {
-                sharedSignals[index] = inputSignals[i];
-            }*/
+
             
-            for (size_t i = 0; i < loadCount; ++i)
+            for (short i = 0; i < loadCount; ++i)
             {
-                size_t signalIndex = i + loadCount * threadIdx.x;
+                short signalIndex = i + loadIndex;
 
                 if (signalsEnd > (signalIndex + signalsBegin))
                 {
                      sharedSignals[signalIndex] = inputSignals[signalIndex+signalsBegin];
                 }
+                __syncthreads();
             }
-            
-
-            /*if (threadIdx.x == 0)
-            {
-                
-                for (size_t i = signalsBegin; i < signalsEnd; ++i)
-                {
-                    sharedSignals[i- signalsBegin] = inputSignals[i];
-                }
-                
-            }*/
-            __syncthreads();
 
 
-            
             for (size_t i = signalsBegin; i < signalsEnd; ++i)
             {
-                //float weight = weights[index * inputSignalCount + i];
-                //float signal = sharedSignals[i - signalsBegin];
-                //delta = weight * signal;
-                //if (delta < 0.00005 && delta > -0.00005)
-                //    delta = 0;
-                //else
-                res += weights[index * inputSignalCount + i] * sharedSignals[i - signalsBegin];
-               /* if (weights[index * inputSignalCount + i] != 0.01)
-                {
-                    printf("A: %f\n", weights[index * inputSignalCount + i]);
-                }*/
-                /*if ((delta - 1) > 0.0001 || (delta - 1) < -0.0001)
-                {
-                    delta = delta;
-                }
-                else if (delta == 0)
-                {
-                    delta = delta;
-                }*/
+                //float weight = weights[index * (i+1)];
+
+
+               // res += *((float*)(&storage) + storageCount) * sharedSignals[i - signalsBegin];
+                
+                
+                float weight = weights[i];
+                __syncthreads();
+                res += weight * sharedSignals[i - signalsBegin];
+                
+                //res += sharedSignals[i - signalsBegin];
+
+            //   if ((++storageCount) >= 1)
+            //   {
+            //       storageCount = 0;
+            //
+            //       if ((i + 8) < signalsEnd)
+            //       {
+            //
+            //           storage = *ramStorage;
+            //           ++ramStorage;
+            //       }
+            //       else
+            //       {
+            //           /*for (size_t j = i; j < signalsEnd; ++j)
+            //           {
+            //               *((float*)&storage + j) = weights[j];
+            //           }*/
+            //       }
+            //       
+            //   }
             }
         }
+
         //__syncthreads();
         outputSignals[index] = (*act)(res);
     }
@@ -196,6 +369,7 @@ namespace NeuronalNet
         void kernel_calculateNet(float* weights, float* signals, float* outpuSignals,
                         size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act)
     {
+        
         kernel_ActFp* actPtr = kernel_net_getActivationFunction(act);
         
         size_t maxThreadPerBlock = 1024;
@@ -205,7 +379,8 @@ namespace NeuronalNet
         float* tmpHiddenOutSignals1 = new float[hiddenY];
         float* tmpHiddenOutSignals2 = new float[hiddenY];
         cudaDeviceSynchronize();
-        kernel_net_calculateLayer <<< numBlocks, blockSize >>> (weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, actPtr);
+        //kernel_net_calculateLayer <<< numBlocks, blockSize >>> (weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, actPtr);
+        kernel_net_calculateLayer <<< 1, 1 >>> (weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, actPtr);
         weights += inputCount * hiddenY;
         cudaDeviceSynchronize();
 

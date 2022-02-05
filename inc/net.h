@@ -8,6 +8,7 @@
 #include "activation.h"
 #include "net_kernel.cuh"
 
+
 #include <chrono>
 
 

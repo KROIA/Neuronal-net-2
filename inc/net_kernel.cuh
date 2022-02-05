@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <cuda_runtime.h>
+#include <nvtx3/nvToolsExt.h> 
 #include <curand.h>
 #include <cuda.h>
 #include "activation.h"
@@ -11,7 +12,15 @@
 
 namespace NeuronalNet 
 {
+	__host__ void GPU_CUDA_memcpyTest();
+	__global__ void kernel_memcpyTest1(float* ptrA,float *ptrB, size_t count);
+	__global__ void kernel_memcpyTest2(float* ptrA,float *ptrB, size_t count);
+
+
 	// Interface functions
+	
+
+	__host__ void GPU_CUDA_getSpecs();
 	__host__ void GPU_CUDA_calculateNet(float* weights, float* signals, float* outpuSignals,
 										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation);
 
