@@ -1,156 +1,132 @@
 ﻿#include "../inc/net_kernel.cuh"
 
+#define BLOCK_DIM 16
+
 namespace NeuronalNet 
 {
+    __global__ void transpose(float* odata, float* idata, int width, int height)
+    {
+        __shared__ float block[BLOCK_DIM][BLOCK_DIM + 1];
+
+        // read the matrix tile into shared memory
+            // load one element per thread from device memory (idata) and store it
+            // in transposed order in block[][]
+        unsigned int xIndex = blockIdx.x * BLOCK_DIM + threadIdx.x;
+        unsigned int yIndex = blockIdx.y * BLOCK_DIM + threadIdx.y;
+        if ((xIndex < width) && (yIndex < height))
+        {
+            unsigned int index_in = yIndex * width + xIndex;
+            block[threadIdx.y][threadIdx.x] = idata[index_in];
+        }
+
+        // synchronise to ensure all writes to block[][] have completed
+        __syncthreads();
+
+        // write the transposed matrix tile to global memory (odata) in linear order
+        xIndex = blockIdx.y * BLOCK_DIM + threadIdx.x;
+        yIndex = blockIdx.x * BLOCK_DIM + threadIdx.y;
+        if ((xIndex < height) && (yIndex < width))
+        {
+            unsigned int index_out = yIndex * height + xIndex;
+            odata[index_out] = block[threadIdx.x][threadIdx.y];
+        }
+    }
     __host__ 
-        void GPU_CUDA_memcpyTest()
-    {
+        double GPU_CUDA_transposeMatrix(float* d_list, size_t width)
+    {/*
+        size_t maxElement = gaussSum(width);
+        size_t elementCount = width * width;
+
+        float* d_list1;
+        float* d_list2;
+        GPU_CUDA_allocMem(d_list1, elementCount * sizeof(float));
+        GPU_CUDA_allocMem(d_list2, elementCount * sizeof(float));
+        GPU_CUDA_transferToDevice(d_list1, h_list, elementCount * sizeof(float));
+
+        dim3 grid(width / BLOCK_DIM, width / BLOCK_DIM, 1);
+        dim3 threads(BLOCK_DIM, BLOCK_DIM, 1);
+        int blockSize = GPU_CUDA_getSpecs().maxThreadsPerBlock;
+        int numBlocks = (maxElement - 1) / blockSize + 1;
+        auto t1 = std::chrono::high_resolution_clock::now();
+        transpose <<<grid, threads >>> (d_list2,d_list1, width, width);
+        cudaDeviceSynchronize();
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double transposeTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
+        double transposeTimeMs = transposeTimeNs / 1000000;
+        std::cout << "Transposetime: " << transposeTimeNs << " ns = " << transposeTimeMs << " ms\n";
+        GPU_CUDA_transferToHost(d_list2, h_list, elementCount * sizeof(float));
+        GPU_CUDA_freeMem(d_list1);
+        GPU_CUDA_freeMem(d_list2);
+        return transposeTimeMs;
+        */
+        size_t maxElement = gaussSum(width);
+      //  size_t elementCount = width * width;
+
+       // float* d_list;
+       // GPU_CUDA_allocMem(d_list, elementCount * sizeof(float));
+       // GPU_CUDA_transferToDevice(d_list, h_list, elementCount * sizeof(float));
+
+
+        int blockSize = GPU_CUDA_getSpecs().maxThreadsPerBlock;
+        int numBlocks = (maxElement - 1) / blockSize + 1;
+        size_t sliceSize = 2048 / 4;
+        if (numBlocks > sliceSize)
         {
-            size_t count = 8;
-            float* h_original = new float[count];
-            float* h_check = new float[count];
-
-            float* d_original;
-            float* d_check;
-
-            cudaMalloc(&d_original, count * sizeof(float));
-            cudaMalloc(&d_check, count * sizeof(float));
-
-
-            for (size_t i = 0; i < count; ++i)
-            {
-                h_original[i] = 1.11 * (i + 1);
-            }
-
-            std::cout << "origninal: \n";
-            for (size_t i = 0; i < count; ++i)
-            {
-                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
-            }
-
-            cudaMemcpy(d_original, h_original, count * sizeof(float), cudaMemcpyHostToDevice);
-            std::cout << "Kernel call: \n";
-            kernel_memcpyTest1 << <1, 1 >> > (d_original, d_check, count);
-            cudaDeviceSynchronize();
-            cudaMemcpy(h_check, d_check, count * sizeof(float), cudaMemcpyDeviceToHost);
-
-            std::cout << "check: \n";
-            for (size_t i = 0; i < count; ++i)
-            {
-                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
-            }
-
-            cudaFree(d_original);
-            cudaFree(d_check);
-            delete[] h_original;
-            delete[] h_check;
+            //std::cout << "numBlocks > 2048\n";
+            numBlocks = sliceSize;
         }
+        auto t1 = std::chrono::high_resolution_clock::now();
+        for (size_t i = 0; i < width / sliceSize + 1; ++i)
         {
-            size_t count = 8;
-            float* h_original = new float[count];
-            float* h_check = new float[count];
-
-            float* d_original;
-            float* d_check;
-
-            cudaMalloc(&d_original, count * sizeof(float));
-            cudaMalloc(&d_check, count * sizeof(float));
-
-
-            for (size_t i = 0; i < count; ++i)
-            {
-                h_original[i] = 1.11 * (i + 1);
-            }
-
-            std::cout << "origninal: \n";
-            for (size_t i = 0; i < count; ++i)
-            {
-                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
-            }
-
-            cudaMemcpy(d_original, h_original, count * sizeof(float), cudaMemcpyHostToDevice);
-            std::cout << "Kernel call: \n";
-            kernel_memcpyTest2 << <1, 1 >> > (d_original, d_check, count);
-            cudaDeviceSynchronize();
-            cudaMemcpy(h_check, d_check, count * sizeof(float), cudaMemcpyDeviceToHost);
-
-            std::cout << "check: \n";
-            for (size_t i = 0; i < count; ++i)
-            {
-                std::cout << "i = " << i << "\t" << h_original[i] << "\t" << h_check[i] << "\n";
-            }
-
-            cudaFree(d_original);
-            cudaFree(d_check);
-            delete[] h_original;
-            delete[] h_check;
+            kernel_transposeMatrix << <numBlocks, blockSize >> > (d_list, width, maxElement, gaussSum(i * sliceSize));
+            
         }
-
+        //kernel_transposeMatrix << <numBlocks, blockSize >> > (d_list, width, maxElement, 0);
+        cudaDeviceSynchronize();
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double transposeTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(t2-t1).count();
+        double transposeTimeMs = transposeTimeNs / 1000000;
+        //std::cout << "Transposetime: " << transposeTimeNs <<" ns = " << transposeTimeMs << " ms\n";
+      //  GPU_CUDA_transferToHost(d_list, h_list, elementCount * sizeof(float));
+      //  GPU_CUDA_freeMem(d_list);
+        return transposeTimeMs;
     }
-    struct Storage
+    __host__
+        double GPU_CUDA_transposeMatrix2(float* d_list1, float* d_list2, size_t width)
     {
-        float a1;
-     //   float a2;
-      //  float a3;
-      //  float a4;
-        //float a5;
-        //float a6;
-       // float a7;
-      //  float a8;
-    };
-    __global__ 
-        void kernel_memcpyTest1(float* ptrA, float* ptrB, size_t count)
-    {
-        Storage* dest = (Storage*)ptrB;
-        *dest = *(Storage*)ptrA;
-    }
-    __global__
-        void kernel_memcpyTest2(float* ptrA, float* ptrB, size_t count)
-    {
-       /* float a0;
-        asm volatile ("mov.f32 %0, %1;"
-            : "=f"(a0)
-            : "f"(*ptrA));
+        size_t maxElement = gaussSum(width);
+        size_t elementCount = width * width;
 
+      // float* d_list1;
+      // float* d_list2;
+      // GPU_CUDA_allocMem(d_list1, elementCount * sizeof(float));
+      // GPU_CUDA_allocMem(d_list2, elementCount * sizeof(float));
+      // GPU_CUDA_transferToDevice(d_list1, h_list, elementCount * sizeof(float));
 
-        asm volatile ("mov.f32 %0, %1;"
-            : "=f"(a0)
-            : "f"(a0));
-
-        double x;
-        double x1 = 11;
-
-        asm volatile ("mov.f64 %0, %1;"
-            : "=d"(x)
-            : "d"(x1));
-
-        //printf("size: %i\n", sizeof(float));
-        //printf("size: %i\n", sizeof(double));
-
-        float a1 = ptrA[1];
-        float a2 = ptrA[2];
-        float a3 = ptrA[3];
-        float a4 = ptrA[4];
-        float a5 = ptrA[5];
-        float a6 = ptrA[6];
-        float a7 = ptrA[7];*/
-
-        ptrB[0] = ptrA[0];
-        ptrB[1] = ptrA[1];
-        ptrB[2] = ptrA[2];
-        ptrB[3] = ptrA[3];
-        ptrB[4] = ptrA[4];
-        ptrB[5] = ptrA[5];
-        ptrB[6] = ptrA[6];
-        ptrB[7] = ptrA[7];
+        dim3 grid(width / BLOCK_DIM, width / BLOCK_DIM, 1);
+        dim3 threads(BLOCK_DIM, BLOCK_DIM, 1);
+        int blockSize = GPU_CUDA_getSpecs().maxThreadsPerBlock;
+        int numBlocks = (maxElement - 1) / blockSize + 1;
+        auto t1 = std::chrono::high_resolution_clock::now();
+        transpose <<<grid, threads >>> (d_list2,d_list1, width, width);
+        cudaDeviceSynchronize();
+        auto t2 = std::chrono::high_resolution_clock::now();
+        double transposeTimeNs = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count();
+        double transposeTimeMs = transposeTimeNs / 1000000;
+        //std::cout << "Transposetime: " << transposeTimeNs << " ns = " << transposeTimeMs << " ms\n";
+      //  GPU_CUDA_transferToHost(d_list2, h_list, elementCount * sizeof(float));
+      //  GPU_CUDA_freeMem(d_list1);
+      //  GPU_CUDA_freeMem(d_list2);
+        return transposeTimeMs;
     }
 
 
     __host__ 
-        void GPU_CUDA_getSpecs()
+        cudaDeviceProp GPU_CUDA_getSpecs()
     {
         cudaDeviceProp h_deviceProp;
         cudaGetDeviceProperties(&h_deviceProp, 0);
+        return h_deviceProp;
     }
     __host__ 
         void GPU_CUDA_calculateNet(float* weights, float* signals, float* outpuSignals,
@@ -226,7 +202,12 @@ namespace NeuronalNet
     __host__
         void GPU_CUDA_transferToHost(float* d_list, float* h_list, size_t byteCount)
     {
-        cuda_handleError(cudaMemcpy(h_list, d_list, byteCount, cudaMemcpyDeviceToHost));
+       cuda_handleError(cudaMemcpy(h_list, d_list, byteCount, cudaMemcpyDeviceToHost));
+    }
+    __host__ 
+        void GPU_CUDA_convertWeightToGPUWeight(float* d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount)
+    {
+
     }
 
 
@@ -275,12 +256,10 @@ namespace NeuronalNet
             return;
 
       
-        size_t storageCount = 0;
-        Storage storage;
-        Storage *ramStorage;
+        
 
         float res = 0;
-        weights += index * inputSignalCount;
+        //weights += index * inputSignalCount;
 
        // ramStorage = (Storage*)weights;
        // storage = *ramStorage;
@@ -333,7 +312,8 @@ namespace NeuronalNet
                // res += *((float*)(&storage) + storageCount) * sharedSignals[i - signalsBegin];
                 
                 
-                float weight = weights[i];
+                float weight = weights[index + inputSignalCount * i];
+                //float weight = weights[index * inputSignalCount + i];
                 __syncthreads();
                 res += weight * sharedSignals[i - signalsBegin];
                 
@@ -417,19 +397,186 @@ namespace NeuronalNet
         delete[] tmpHiddenOutSignals2;
 
     }
-    /*__global__
-        void kernel_scaleRandomWeight(float min, float max, float* d_list, size_t elements)
+
+    __global__ 
+        void kernel_convertLayerWeightToGPUWeight(float* d_list, size_t signalCount, size_t neuronCount)
     {
-        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
-        if (index >= elements)
+        
+
+        /*
+        1) Kreisläufe finden:
+            index 0 überspringen
+            index 1 index speichern, kreislauf durchrechnen bis zum anfang, index in Liste aufnehmen
+            index++ -> wieder index speichern, kreislauf druchrechnen bis anfang. bei jedem element prüfen, 
+                       ob der jeweilige index schon in der Liste aufgenommen ist, wenn ja ist der Kreislauf
+                       schon notiert.
+
+            index++ -> wiederholen
+
+            --> Ergiebt eine Liste von startindexen für die kreisläufe.
+
+            --> 
+        
+        */
+
+        size_t weightCount = signalCount * neuronCount;
+        size_t circuitStartIndex[2];
+        circuitStartIndex[0] = 0;
+        circuitStartIndex[1] = 0;
+        size_t circuitIndex = 0;
+
+        // Kreisläufe finden
+        // Erstes und letztes Elemnt überspringen, diese bleiben konstant.
+        for (size_t currentStartIndex = 1; currentStartIndex < weightCount-1; ++currentStartIndex)
+        {
+            size_t destinationIndex = 0;
+            size_t srcIndex = currentStartIndex;
+            bool circuitAlreadyExists = false;
+            while (destinationIndex != currentStartIndex) 
+            {
+                kernel_convertLayerWeightToGPUWeight_getNewIndex(srcIndex, destinationIndex, signalCount, neuronCount);
+                
+                for (int i = 0; i < 2; ++i)
+                {
+                    if (circuitStartIndex[i] == destinationIndex)
+                    {
+                        circuitAlreadyExists = true;
+                    }
+                }
+                srcIndex = destinationIndex;
+            }      
+            if (!circuitAlreadyExists)
+            {
+                circuitStartIndex[circuitIndex] = currentStartIndex;
+                ++circuitIndex;
+                if (circuitIndex >= 2)
+                {
+                    printf("ERROR: more than 2 circuits found\n");
+                }
+            }
+        }
+
+/*
+        size_t inputIndex = ;
+        size_t outputIndex = inputIndex / neuronCount + (inputIndex % neuronCount) * signalCount;
+        result[inputIndex / h][inputIndex % h] = m[x][y];*/
+
+        /*
+        size_t weightCount = signalCount * neuronCount -1;
+        float tmp;
+        size_t destIndex = 0;
+        size_t srcIndex =  1;
+
+        size_t srcIndexX = 1;
+        size_t srcIncexY = 0;
+        size_t destIndexX = 0;
+        size_t destIncexY = 0;
+        for (size_t x = 0; x <signalCount; ++x)
+        {
+            for (size_t y = 0; y < neuronCount; ++y)
+            {
+                if (x + y == 0 || x + y == signalCount + neuronCount-2)
+                    continue;
+                
+               // destIndexX = (srcIndexX * signalCount) % signalCount;
+               // destIndexY = (srcIndexY *)
+
+
+
+
+                tmp = d_list[destIndex];
+                d_list[destIndex] = d_list[srcIndex];
+                destIndex = (destIndex + signalCount) % weightCount;
+                ++srcIndex;
+            }
+        }*/
+    }
+
+    __global__ 
+        void kernel_transposeMatrix(float* d_list, size_t width, size_t maxIndex, size_t indexOffset)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x + indexOffset;
+       // #define COALESCED
+        //maxIndex = kernel_gaussSum(width)
+      
+        size_t x = kernel_invGaussSum(index);
+        size_t y = index - kernel_gaussSum(x);
+
+        if (index >= maxIndex || x==y)
+        {
+            //printf(" returning index: %i\tx: %i\ty: %i\n", index, x, y);
             return;
+        }
+        if (y != 0)
+            return;
+       // if (index == 1)
+        //    printf("maxIndex: %i\n", maxIndex);
+        //if(x==0)
+        //printf(" i: %3i x: %3i\n", index, x);
 
-        size_t r = (size_t)d_list[index];
-        d_list[index] = min + (r % (size_t(max) - size_t(min)));
-        //if(index == 0)
-            //curandGenerateUniform(*gen, d_list, elements);
-        //cudaDeviceSynchronize();
-    }*/
+        if (x > width || y > width)
+            printf("ERROR: x>width || y>width\n");
+        size_t elementIndex1 = y * width + x;
+        size_t elementIndex2 = x * width + y;
+       // if (index == 2098176)
+       //     printf("index == 2098176, d_list[%i][%i] = %1.1f\n", x, y, d_list[elementIndex1]);
+
+       // if (elementIndex1 == 1 || elementIndex2 == 32)
+      //      printf("");
+
+
+#ifdef COALESCED
+        //__shared__ float buffer1[1024];
+        __shared__ float buffer2[1024];
+
+        
+        //buffer1[threadIdx.x] = d_list[elementIndex1];
+        //__syncthreads();
+        buffer2[threadIdx.x] = d_list[elementIndex2];
+        __syncthreads();
+        d_list[elementIndex1] = buffer2[threadIdx.x];
+        __syncthreads();
+        d_list[elementIndex2] = d_list[elementIndex1];
+
+#else
+        
+        float tmp = d_list[elementIndex1];
+        d_list[elementIndex1] = d_list[elementIndex2];
+        d_list[elementIndex2] = tmp;
+#endif
+    }
+
+
+    __host__ 
+        size_t gaussSum(size_t val)
+    {
+        return (val * (val + 1)) / 2;
+    }
+    
+    __device__ 
+        size_t kernel_gaussSum(size_t val)
+    {
+        return (val * (val + 1)) / 2;
+    }
+
+    __host__ 
+        size_t invGaussSum(size_t sum)
+    {
+        return (size_t)floor((sqrt(8 * (float)sum + 1) - 1) / 2);
+    }
+    __device__ 
+        size_t kernel_invGaussSum(size_t sum)
+    {
+        return (size_t)floorf((sqrtf(8 * (float)sum + 1) - 1) / 2);
+    }
+
+
+    __device__ 
+        void kernel_convertLayerWeightToGPUWeight_getNewIndex(size_t startIndex, size_t& endIndex, size_t signalCount, size_t neuronCount)
+    {
+        // Calculates the new Position of a element
+        endIndex = startIndex / neuronCount + (startIndex % neuronCount) * signalCount;
+    }
+
 }
-
 

@@ -342,36 +342,39 @@ void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 	VERIFY_VALID_PTR(activation, "", return)
 
 
-	float* tmpHiddenOutSignals = new float[hiddenY];
-	CPU_calculateLayer(weights, signals, tmpHiddenOutSignals, hiddenY, inputCount, activation);
+	float* tmpHiddenOutSignals1 = new float[hiddenY];
+	float* tmpHiddenOutSignals2 = new float[hiddenY];
+	CPU_calculateLayer(weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, activation);
 	weights += inputCount * hiddenY;
 
 
 	for (size_t i = 1; i < hiddenX; ++i)
 	{
-		CPU_calculateLayer(weights, tmpHiddenOutSignals, tmpHiddenOutSignals, hiddenY, hiddenY, activation);
+		CPU_calculateLayer(weights, tmpHiddenOutSignals1, tmpHiddenOutSignals2, hiddenY, hiddenY, activation);
 		weights += hiddenY * hiddenY;
+		float* tmp = tmpHiddenOutSignals1;
+		tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
+		tmpHiddenOutSignals2 = tmp;
 	}
 
 
-	CPU_calculateLayer(weights, tmpHiddenOutSignals, outpuSignals, outputCount, hiddenY, activation);
-	delete[] tmpHiddenOutSignals;
+	CPU_calculateLayer(weights, tmpHiddenOutSignals1, outpuSignals, outputCount, hiddenY, activation);
+	delete[] tmpHiddenOutSignals1;
+	delete[] tmpHiddenOutSignals2;
 }
 void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
 							 size_t neuronCount, size_t inputSignalCount, ActFp* activation)
 {
-	float* tmpSignals = new float[inputSignalCount];
-	memcpy(tmpSignals, inputSignals, inputSignalCount * sizeof(float));
 	for (size_t index = 0; index < neuronCount; ++index)
 	{
 		float res = 0;
 		for (size_t i = 0; i < inputSignalCount; ++i)
 		{
-			res += weights[index * inputSignalCount + i] * tmpSignals[i];
+			//res += weights[index * inputSignalCount + i] * tmpSignals[i];
+			res += weights[index + inputSignalCount * i] * inputSignals[i];
 		}
 		outputSignals[index] = (*activation)(res);
 	}
-	delete[] tmpSignals;
 }
 void Net::transferWeightsToDevice()
 {
