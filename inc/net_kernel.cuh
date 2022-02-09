@@ -6,6 +6,7 @@
 #include <cuda_runtime.h>
 #include <nvtx3/nvToolsExt.h> 
 #include <curand.h>
+
 #include <cuda.h>
 #include <math.h>
 #include <chrono>
@@ -35,8 +36,8 @@ namespace NeuronalNet
 	__host__ void GPU_CUDA_convertWeightToGPUWeight(float *d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount);
 
 
-	__host__ inline size_t gaussSum(size_t val);
-	__host__ inline size_t invGaussSum(size_t sum);
+	__host__ size_t gaussSum(size_t val);
+	__host__ size_t invGaussSum(size_t sum);
 
 	// Kernel functions
 	typedef float kernel_ActFp(float);

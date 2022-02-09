@@ -49,13 +49,19 @@ void matrixTransposeExample(int width);
 vector<double> transposeTimeListGPU1;
 vector<double> transposeTimeListGPU2;
 vector<double> transposeTimeListCPU;
+vector<double> transposeMemThruputListGPU1;
+vector<double> transposeMemThruputListGPU2;
+vector<double> transposeMemThruputListCPU;
 vector<size_t> transposeWidthList;
+
+void gaussumValidator();
+
 
 int main(void)
 {
 	nvtxNameOsThread(1,"Main Thread");
 	nvtxRangePush(__FUNCTION__);
-	window = new sf::RenderWindow(sf::VideoMode(800, 600), "My window");
+	window = new sf::RenderWindow(sf::VideoMode(1000, 1000), "My window");
 	//matrixProblemSolver(4, 3);
 
 	/*for (int y = 2; y < 100; ++y)
@@ -76,6 +82,10 @@ int main(void)
 	//matrixTransposeExample(2080);
 	//return 0;
 	//getchar();
+	matrixTransposeExample(1024*25);
+	return 0;
+	//gaussumValidator();
+//	return 0;
 	for (size_t i = 32; i < 1024*50; i+=1024)
 	{
 		matrixTransposeExample(i);
@@ -211,6 +221,10 @@ void printMatrix(const Matrix& m)
 		return;
 
 	int h = m[0].size();
+
+
+	
+
 
 	cout << "Matrix: width  = " << w << "\n";
 	cout << "        height = " << h << "\n";
@@ -456,6 +470,75 @@ void convertLayerWeightToGPUWeight_getNewIndex(size_t startIndex, size_t& endInd
 void plotMatrix1(float* list, size_t width)
 {
 	cout << "Matrix: \n";
+	//sf::Uint8* pixels = new sf::Uint8[width * width * 4];
+	sf::Image image;
+	image.create(width, width);
+
+	sf::Texture texture;
+	texture.create(width, width);
+
+	sf::Sprite sprite(texture); // needed to draw the texture on screen
+
+	// ...
+	size_t counter = 0;
+	for (size_t y = 0; y < width; ++y)
+	{
+		for (size_t x = 0; x < width; ++x)
+		{
+			//printf("%1.0f", list[y * width + x]);
+			/*pixels[counter] = list[y * width + x]; // obviously, assign the values you need here to form your color
+			pixels[counter + 1] = 0;
+			pixels[counter + 2] = 0;
+			pixels[counter + 3] = 255;*/
+			sf::Color color(list[y * width + x], 0, 0, 255);
+			image.setPixel(x, y, color);
+			//counter+=4;
+		}
+		//cout << "\n";
+	}
+
+	//texture.update(pixels);
+	texture.loadFromImage(image);
+
+	// ...
+	sprite.setScale(sf::Vector2f(800.f / (float)width, 800.f / (float)width));
+	sprite.setPosition(sf::Vector2f(10, 10));
+	window->clear();
+	window->draw(sprite);
+	window->display();
+	cout << "display done\n";
+	//delete[] pixels;
+	while (window->isOpen())
+	{
+		//cout << "event1\n";
+		sf::Event event;
+		while (window->pollEvent(event))
+		{
+			//cout << "event2\n";
+			// "close requested" event: we close the window
+			if (event.type == sf::Event::Closed)
+				window->close();
+			if (event.type == sf::Event::KeyPressed)
+			{
+				if (event.key.code == sf::Keyboard::Enter)
+				{
+					cout << "return\n";
+					return;
+				}
+				if (event.key.code == sf::Keyboard::P)
+				{
+					static int fileCounter = 0;
+					cout << "Save...\n";
+					image.saveToFile("mat_" + std::to_string(width) + "_"+std::to_string(fileCounter)+".jpg");
+					fileCounter++;
+				}
+			}
+
+		}
+		//cout << "return\n";
+		//return;
+	}
+	return;
 	for (size_t y = 0; y < width; ++y)
 	{
 		for (size_t x = 0; x < width; ++x)
@@ -480,11 +563,16 @@ void matrixTransposeCPU(float* list, size_t width)
 bool matrixComp(float* org, float* tst, size_t width)
 {
 	size_t size = width * width;
-	for (size_t i = 0; i < size; ++i)
-		if (org[i] != tst[i])
+	for (size_t y = 0; y < width; ++y)
+		for (size_t x = 0; x < width; ++x)
 		{
-			//cout << "-not equal: elem: " << i << " "<<org[i] <<" != "<<tst[i]<<"\n";
-			return false;
+			size_t index = y * width + x;
+			if (abs(org[index] - tst[index]) > 0.000001)
+			{
+
+				cout << "-not equal: elem: x = " << x << " y = " << y << " " << org[index] << " != " << tst[index] << "\n";
+				return false;
+			}
 		}
 	return true;
 }
@@ -514,7 +602,7 @@ double matrixTransposeSelfTest(float *h_list,float *h_original, size_t width,siz
 				{
 					cout << "  !!! NOT TRANSPOSED 1 !!! " << width << "\n";
 					plotMatrix1(h_list, width);
-					getchar();
+					//getchar();
 				}
 			}
 			else
@@ -522,9 +610,9 @@ double matrixTransposeSelfTest(float *h_list,float *h_original, size_t width,siz
 				if (!matrixComp(h_original, h_list, width))
 				{
 					cout << "  !!! NOT EQUAL 1 !!! " << width << "\n";
-					//plotMatrix1(matrixORG, width);
+					plotMatrix1(h_original, width);
 					plotMatrix1(h_list, width);
-					getchar();
+					//getchar();
 				}
 			}
 		}
@@ -566,7 +654,7 @@ double matrixTransposeCudaExampleTest(float* h_list, float* h_original, size_t w
 				{
 					cout << "  !!! NOT TRANSPOSED 2 !!! " << width << "\n";
 					plotMatrix1(h_list, width);
-					getchar();
+					//getchar();
 				}
 			}
 			else
@@ -574,9 +662,9 @@ double matrixTransposeCudaExampleTest(float* h_list, float* h_original, size_t w
 				if (!matrixComp(h_original, h_list, width))
 				{
 					cout << "  !!! NOT EQUAL 2 !!! " << width << "\n";
-					//plotMatrix1(matrixORG, width);
+					plotMatrix1(h_original, width);
 					plotMatrix1(h_list, width);
-					getchar();
+					//getchar();
 				}
 			}
 		}
@@ -594,8 +682,78 @@ double matrixTransposeCudaExampleTest(float* h_list, float* h_original, size_t w
 	cout << "  matrixTransposeCudaExampleTest end\n";
 	return time / iterations;
 }
+void matrixTransposeMixedTest(float* h_list, float* h_original, size_t width, size_t iterations, bool transposeCheck)
+{
+	cout << "  matrixTransposeCudaExampleTest begin\n";
+	size_t elementCount = width * width;
+	float* h_checkList1 = new float[elementCount];
+	float* h_checkList2 = new float[elementCount];
+	float* d_list1;
+	float* d_list2;
+	cout << "    Alloc GPU Memory... ";
+	NeuronalNet::GPU_CUDA_allocMem(d_list1, elementCount * sizeof(float));
+	NeuronalNet::GPU_CUDA_allocMem(d_list2, elementCount * sizeof(float));
+	cout << "done\n";
+	cout << "    Transfer GPU Memory to device... ";
+	NeuronalNet::GPU_CUDA_transferToDevice(d_list1, h_list, elementCount * sizeof(float));
+	cout << "done\n";
 
-void plotResults(size_t width, double timeGPU_self, double timeGPU_cudaExample, double timeCPU)
+	double time = 0;
+	time += NeuronalNet::GPU_CUDA_transposeMatrix2(d_list1, d_list2, width);
+
+	
+	cout << "    Transfer GPU Memory to host... ";
+	NeuronalNet::GPU_CUDA_transferToHost(d_list2, h_checkList1, elementCount * sizeof(float));
+	cout << "done\n";
+	cout << "    Delete GPU Memory... ";
+	NeuronalNet::GPU_CUDA_freeMem(d_list1);
+	NeuronalNet::GPU_CUDA_freeMem(d_list2);
+	cout << "done\n";
+	cout << "  matrixTransposeCudaExampleTest end\n";
+
+
+
+
+	// -------------------------------
+
+
+
+
+	cout << "  matrixTransposeSelfTest begin\n";
+	float* d_list;
+	cout << "    Alloc GPU Memory... ";
+	NeuronalNet::GPU_CUDA_allocMem(d_list, elementCount * sizeof(float));
+	cout << "done\n";
+	cout << "    Transfer GPU Memory to device... ";
+	NeuronalNet::GPU_CUDA_transferToDevice(d_list, h_list, elementCount * sizeof(float));
+	cout << "done\n";
+
+	
+
+	time += NeuronalNet::GPU_CUDA_transposeMatrix(d_list, width);
+
+	cout << "    Transfer GPU Memory to host... ";
+	NeuronalNet::GPU_CUDA_transferToHost(d_list, h_checkList2, elementCount * sizeof(float));
+	cout << "done\n";
+	if (!matrixComp(h_checkList1, h_checkList2, width))
+	{
+		cout << "h_checkList1 != h_checkList2 !!! NOT EQUAL 2 !!! " << width << "\n";
+		plotMatrix1(h_checkList1, width);
+		plotMatrix1(h_checkList2, width);
+		//getchar();
+	}
+
+
+	cout << "    Delete GPU Memory... ";
+	NeuronalNet::GPU_CUDA_freeMem(d_list);
+	delete[] h_checkList1;
+	delete[] h_checkList2;
+	cout << "done\n";
+	cout << "  matrixTransposeSelfTest end \n";
+}
+
+void plotResults(size_t width, double timeGPU_self, double timeGPU_cudaExample, double timeCPU,
+				 double mem1,double mem2,double mem3)
 {
 	cout << "    Plot results... ";
 	static bool firstCall = true;
@@ -614,9 +772,9 @@ void plotResults(size_t width, double timeGPU_self, double timeGPU_cudaExample, 
 		if (firstCall)
 		{
 			firstCall = false;
-			fprintf(file, "width;time GPU self ms;time GPU cuda example ms;time CPU ms\n");
+			fprintf(file, "width;time GPU self ms;time GPU cuda example ms;time CPU ms;Memory throughput GPU self bytes/s;Memory throughput GPU example bytes/s;Memory throughput CPU bytes/s;\n");
 		}
-		fprintf(file,"%lu;%lf;%lf;%lf\n", width, timeGPU_self, timeGPU_cudaExample, timeCPU);
+		fprintf(file,"%lu;%lf;%lf;%lf;%lf;%lf;%lf\n", width, timeGPU_self, timeGPU_cudaExample, timeCPU, mem1, mem2, mem3);
 		fclose(file);
 	}
 	else
@@ -626,14 +784,40 @@ void plotResults(size_t width, double timeGPU_self, double timeGPU_cudaExample, 
 	}
 	cout << "done\n";
 }
+std::string getByteString(double bytes)
+{
+	double b = bytes;
+	int exp = 0;
+
+	while (b >= 1000.f)
+	{
+		b /= 1000;
+		exp += 3;
+	}
+	switch (exp)
+	{
+		case 0:
+			return std::to_string(b) + " bytes";
+		case 3:
+			return std::to_string(b) + " KB";
+		case 6:
+			return std::to_string(b) + " MB";
+		case 9:
+			return std::to_string(b) + " GB";
+		case 12:
+			return std::to_string(b) + " TB";
+	}
+	return "unknown amount";
+}
 void matrixTransposeExample(int width)
 {
+
 	int iterations = 4;
-	bool validateTransposition = false;
+	bool validateTransposition = true;
 
 	bool calcCudaSelf = true;
 	bool calcCudaExample = true;
-	bool calcCPU = true;
+	bool calcCPU = false;
 	double cudaMaxMem = 7e+09;
 
 
@@ -642,7 +826,7 @@ void matrixTransposeExample(int width)
 
 
 	cout << "  Alloc CPU Memory... ";
-	float* matrixORG;
+	float* matrixORG = nullptr;
 	if (validateTransposition)
 		matrixORG = new float[width * width];
 	float* matrix = new float[width * width];
@@ -656,11 +840,11 @@ void matrixTransposeExample(int width)
 			for (size_t y = 0; y < width; ++y)
 			{
 				//matrix[y * width + x] = (float)(rand() % 10);
-				matrix[y * width + x] = (rand() % 100) / 10.f;
-				/*if (y > x)
-					matrixORG[y * width + x] = 0;
+				//matrix[y * width + x] = (rand() % 100) / 10.f;
+				if (y > x)
+					matrix[y * width + x] = 0;
 				else
-					matrixORG[y * width + x] = 1;//NeuronalNet::gaussSum(x)+y;*/
+					matrix[y * width + x] = 255;//NeuronalNet::gaussSum(x)+y;
 			}
 		}
 		cout << "done\n";
@@ -672,15 +856,19 @@ void matrixTransposeExample(int width)
 		if (!matrixComp(matrixORG, matrix, width))
 		{
 			cout << "  !!! NOT EQUAL 0 !!! " << width << "\n";
-			//plotMatrix1(matrixORG, width);
+		    plotMatrix1(matrixORG, width);
 			plotMatrix1(matrix, width);
-			getchar();
+			//getchar();
 		}
 	}
 	//plotMatrix1(matrix, width);
 	//cout << "transpose...\n";
+
+	//matrixTransposeMixedTest(matrix, matrixORG, width, iterations, validateTransposition);
+	//matrixTransposeMixedTest(matrix, matrixORG, width, iterations, validateTransposition);
 	
 	double timeMs1 = 0;
+	double memThruput1 = 0;
 	if (calcCudaSelf )
 	{
 		if (bytes > cudaMaxMem)
@@ -688,7 +876,10 @@ void matrixTransposeExample(int width)
 			cout << "  Skip matrixTransposeSelfTest, out of memory: " << bytes / 1000000 << "MB, max is: " << cudaMaxMem / 1000000 << "MB\n";
 		}
 		else
+		{
 			timeMs1 = matrixTransposeSelfTest(matrix, matrixORG, width, iterations, validateTransposition);
+			memThruput1 = (bytes * 1000.l / timeMs1);
+		}
 	}
 	/*double timeMs1 = 0;
 	for (int i = 0; i < iterations; ++i)
@@ -719,13 +910,14 @@ void matrixTransposeExample(int width)
 		if (!matrixComp(matrixORG, matrix, width))
 		{
 			cout << "  !!! NOT EQUAL 0.1 !!! " << width << "\n";
-			//plotMatrix1(matrixORG, width);
+			plotMatrix1(matrixORG, width);
 			plotMatrix1(matrix, width);
-			getchar();
+			//getchar();
 		}
 
 	//-------------------------------------
 	double timeMs2 = 0;
+	double memThruput2 = 0;
 	if (calcCudaExample)
 	{
 		if (bytes > cudaMaxMem/2)
@@ -733,7 +925,10 @@ void matrixTransposeExample(int width)
 			cout << "  Skip matrixTransposeCudaExampleTest, out of memory: " << bytes / 1000000 << "MB, max is: " << cudaMaxMem / 2000000 << "MB\n";
 		}
 		else
+		{
 			timeMs2 = matrixTransposeCudaExampleTest(matrix, matrixORG, width, iterations, validateTransposition);
+			memThruput2 = (bytes *1000.l / timeMs2);
+		}
 	}
 		
 	/*double timeMs2 = 0;
@@ -770,6 +965,7 @@ void matrixTransposeExample(int width)
 
 	//cout << "transpose...\n";
 	double transposeCPUTimeMs = 0;
+	double memThruput3 = 0;
 	if (calcCPU)
 	{
 		if (bytes > 30e+09)
@@ -783,26 +979,72 @@ void matrixTransposeExample(int width)
 			matrixTransposeCPU(matrix, width);
 			auto t2 = std::chrono::high_resolution_clock::now();
 			transposeCPUTimeMs = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / 1000000.f;
+			memThruput3 = (bytes *1000.l / transposeCPUTimeMs);
 			cout << "  CPU matrix transpose end\n";
 		}
 	}
 	//cout << "transpose done\n";
 	//plotMatrix1(matrix, width);
 
-	cout << "  Average CUDA Transpose time:         " << timeMs1 << "ms\n";
-	cout << "  Average CUDA Example Transpose time: " << timeMs2 << "ms\n";
-	cout << "  Average CPU Transpose time:          " << transposeCPUTimeMs << "ms\n";
+	cout << "  Average CUDA Transpose time:         " << timeMs1 << "ms\tThroughput: "  << getByteString(memThruput1)<<"/s\n";
+	cout << "  Average CUDA Example Transpose time: " << timeMs2 << "ms\tThroughput: "  << getByteString(memThruput2) << "/s\n";
+	cout << "  Average CPU Transpose time:          " << transposeCPUTimeMs << "ms\tThroughput: " << getByteString(memThruput3) << "/s\n";
 	cout << "  Delete CPU Memory... ";
 	delete[] matrix;
 	if (validateTransposition)
 		delete[] matrixORG;
 	cout << "done\n";
+
+	transposeWidthList.push_back(width);
+
 	transposeTimeListGPU1.push_back(timeMs1);
 	transposeTimeListGPU2.push_back(timeMs2);
 	transposeTimeListCPU.push_back(transposeCPUTimeMs);
-	transposeWidthList.push_back(width);
-	plotResults(width, timeMs1, timeMs2, transposeCPUTimeMs);
+
+	transposeMemThruputListGPU1.push_back(memThruput1);
+	transposeMemThruputListGPU2.push_back(memThruput2);
+	transposeMemThruputListCPU.push_back(memThruput3);
+
+	
+	plotResults(width, timeMs1, timeMs2, transposeCPUTimeMs, memThruput1, memThruput2, memThruput3);
 	cout << "Transpose Test, width: " << width << " done\n\n";
 	//Sleep(10);
 	//getchar();
+}
+
+
+
+void gaussumValidator()
+{
+	//size_t it = (size_t)0 - 2;
+	size_t it = 200000;
+	cout << "iterations: " << it<<"\n";
+	for (size_t x = 100000; x < it; ++x)
+	{
+		if(x%1000==0)
+			cout << x << "\n";
+		for (size_t y = 0; y <= x; ++y)
+		{
+
+			size_t gaussSum = NeuronalNet::gaussSum(x);
+			size_t index = gaussSum + y;
+
+			size_t testX = NeuronalNet::invGaussSum(index);
+			size_t testY = index - NeuronalNet::gaussSum(testX);
+
+			if (x != testX || testY != y)
+			{
+				cout << "NOK Index = " << index << " x = " << x << " y = " << y << "\t testX = " << testX << " testY = " << testY << "\n";
+				NeuronalNet::invGaussSum(index);
+				getchar();
+			}
+			else
+			{
+				//cout << " OK Index = " << index << " x = " << x << " y = " << y << "\t testX = " << testX << " testY = " << testY << "\n";
+			}
+		}
+
+	}
+	cout << "finish\n";
+	getchar();
 }

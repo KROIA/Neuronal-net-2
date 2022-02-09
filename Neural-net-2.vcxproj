@@ -14,6 +14,7 @@
     <ProjectGuid>{941A844E-DAD7-4436-AABB-9B41D0568D98}</ProjectGuid>
     <RootNamespace>Neural_net_2</RootNamespace>
     <CudaToolkitCustomDir>C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.6</CudaToolkitCustomDir>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -46,7 +47,8 @@
     <SourcePath>src;$(SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;$(IncludePath)</IncludePath>
+    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;$(IncludePath)</IncludePath>
+    <SourcePath>src;$(VC_SourcePath);</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -64,7 +66,11 @@
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
       <GenerateRelocatableDeviceCode>true</GenerateRelocatableDeviceCode>
+      <ExtensibleWholeProgramCompilation>false</ExtensibleWholeProgramCompilation>
     </CudaCompile>
+    <CudaLink>
+      <Optimization>O3</Optimization>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -91,6 +97,9 @@
       <Runtime>MD</Runtime>
       <AdditionalOptions>-use_fast_math %(AdditionalOptions)</AdditionalOptions>
     </CudaCompile>
+    <CudaLink>
+      <Optimization>O3</Optimization>
+    </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="src\layer.cu" />

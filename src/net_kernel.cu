@@ -69,7 +69,7 @@ namespace NeuronalNet
 
         int blockSize = GPU_CUDA_getSpecs().maxThreadsPerBlock;
         int numBlocks = (maxElement - 1) / blockSize + 1;
-        size_t sliceSize = 2048 / 4;
+        size_t sliceSize = 2048;
         if (numBlocks > sliceSize)
         {
             //std::cout << "numBlocks > 2048\n";
@@ -132,12 +132,10 @@ namespace NeuronalNet
         void GPU_CUDA_calculateNet(float* weights, float* signals, float* outpuSignals,
                                size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation)
     {
-        nvtxRangePush(__FUNCTION__);
-        nvtxMark("Waiting...");
+
         kernel_calculateNet << <1, 1 >> > (weights, signals, outpuSignals,
                                            inputCount, hiddenX, hiddenY, outputCount, activation);
         cudaDeviceSynchronize();
-        nvtxRangePop();
     }
     __host__
         void GPU_CUDA_getRandomWeight(float min, float max, float* h_list, size_t elements)
@@ -247,101 +245,57 @@ namespace NeuronalNet
         void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
                                           size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act)
     {
+        // Get "Neuron index"
         size_t index = blockIdx.x * blockDim.x + threadIdx.x;
-        
-        
-
-        
         if (neuronCount == 0 || index >= neuronCount)
             return;
-
-      
-        
-
         float res = 0;
-        //weights += index * inputSignalCount;
-
-       // ramStorage = (Storage*)weights;
-       // storage = *ramStorage;
-       
-       
-       
-       /*
-        for (size_t i = 0; i < inputSignalCount; ++i)
-        {
-            res += weights[i] * inputSignals[i];
-        }*/
-
         const short tileSize = 32;
+        // Declare shares memory for the signals
         __shared__ float sharedSignals[tileSize];
-        
         size_t signalsBegin = 0;
         size_t signalsEnd   = 0;
         short tiles = inputSignalCount / tileSize + 1;
         short loadCount = tileSize / neuronCount + 1;
         short loadIndex = loadCount * threadIdx.x;
 
-
+        // Split the neuron in segments for faster compute
         for (short tile = 0; tile <tiles; ++tile)
         {
+            // Set new signal pointer (inputs of neuron)
             signalsBegin = signalsEnd;
             if (tile == tiles - 1)
                 signalsEnd = inputSignalCount;
             else
                 signalsEnd = (tile + 1) * tileSize;
 
-
-            
+            // Load signals from VRAM in shared memory
+            // Load even distributed over all threads to maximize speed
             for (short i = 0; i < loadCount; ++i)
             {
                 short signalIndex = i + loadIndex;
 
                 if (signalsEnd > (signalIndex + signalsBegin))
                 {
-                     sharedSignals[signalIndex] = inputSignals[signalIndex+signalsBegin];
+                    // Coalesced memory reading
+                    sharedSignals[signalIndex] = inputSignals[signalIndex+signalsBegin];
                 }
+                // Sync all threads in this Block
                 __syncthreads();
             }
-
-
             for (size_t i = signalsBegin; i < signalsEnd; ++i)
             {
-                //float weight = weights[index * (i+1)];
-
-
-               // res += *((float*)(&storage) + storageCount) * sharedSignals[i - signalsBegin];
                 
-                
+                // Read weights
                 float weight = weights[index + inputSignalCount * i];
-                //float weight = weights[index * inputSignalCount + i];
+              //float weight = weights[index * inputSignalCount + i];
                 __syncthreads();
-                res += weight * sharedSignals[i - signalsBegin];
                 
-                //res += sharedSignals[i - signalsBegin];
-
-            //   if ((++storageCount) >= 1)
-            //   {
-            //       storageCount = 0;
-            //
-            //       if ((i + 8) < signalsEnd)
-            //       {
-            //
-            //           storage = *ramStorage;
-            //           ++ramStorage;
-            //       }
-            //       else
-            //       {
-            //           /*for (size_t j = i; j < signalsEnd; ++j)
-            //           {
-            //               *((float*)&storage + j) = weights[j];
-            //           }*/
-            //       }
-            //       
-            //   }
+                // Ad the product of signal and weight
+                res += weight * sharedSignals[i - signalsBegin];
             }
         }
-
-        //__syncthreads();
+        // Set the resultat of the activationfunction of the netinput (res)
         outputSignals[index] = (*act)(res);
     }
 
@@ -358,44 +312,41 @@ namespace NeuronalNet
         size_t numBlocks = (hiddenY - 1) / blockSize + 1;
         float* tmpHiddenOutSignals1 = new float[hiddenY];
         float* tmpHiddenOutSignals2 = new float[hiddenY];
-        cudaDeviceSynchronize();
-        //kernel_net_calculateLayer <<< numBlocks, blockSize >>> (weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, actPtr);
-        kernel_net_calculateLayer <<< 1, 1 >>> (weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, actPtr);
-        weights += inputCount * hiddenY;
-        cudaDeviceSynchronize();
 
-       /* for (size_t i = 1; i < hiddenY; i += 100)
-        {
-            printf("0 %i %f\n", i, tmpHiddenOutSignals1[i]);
-        }*/
+        // Calculate the first Layer
+        kernel_net_calculateLayer <<< numBlocks, blockSize >>> (weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, actPtr);
+
+        // Increment the current start pos of the weights
+        weights += inputCount * hiddenY;
+
+        // Wait until layer kernel is finished
+        cudaDeviceSynchronize(); 
 
         for (size_t i = 1; i < hiddenX; ++i)
         {
+            // Calculate all hidden Layers
             kernel_net_calculateLayer <<< numBlocks, blockSize >>> (weights, tmpHiddenOutSignals1, tmpHiddenOutSignals2, hiddenY, hiddenY, actPtr);
+
+            // Increment the current start pos of the weights
             weights += hiddenY * hiddenY;
+
+            // Swap the the signal lists: last outputs become now the new inputs
             float* tmp = tmpHiddenOutSignals1;
             tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
             tmpHiddenOutSignals2 = tmp;
+
+            // Wait until layer kernel is finished
             cudaDeviceSynchronize();
-            /*for (size_t j = 0; j < hiddenY; j += 100)
-            {
-                float ttt = tmpHiddenOutSignals2[j];
-                printf("%i %i %f\n", i,j, ttt);
-            }*/
-            //printf("v2 %f\n", v2);
-            
         }
 
         numBlocks = (outputCount - 1) / blockSize + 1;
         kernel_net_calculateLayer <<< numBlocks, blockSize >>> (weights, tmpHiddenOutSignals1, outpuSignals, outputCount, hiddenY, actPtr);
+
+        // Wait until layer kernel is finished
         cudaDeviceSynchronize();
-       /* for (size_t i = 0; i < outputCount; ++i)
-        {
-            printf("out %i %f\n", i, outpuSignals[i]);
-        }*/
+
         delete[] tmpHiddenOutSignals1;
         delete[] tmpHiddenOutSignals2;
-
     }
 
     __global__ 
@@ -502,20 +453,20 @@ namespace NeuronalNet
         size_t x = kernel_invGaussSum(index);
         size_t y = index - kernel_gaussSum(x);
 
-        if (index >= maxIndex || x==y)
+        if (index >= maxIndex  || x == y)
         {
             //printf(" returning index: %i\tx: %i\ty: %i\n", index, x, y);
             return;
         }
-        if (y != 0)
-            return;
+        //if (y != 0)
+        //    return;
        // if (index == 1)
         //    printf("maxIndex: %i\n", maxIndex);
         //if(x==0)
         //printf(" i: %3i x: %3i\n", index, x);
 
         if (x > width || y > width)
-            printf("ERROR: x>width || y>width\n");
+            printf("ERROR: x>width || y>width %i\n",index);
         size_t elementIndex1 = y * width + x;
         size_t elementIndex2 = x * width + y;
        // if (index == 2098176)
@@ -541,8 +492,15 @@ namespace NeuronalNet
 #else
         
         float tmp = d_list[elementIndex1];
+        float tmp2 = d_list[elementIndex2];
+        if (tmp == 255 && tmp2 != 0 || tmp != 0 && tmp2 == 255)
+        {
+            printf("index == %i, d_list[%i][%i] = %1.1f\n", index, x, y, tmp);
+        }
         d_list[elementIndex1] = d_list[elementIndex2];
+        __syncthreads();
         d_list[elementIndex2] = tmp;
+        __syncthreads();
 #endif
     }
 
@@ -562,12 +520,29 @@ namespace NeuronalNet
     __host__ 
         size_t invGaussSum(size_t sum)
     {
-        return (size_t)floor((sqrt(8 * (float)sum + 1) - 1) / 2);
+        double prod = 8 * (double)sum + 1;
+        double sq = sqrt(prod);
+        double res = (sq - 1) / 2.f;
+        size_t resFloor = (size_t)floor(res);
+        return resFloor;
+        /*double prod = 8 * (float)sum + 1;
+        double sq = sqrt(prod);
+        double res = (sq - 1) / 2.f;
+        size_t resFloor = (size_t)floor(res);
+        return resFloor;*/
+        //return (size_t)floor((sqrt(8 * (float)sum + 1) - 1) / 2);
     }
     __device__ 
         size_t kernel_invGaussSum(size_t sum)
     {
-        return (size_t)floorf((sqrtf(8 * (float)sum + 1) - 1) / 2);
+       /* double prod = 8 * (double)sum + 1;
+        double sq = sqrt(prod);
+        double res = (sq - 1) / 2.f;
+        size_t resFloor = (size_t)floor(res);
+        return resFloor;*/
+
+        
+        return (size_t)floor((sqrt(8 * (double)sum + 1) - 1) / 2);
     }
 
 
