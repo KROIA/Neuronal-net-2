@@ -32,6 +32,7 @@ Net::Net()
 	m_built   = false;
 	m_neuronCount = 0;
 	m_weightsCount = 0;
+	m_streamSize = 1;
 	setActivation(Activation::sigmoid);
 	setHardware(Hardware::cpu);
 }
@@ -40,8 +41,18 @@ Net::~Net()
 {
 	destroyDevice();
 	m_built = false;
-	if (m_inputSignalList) delete[] m_inputSignalList;
-	if (m_outputSingalList) delete[] m_outputSingalList;
+	if (m_inputSignalList)
+	{
+		for (size_t i = 0; i < m_streamSize; ++i)
+			delete[] m_inputSignalList[i];
+		delete[] m_inputSignalList;
+	}
+	if (m_outputSingalList)
+	{
+		for (size_t i = 0; i < m_streamSize; ++i)
+			delete[] m_outputSingalList[i];
+		delete[] m_outputSingalList;
+	}
 
 	m_inputSignalList = nullptr;
 	m_outputSingalList = nullptr;
@@ -59,6 +70,10 @@ void Net::setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t ou
 	m_hiddenX = hiddenX;
 	m_hiddenY = hiddenY;
 	m_outputs = outputs;
+}
+void Net::setStreamSize(size_t size)
+{
+	m_streamSize = size;
 }
 
 size_t Net::getInputCount() const
@@ -117,8 +132,8 @@ void Net::setHardware(Hardware ware)
 		{
 			if (!m_built)
 				break;
-			for (size_t i = 0; i < m_outputs; ++i)
-				m_outputSingalList[i] = 0;
+			for (size_t i = 0; i < m_streamSize; ++i)
+				memset(m_outputSingalList[i],0,m_outputs*sizeof(float));
 			CONSOLE("  Hardware: CPU")
 			buildHostWeights();
 			transferWeightsToHost();
@@ -133,12 +148,11 @@ void Net::setHardware(Hardware ware)
 			if (!m_built)
 				break;
 			m_hardware = ware;
-			for (size_t i = 0; i < m_outputs; ++i)
-				m_outputSingalList[i] = 0;
+			for (size_t i = 0; i < m_streamSize; ++i)
+				memset(m_outputSingalList[i], 0, m_outputs * sizeof(float));
 			CONSOLE("  Hardware: GPU CUDA device")
 			buildDevice();
 			transferWeightsToDevice();
-			//transferSignalsToDevice();
 			destroyHostWeights();
 		}
 	}
@@ -154,6 +168,8 @@ Hardware Net::getHardware() const
 
 bool Net::build()
 {
+	if (m_built)
+		return 1;
 	CONSOLE("begin")
 	auto t1 = now();
 	bool success = true;
@@ -171,23 +187,39 @@ bool Net::build()
 		}
 		else
 			m_weightsCount = m_inputs * m_hiddenY + m_hiddenX * m_hiddenY * m_hiddenY + m_hiddenY * m_outputs;
+		if (m_streamSize == 0)
+			m_streamSize = 1;
 
 		CONSOLE("  Inputs       : " << m_inputs)
 		CONSOLE("  Hidden X     : " << m_hiddenX)
 		CONSOLE("  Hidden Y     : " << m_hiddenY)
 		CONSOLE("  Outputs      : " << m_outputs)
 
+
 		CONSOLE("  Neuron  count: " << m_neuronCount)
 		CONSOLE("  Weights count: " << m_weightsCount)
 		CONSOLE("  Storage      : " << m_weightsCount * sizeof(float) + m_inputs * sizeof(float) + m_outputs * sizeof(float) << " bytes")
-		m_inputSignalList = new float[m_inputs];
-		m_outputSingalList = new float[m_outputs];
-		for (size_t i = 0; i < m_outputs; ++i)
-			m_outputSingalList[i] = 0;
+		CONSOLE("  Streams      : " << m_streamSize)
+
+		m_inputSignalList = new float* [m_streamSize];
+		m_outputSingalList = new float* [m_streamSize];
+		for (size_t i = 0; i < m_streamSize; ++i)
+		{
+			m_inputSignalList[i] = new float[m_inputs];
+			m_outputSingalList[i] = new float[m_outputs];
+
+			memset(m_inputSignalList[i], 0, m_inputs * sizeof(float));
+			memset(m_outputSingalList[i], 0, m_outputs * sizeof(float));
+		}
+		m_inputStream = MultiSignalVector(m_streamSize, SignalVector(m_inputs, 0));
+		m_outputStream = MultiSignalVector(m_streamSize, SignalVector(m_outputs, 0));
+		
+		
 		
 		buildHostWeights();
 		m_built = true;
 		randomizeWeights();
+
 		buildDevice();
 		transferWeightsToDevice();
 		if (m_hardware != Hardware::cpu)
@@ -226,6 +258,7 @@ bool Net::randomizeWeights(size_t from, size_t to)
 	{
 		for (size_t i = from; i <= to; ++i)
 		{
+			//m_weightsList[i] = (float)i / 10;
 			m_weightsList[i] = getRandomValue(-1, 1);
 		}
 	}
@@ -259,64 +292,142 @@ float Net::getRandomValue(float min, float max)
 void Net::setInputVector(float* signalList)
 {
 	VERIFY_BOOL(m_built, true, "build the net first", return)
-	for (size_t i = 0; i < m_inputs; ++i)
-		m_inputSignalList[i] = signalList[i];
+	memcpy(m_inputSignalList[0], signalList, m_inputs * sizeof(float));
+	m_inputStream[0] = std::vector<float>(signalList, signalList + m_inputs);
 }
+void Net::setInputVector(size_t stream, float* signalList)
+{
+	VERIFY_BOOL(m_built, true, "build the net first", return)
+	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
+	memcpy(m_inputSignalList[stream], signalList, m_inputs * sizeof(float));
+	m_inputStream[stream] = std::vector<float>(signalList, signalList + m_inputs);
+}
+
 
 void Net::setInputVector(const SignalVector& signalList)
 {
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	size_t max = signalList.size();
 	if (m_inputs < max) max = m_inputs;
-	for (size_t i = 0; i < max; ++i)
-		m_inputSignalList[i] = signalList[i];
+	memcpy(m_inputSignalList[0], signalList.data(), max * sizeof(float));
+}
+void Net::setInputVector(size_t stream, const SignalVector& signalList)
+{
+	VERIFY_BOOL(m_built, true, "build the net first", return)
+	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
+	size_t max = signalList.size();
+	if (m_inputs < max) max = m_inputs;
+	memcpy(m_inputSignalList[stream], signalList.data(), max * sizeof(float));
+	m_inputStream[stream] = signalList;
+}
+void Net::setInputVector(const MultiSignalVector& streamVector)
+{
+	VERIFY_BOOL(m_built, true, "build the net first", return)
+	VERIFY_RANGE(m_streamSize, streamVector.size(), m_streamSize, return)
+	VERIFY_RANGE(m_inputs, streamVector[0].size(), m_inputs, return)
+	size_t streams = streamVector.size();
+	if (streams == 0)
+		return;
+	if (streams > m_streamSize)
+		streams = m_streamSize;
+	size_t max = streamVector[0].size();
+	if (m_inputs < max) max = m_inputs;
+	for (size_t s = 0; s < streams; ++s)
+	{
+		memcpy(m_inputSignalList[s], streamVector[s].data(), max * sizeof(float));
+	}
+	m_inputStream = streamVector;
 }
 
-void Net::setInput(size_t index, float signal)
+void Net::setInput(size_t input, float signal)
+{
+	VERIFY_BOOL(m_built, true, "build the net first", return)
+	VERIFY_RANGE(0, input, m_inputs-1, return)
+	m_inputSignalList[0][input] = signal;
+	m_inputStream[0][input] = signal;
+}
+void Net::setInput(size_t stream, size_t input, float signal)
 {
 	VERIFY_BOOL(m_built,true,"build the net first",return)
-	VERIFY_RANGE(0,index,m_inputs,return)
-	m_inputSignalList[index] = signal;
+	VERIFY_RANGE(0, input,m_inputs-1,return)
+	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
+	m_inputSignalList[stream][input] = signal;
+	m_inputStream[stream][input] = signal;
 }
 
-float Net::getInput(size_t index) const
+float Net::getInput(size_t input) const
 {
 	VERIFY_BOOL(m_built, true, "build the net first", return 0)
-	return m_inputSignalList[index];
+	return m_inputStream[0][input];
+	//return m_inputSignalList[0][input];
+}
+float Net::getInput(size_t stream, size_t input) const
+{
+	VERIFY_BOOL(m_built, true, "build the net first", return 0)
+	VERIFY_RANGE(0, stream, m_streamSize-1, return 0)
+	//return m_inputSignalList[stream][input];
+	return m_inputStream[stream][input];
 }
 
-std::vector<float> Net::getInputVector() const
+const SignalVector &Net::getInputVector(size_t stream)
 {
 	VERIFY_BOOL(m_built, true, "build the net first", return std::vector<float>())
 	std::vector<float> inputVec(m_inputs);
-	for (size_t i = 0; i < m_inputs; ++i)
-		inputVec[i] = m_inputSignalList[i];
-	return inputVec;
+	if (stream >= m_streamSize)
+		stream = m_streamSize - 1;
+	m_inputStream[stream] = std::vector<float>(m_inputSignalList[stream], m_inputSignalList[stream] + m_inputs);
+	return m_inputStream[stream];
+}
+const MultiSignalVector& Net::getInputStreamVector()
+{
+	return m_inputStream;
 }
 
-std::vector<float> Net::getOutputVector() const
+const SignalVector &Net::getOutputVector(size_t stream) 
 {
 	VERIFY_BOOL(m_built, true, "build the net first", return std::vector<float>())
-		std::vector<float> outputVec(m_outputs);
-	for (size_t i = 0; i < m_outputs; ++i)
-		outputVec[i] = m_outputSingalList[i];
-	return outputVec;
+	
+	if (stream >= m_streamSize)
+		stream = m_streamSize - 1;
+	m_outputStream[stream] = std::vector<float>(m_outputSingalList[stream], m_outputSingalList[stream] + m_outputs);
+	return m_outputStream[stream];
+}
+const MultiSignalVector &Net::getOutputStreamVector() 
+{
+	for (size_t i = 0; i < m_streamSize; ++i)
+	{
+		m_outputStream[i] = std::vector<float>(m_outputSingalList[i], m_outputSingalList[i] + m_outputs);
+	}
+	return m_outputStream;
 }
 
 void Net::calculate()
 {
+	calculate(0, m_streamSize);
+}
+void Net::calculate(size_t stream)
+{
+	calculate(stream, stream+1);
+}
+void Net::calculate(size_t streamBegin, size_t streamEnd)
+{
+	if (streamBegin > streamEnd)
+		std::swap(streamBegin, streamEnd);
+
+	VERIFY_RANGE(0,streamBegin,m_streamSize,return)
+	VERIFY_RANGE(0, streamEnd,m_streamSize,return)
 	CONSOLE("begin")
-	auto t1 = now();
+		auto t1 = now();
 	switch (m_hardware)
 	{
 		case Hardware::cpu:
 		{
-			CPU_calculate();
+			CPU_calculate(streamBegin, streamEnd);
 			break;
 		}
 		case Hardware::gpu_cuda:
 		{
-			GPU_CUDA_calculate();
+			GPU_CUDA_calculate(streamBegin, streamEnd);
 			break;
 		}
 		default:
@@ -329,16 +440,17 @@ void Net::calculate()
 }
 
 
-void Net::CPU_calculate()
+void Net::CPU_calculate(size_t streamBegin, size_t streamEnd)
 {
-	CPU_calculateNet(m_weightsList, m_inputSignalList, m_outputSingalList,
-					 m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
+	for(size_t i= streamBegin; i< streamEnd; ++i)
+		CPU_calculateNet(m_weightsList, m_inputSignalList[i], m_outputSingalList[i],
+						 m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
 }
 
-void Net::GPU_CUDA_calculate()
+void Net::GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd)
 {
 	transferSignalsToDevice();
-	NeuronalNet::GPU_CUDA_calculateNet(d_weightsList, d_inputSignalList, d_outputSingalList,
+	NeuronalNet::GPU_CUDA_calculateNet(d_weightsList, d_inputSignalList+streamBegin, d_outputSingalList, streamEnd-streamBegin,
 									   m_inputs, m_hiddenX, m_hiddenY, m_outputs,m_activation,
 									   NeuronalNet::_d_cudaInfo);
 	transferSignalsToHost();
@@ -348,13 +460,15 @@ void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 					   size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation)
 {
 	VERIFY_VALID_PTR(weights, "", return)
-	VERIFY_VALID_PTR(signals, "", return)
-	VERIFY_VALID_PTR(outpuSignals, "", return)
-	VERIFY_VALID_PTR(activation, "", return)
+		VERIFY_VALID_PTR(signals, "", return)
+		VERIFY_VALID_PTR(outpuSignals, "", return)
+		VERIFY_VALID_PTR(activation, "", return)
 
 
-	
-
+		/*std::cout << "signals: ";
+		for (size_t i = 0; i < inputCount; ++i)
+			std::cout << signals[i] << "\t";
+		std::cout << "\n";*/
 	bool noHiddenLayer = !(hiddenY * hiddenX);
 
 	if (noHiddenLayer)
@@ -388,14 +502,19 @@ void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
 							 size_t neuronCount, size_t inputSignalCount, ActFp* activation)
 {
+
+	//std::cout << "Weights:\n";
 	for (size_t index = 0; index < neuronCount; ++index)
 	{
 		float res = 0;
+		
 		for (size_t i = 0; i < inputSignalCount; ++i)
 		{
+			//printf("%3.2f ", weights[index * inputSignalCount + i]);
 			res += weights[index * inputSignalCount + i] * inputSignals[i];
 			//res += weights[index + inputSignalCount * i] * inputSignals[i];
 		}
+		//std::cout << "\n";
 		outputSignals[index] = (*activation)(res);
 	}
 }
@@ -407,7 +526,7 @@ void Net::transferWeightsToDevice()
 		{
 			
 			NeuronalNet::GPU_CUDA_transferToDevice(d_weightsList, m_weightsList, m_weightsCount * sizeof(float));
-			NeuronalNet::GPU_CUDA_convertWeightMatrix(d_weightsList, m_inputs, m_hiddenX, m_hiddenY, m_outputs);
+			NeuronalNet::GPU_CUDA_convertWeightMatrix(d_weightsList, m_inputs, m_hiddenX, m_hiddenY, m_outputs, NeuronalNet::Direction::toDevice);
 			break;
 		}
 		default:
@@ -421,7 +540,7 @@ void Net::transferWeightsToHost()
 		case Hardware::gpu_cuda:
 		{
 			
-			NeuronalNet::GPU_CUDA_convertWeightMatrix(d_weightsList, m_inputs, m_hiddenX, m_hiddenY, m_outputs);
+			NeuronalNet::GPU_CUDA_convertWeightMatrix(d_weightsList, m_inputs, m_hiddenX, m_hiddenY, m_outputs,NeuronalNet::Direction::toHost);
 			NeuronalNet::GPU_CUDA_transferToHost(d_weightsList, m_weightsList, m_weightsCount * sizeof(float));
 			break;
 		}
@@ -435,7 +554,11 @@ void Net::transferSignalsToDevice()
 	{
 		case Hardware::gpu_cuda:
 		{
-			NeuronalNet::GPU_CUDA_transferToDevice(d_inputSignalList, m_inputSignalList, m_inputs * sizeof(float));
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputSignalList[i], m_inputs * sizeof(float));
+			}
+			
 			break;
 		}
 		default:
@@ -448,7 +571,11 @@ void Net::transferSignalsToHost()
 	{
 		case Hardware::gpu_cuda:
 		{
-			NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputSingalList[i], m_outputs * sizeof(float));
+			}
+			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
 		default:
@@ -462,9 +589,25 @@ void Net::buildDevice()
 	{
 		case Hardware::gpu_cuda:
 		{
-			NeuronalNet::GPU_CUDA_allocMem(d_inputSignalList, m_inputs * sizeof(float));
+			h_d_inputSignalList = new float* [m_streamSize];
+			h_d_outputStream = new float* [m_streamSize];
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				float* inpVec;
+				float* outVec;
+				NeuronalNet::GPU_CUDA_allocMem(inpVec, m_inputs * sizeof(float));
+				NeuronalNet::GPU_CUDA_allocMem(outVec, m_outputs * sizeof(float));
+
+				h_d_inputSignalList[i] = inpVec;
+				h_d_outputStream[i] = outVec;
+			}
+
+			NeuronalNet::GPU_CUDA_allocMem(d_inputSignalList, m_streamSize * sizeof(float*));
+			NeuronalNet::GPU_CUDA_allocMem(d_outputSingalList, m_outputs * sizeof(float*));
+			NeuronalNet::GPU_CUDA_transferToDevice(d_inputSignalList, h_d_inputSignalList, m_streamSize * sizeof(float*));
+			NeuronalNet::GPU_CUDA_transferToDevice(d_outputSingalList, h_d_outputStream, m_streamSize * sizeof(float*));
+
 			NeuronalNet::GPU_CUDA_allocMem(d_weightsList, m_weightsCount * sizeof(float));
-			NeuronalNet::GPU_CUDA_allocMem(d_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
 		default: {}
@@ -476,9 +619,20 @@ void Net::destroyDevice()
 	{
 		case Hardware::gpu_cuda:
 		{
+			NeuronalNet::GPU_CUDA_transferToHost(d_inputSignalList, h_d_inputSignalList, m_streamSize * sizeof(float*));
+			NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, h_d_outputStream, m_streamSize * sizeof(float*));
+
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				NeuronalNet::GPU_CUDA_freeMem(h_d_inputSignalList[i]);
+				NeuronalNet::GPU_CUDA_freeMem(h_d_outputStream[i]);
+			}
+
 			NeuronalNet::GPU_CUDA_freeMem(d_inputSignalList);
 			NeuronalNet::GPU_CUDA_freeMem(d_weightsList);
 			NeuronalNet::GPU_CUDA_freeMem(d_outputSingalList);
+			delete[] h_d_inputSignalList;
+			delete[] h_d_outputStream;
 			break;
 		}
 		default: {}

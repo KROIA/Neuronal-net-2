@@ -111,11 +111,13 @@
     <ClInclude Include="inc\layer.h" />
     <ClInclude Include="inc\net.h" />
     <ClInclude Include="inc\net_kernel.cuh" />
+    <ClInclude Include="inc\signalVector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\layer.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\net.cpp" />
+    <ClCompile Include="src\signalVector.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

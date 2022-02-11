@@ -4,10 +4,14 @@
 
 namespace NeuronalNet 
 {
+    // Kernel global var.
+    CUDA_info* _d_cudaInfo = nullptr;
+    CUDA_info* _h_cudaInfo = nullptr;
+
     __host__ 
         void testCUDA()
     {
-        size_t w = 10;
+        size_t w = 3;
         size_t h = 5;
         float* matrix = new float[w * h];
         /*for (size_t y = 0; y < w * h; ++y)
@@ -22,11 +26,21 @@ namespace NeuronalNet
             }
         }
         printf("Original Matrix:\n");
+        printf("V1:\n");
         for (size_t y = 0; y < h; ++y)
         {
             for (size_t x = 0; x < w; ++x)
             {
                 printf("%3.0f ", matrix[y * w + x]);
+            }
+            printf("\n");
+        }
+        printf("V2:\n");
+        for (size_t y = 0; y < w; ++y)
+        {
+            for (size_t x = 0; x < h; ++x)
+            {
+                printf("%3.0f ", matrix[y * h + x]);
             }
             printf("\n");
         }
@@ -44,11 +58,21 @@ namespace NeuronalNet
         GPU_CUDA_transferToHost(dMatrix, matrix, w * h * sizeof(float));
 
         printf("Transposed Matrix:\n");
+        printf("V1:\n");
         for (size_t y = 0; y < h; ++y)
         {
             for (size_t x = 0; x < w; ++x)
             {
-                printf("%3.0f ",matrix[y * w + x]);
+                printf("%3.0f ", matrix[y * w + x]);
+            }
+            printf("\n");
+        }
+        printf("V2:\n");
+        for (size_t y = 0; y < w; ++y)
+        {
+            for (size_t x = 0; x < h; ++x)
+            {
+                printf("%3.0f ",matrix[y * h + x]);
             }
             printf("\n");
         }
@@ -87,12 +111,12 @@ namespace NeuronalNet
         return h_deviceProp;
     }
     __host__ 
-        void GPU_CUDA_calculateNet(float* weights, float* signals, float* outpuSignals,
+        void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
                                    size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
                                    CUDA_info* d_info)
     {
 
-        kernel_calculateNet << <1, 1 >> > (weights, signals, outpuSignals,
+        kernel_calculateNet << <1, 1 >> > (weights, multiSignalVec, multiOutputVec, multiSignalSize,
                                            inputCount, hiddenX, hiddenY, outputCount, activation,
                                            d_info);
         cudaDeviceSynchronize();
@@ -113,73 +137,88 @@ namespace NeuronalNet
         cudaFree(d_list);
     }
 
-
-    __host__
-        void GPU_CUDA_allocMem(float*& d_list, size_t byteCount)
+    
+    template <typename T>
+    __host__ void GPU_CUDA_allocMem(T*& d_list, size_t byteCount)
     {
         d_list = nullptr;
         cuda_handleError(cudaMalloc(&d_list, byteCount));
     }
+    template __host__ void GPU_CUDA_allocMem<float>(float*& d_list, size_t byteCount);
+    template __host__ void GPU_CUDA_allocMem<float*>(float**& d_list, size_t byteCount);
 
-    __host__ 
-        void GPU_CUDA_freeMem(float*& d_list)
+    template <typename T>
+    __host__ void GPU_CUDA_freeMem(T*& d_list)
     {
         if (!d_list)
             return;
         cudaError_t err = cudaFree(d_list);
         cuda_handleError(err);
-        if(err == cudaError::cudaSuccess)
+        if (err == cudaError::cudaSuccess)
             d_list = nullptr;
     }
+    template __host__ void GPU_CUDA_freeMem<float>(float*& d_list);
+    template __host__ void GPU_CUDA_freeMem<float*>(float**& d_list);
 
-    __host__
-        void GPU_CUDA_transferToDevice(float* d_list, float* h_list, size_t byteCount)
+    template <typename T>
+    __host__ void GPU_CUDA_transferToDevice(T* d_list, T* h_list, size_t byteCount)
     {
         cuda_handleError(cudaMemcpy(d_list, h_list, byteCount, cudaMemcpyHostToDevice));
     }
-    __host__
-        void GPU_CUDA_transferToHost(float* d_list, float* h_list, size_t byteCount)
+    template __host__ void GPU_CUDA_transferToDevice<float>(float* d_list, float* h_list, size_t byteCount);
+    template __host__ void GPU_CUDA_transferToDevice<float*>(float** d_list, float** h_list, size_t byteCount);
+
+    template <typename T>
+    __host__ void GPU_CUDA_transferToHost(T* d_list, T* h_list, size_t byteCount)
     {
-       cuda_handleError(cudaMemcpy(h_list, d_list, byteCount, cudaMemcpyDeviceToHost));
+        cuda_handleError(cudaMemcpy(h_list, d_list, byteCount, cudaMemcpyDeviceToHost));
     }
+    template __host__ void GPU_CUDA_transferToHost<float>(float* d_list, float* h_list, size_t byteCount);
+    template __host__ void GPU_CUDA_transferToHost<float*>(float** d_list, float** h_list, size_t byteCount);
+
+    
+
+    
     __host__ 
-        void GPU_CUDA_convertWeightMatrix(float* d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount)
+        void GPU_CUDA_convertWeightMatrix(float* d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Direction dir)
     {
         bool noHiddenLayer = !(hiddenY * hiddenX);
 
         if (noHiddenLayer)
         {
             // Transpose input Matrix
-            kernel_transposeMatrix << <1, 1 >> > (d_list, inputCount, outputCount, _d_cudaInfo);
+            if(dir == Direction::toDevice)
+                kernel_transposeMatrix << <1, 1 >> > (d_list, inputCount, outputCount, _d_cudaInfo);
+            else
+                kernel_transposeMatrix << <1, 1 >> > (d_list, outputCount, inputCount, _d_cudaInfo);
         }
         else
         {
             // Transpose input Matrix
-            kernel_transposeMatrix << <1, 1 >> > (d_list, inputCount, hiddenY, _d_cudaInfo);
-            //cudaDeviceSynchronize();
+            if (dir == Direction::toDevice)
+                kernel_transposeMatrix << <1, 1 >> > (d_list, inputCount, hiddenY, _d_cudaInfo);
+            else
+                kernel_transposeMatrix << <1, 1 >> > (d_list, hiddenY, inputCount, _d_cudaInfo);
+
             d_list += inputCount * hiddenY;
 
             // Transpose all Layers
             for (size_t l = 1; l < hiddenX; ++l)
             {
                 kernel_transposeMatrix << <1, 1 >> > (d_list, hiddenY, _d_cudaInfo);
-                //cudaDeviceSynchronize();
                 d_list += hiddenY * hiddenY;
             }
 
             // Transpose output Matrix
-            kernel_transposeMatrix << <1, 1 >> > (d_list, hiddenY, outputCount, _d_cudaInfo);
-        }
-
-       
-        
-        
-       
+            if (dir == Direction::toDevice)
+                kernel_transposeMatrix << <1, 1 >> > (d_list, hiddenY, outputCount, _d_cudaInfo);
+            else
+                kernel_transposeMatrix << <1, 1 >> > (d_list, outputCount, hiddenY, _d_cudaInfo);
+        }       
     }
 
-    // Kernel global var.
-    CUDA_info* _d_cudaInfo = nullptr;
-    CUDA_info* _h_cudaInfo = nullptr;
+    
+    
 
 
     // Kernel functions
@@ -268,10 +307,6 @@ namespace NeuronalNet
                 
                 // Ad the product of signal and weight
                 res += weight * sharedSignals[i - signalsBegin];
-              /*  if (res == 0)
-                {
-                    printf("calc %i w: %1.2f s: %1.1f\n",i,weight, sharedSignals[i - signalsBegin]);
-                }*/
             }
         }
         // Set the resultat of the activationfunction of the netinput (res)
@@ -279,7 +314,7 @@ namespace NeuronalNet
     }
 
     __global__
-        void kernel_calculateNet(float* weights, float* signals, float* outpuSignals,
+        void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
                                  size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
                                  CUDA_info* d_info)
     {
@@ -298,20 +333,28 @@ namespace NeuronalNet
         {
             size_t blockSize = maxThreadsPerBlock;
             size_t numBlocks = (outputCount - 1) / blockSize + 1;
-
-            // Calculate the first Layer
-            kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, signals, outpuSignals, outputCount, inputCount, actPtr);
+            for (size_t i = 0; i < multiSignalSize; ++i)
+            {
+                // Calculate the first Layer
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[i], multiOutputVec[i], outputCount, inputCount, actPtr);
+            }
+            
         }
         else
         {
             size_t blockSize = maxThreadsPerBlock;
             size_t numBlocks = (hiddenY - 1) / blockSize + 1;
-            float* tmpHiddenOutSignals1 = new float[hiddenY];
-            float* tmpHiddenOutSignals2 = new float[hiddenY];
+            float** tmpHiddenOutSignals1 = new float*[multiSignalSize];
+            float** tmpHiddenOutSignals2 = new float*[multiSignalSize];
+            for (size_t j = 0; j < multiSignalSize; ++j)
+            {
+                tmpHiddenOutSignals1[j] = new float[hiddenY];
+                tmpHiddenOutSignals2[j] = new float[hiddenY];
 
-            // Calculate the first Layer
-            kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, actPtr);
-
+                // Calculate the first Layer
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[j], tmpHiddenOutSignals1[j], hiddenY, inputCount, actPtr);
+            }
+            
             // Increment the current start pos of the weights
             weights += inputCount * hiddenY;
 
@@ -320,14 +363,16 @@ namespace NeuronalNet
 
             for (size_t i = 1; i < hiddenX; ++i)
             {
-                // Calculate all hidden Layers
-                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1, tmpHiddenOutSignals2, hiddenY, hiddenY, actPtr);
-
+                for (size_t j = 0; j < multiSignalSize; ++j)
+                {
+                    // Calculate all hidden Layers
+                    kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], tmpHiddenOutSignals2[j], hiddenY, hiddenY, actPtr);
+                }
                 // Increment the current start pos of the weights
                 weights += hiddenY * hiddenY;
 
                 // Swap the the signal lists: last outputs become now the new inputs
-                float* tmp = tmpHiddenOutSignals1;
+                float** tmp = tmpHiddenOutSignals1;
                 tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
                 tmpHiddenOutSignals2 = tmp;
 
@@ -336,11 +381,19 @@ namespace NeuronalNet
             }
 
             numBlocks = (outputCount - 1) / blockSize + 1;
-            kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1, outpuSignals, outputCount, hiddenY, actPtr);
+            for (size_t j = 0; j < multiSignalSize; ++j)
+            {
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], multiOutputVec[j], outputCount, hiddenY, actPtr);
+            }
 
             // Wait until layer kernel is finished
             cudaDeviceSynchronize();
 
+            for (size_t j = 0; j < multiSignalSize; ++j)
+            {
+                delete[] tmpHiddenOutSignals1[j];
+                delete[] tmpHiddenOutSignals2[j]; 
+            }
             delete[] tmpHiddenOutSignals1;
             delete[] tmpHiddenOutSignals2;
         }
@@ -348,13 +401,6 @@ namespace NeuronalNet
        
     }
 
-    /*__global__
-        void kernel_convertLayerWeightToGPUWeight(float* d_list, size_t signalCount, size_t neuronCount)
-    {
-        
-
-       
-    }*/
     __global__
         void kernel_transposeMatrix(float* d_list, size_t width, CUDA_info* d_info)
     {
@@ -369,30 +415,11 @@ namespace NeuronalNet
         {
             numBlocks = sliceSize;
         }
-       /* printf("Original Matrix:\n");
-        size_t i = 0;
-        for (size_t y = 0; y < width; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                printf("%5.2f ", d_list[i++]);
-            }
-            printf("\n");
-        }*/
+
         for (size_t i = 0; i < width / sliceSize + 1; ++i)
         {
             kernel_transposeMatrix_internal << <numBlocks, blockSize >> > (d_list, width, maxElement, kernel_gaussSum(i * sliceSize));
         }
-       /* printf("Transposed Matrix:\n");
-        i = 0;
-        for (size_t y = 0; y < width; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                printf("%5.2f ", d_list[i++]);
-            }
-            printf("\n");
-        }*/
     }
 
     __global__
@@ -458,73 +485,17 @@ namespace NeuronalNet
             maxThreadsPerBlock = d_info->maxThreadsPerBlock;
         }
 
-        //dim3 numThreads(maxThreadsPerBlock);
-        //dim3 numBlocks(maxThreadsPerBlock / size + 1);
-
-        /*printf("Original Matrix:\n");
-        size_t i = 0;
-        for (size_t y = 0; y < height; ++y)
-        {
-            for (size_t x = 0; x < width; ++x)
-            {
-                printf("%5.2f ", d_list[i++]);
-            }
-            printf("\n");
-        }*/
-
         dim3 numBlocks = dim3(width / sqrt((double)maxThreadsPerBlock) + 1, height / sqrt((double)maxThreadsPerBlock) + 1);
         dim3  numThreads = dim3(width / numBlocks.x, height / numBlocks.y);
         
-        //kernel_copy <<< numBlocks, numThreads >>> (newList, d_list, size);
-        //cudaDeviceSynchronize();
         memcpy(newList, d_list, size * sizeof(float));
-        size_t sq = width % maxThreadsPerBlock;
-        /*if (size > maxThreadsPerBlock)
-            sq = sqrt((double)maxThreadsPerBlock);
-        else
-            sq = sqrt((double)size);*/
-
-       // printf("sq = %i\n", sq);
-        
-
-        
-
-       /* printf("numBlocks.x  = %i\n", numBlocks.x);
-        printf("numBlocks.y  = %i\n", numBlocks.y);
-        printf("numThreads.x = %i\n", numThreads.x);
-        printf("numThreads.y = %i\n", numThreads.y);*/
         kernel_transposeMatrix_rect_internal <<< numBlocks, numThreads >>> (d_list, newList, width, height);
         cudaDeviceSynchronize();
-        
-
-        /*printf("Transposed Matrix:\n");
-        size_t i = 0;
-        for (size_t y = 0; y < width; ++y)
-        {
-            for (size_t x = 0; x < height; ++x)
-            {
-                printf("%5.2f ", d_list[i++]);
-            }
-            printf("\n");
-        }*/
         
         delete[] newList;
     }
 
-    __global__
-        void kernel_copy(float* d_dest, float* d_source, size_t size)
-    {
-        size_t blockId = blockIdx.x + blockIdx.y * gridDim.x
-            + gridDim.x * gridDim.y * blockIdx.z;
 
-        size_t threadId = blockId * (blockDim.x * blockDim.y * blockDim.z)
-            + (threadIdx.z * (blockDim.x * blockDim.y))
-            + (threadIdx.y * blockDim.x) + threadIdx.x;
-        if (threadId >= size)
-            return;
-        d_dest[threadId] = d_source[threadId];
-        //__syncthreads();
-    }
 
     __global__
         void kernel_transposeMatrix_rect_internal(float* d_list, float* tmpBuffer, size_t width, size_t height)
@@ -535,14 +506,10 @@ namespace NeuronalNet
             return;
 
         size_t inputIndex = y * width + x;
-
-       
        
         size_t outputIndex = x * height + y;
-        d_list[outputIndex] =/* x + (float)y / 10;//*/tmpBuffer[inputIndex];
+        d_list[outputIndex] = tmpBuffer[inputIndex];
 
-        //size_t outputIndex = (inputIndex % height) * width + (inputIndex / height);
-        //d_list[outputIndex] = tmpBuffer[inputIndex];
     }
 
     __host__ 

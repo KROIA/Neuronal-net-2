@@ -27,18 +27,20 @@ enum Hardware
 };
 
 typedef std::vector<float> SignalVector;
-
+typedef std::vector<SignalVector> MultiSignalVector;
 
 
 
 class Net
 {
+
 	typedef float ActFp(float);
 	public:
 	Net();
 	~Net();
 
 	void setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
+	void setStreamSize(size_t size);
 	size_t getInputCount() const;
 	size_t getHiddenXCount() const;
 	size_t getHiddenYCount() const;
@@ -56,18 +58,28 @@ class Net
 	static float getRandomValue(float min, float max);
 
 	void setInputVector(float* signalList);
+	void setInputVector(size_t stream, float* signalList);
 	void setInputVector(const SignalVector& signalList);
-	void setInput(size_t index, float signal);
-	float getInput(size_t index) const;
-	SignalVector getInputVector() const;
-	SignalVector getOutputVector() const;
+	void setInputVector(size_t stream, const SignalVector& signalList);
+	void setInputVector(const MultiSignalVector& streamVector);
+
+	void setInput(size_t input, float signal);
+	void setInput(size_t stream, size_t input, float signal);
+	float getInput(size_t input) const;
+	float getInput(size_t stream, size_t input) const;
+	const SignalVector& getInputVector(size_t stream = 0);
+	const MultiSignalVector &getInputStreamVector();
+	const SignalVector& getOutputVector(size_t stream = 0);
+	const MultiSignalVector &getOutputStreamVector();
 
 	void calculate();
+	void calculate(size_t stream);
+	void calculate(size_t streamBegin, size_t streamEnd);
 
 	protected:
 
-	void CPU_calculate();
-	void GPU_CUDA_calculate();
+	void CPU_calculate(size_t streamBegin, size_t streamEnd); // including begin, excluding end
+	void GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd);
 	static void CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 							 size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp *activation);
 	static void CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
@@ -87,22 +99,30 @@ class Net
 	size_t m_hiddenY;
 	size_t m_outputs;
 
+	size_t m_streamSize;
+
 	size_t m_neuronCount;
 	size_t m_weightsCount;
 
 	Activation m_activation;
 	ActFp* m_activationFunc;
 
-	float* m_inputSignalList;
+	MultiSignalVector m_inputStream;
+	MultiSignalVector m_outputStream;
+
+
+	float** m_inputSignalList;
 	float* m_weightsList;
-	float* m_outputSingalList;
+	float** m_outputSingalList;
 	bool   m_built;
 
 	// Extern hardware
 	Hardware m_hardware;
-	float* d_inputSignalList;
+	float** d_inputSignalList;
+	float** h_d_inputSignalList;
 	float* d_weightsList;
-	float* d_outputSingalList;
+	float** d_outputSingalList;
+	float** h_d_outputStream;
 
 	private:
 	static inline float activation_linear(float inp);

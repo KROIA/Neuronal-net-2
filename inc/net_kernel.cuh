@@ -17,7 +17,11 @@
 
 namespace NeuronalNet 
 {
-	
+	typedef enum 
+	{
+		toDevice = 0,
+		toHost = 1
+	} Direction;
 	struct Point
 	{
 		size_t x;
@@ -41,18 +45,23 @@ namespace NeuronalNet
 	__host__ void testCUDA();
 
 	__host__ cudaDeviceProp GPU_CUDA_getSpecs();
-	__host__ void GPU_CUDA_calculateNet(float* weights, float* signals, float* outpuSignals,
+	__host__ void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
 										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
 										CUDA_info * d_info = nullptr);
 
 	__host__ void GPU_CUDA_getRandomWeight(float min, float max, float* h_list, size_t elements);
 
-	__host__ void GPU_CUDA_allocMem(float* &d_list, size_t byteCount);
-	__host__ void GPU_CUDA_freeMem(float* &d_list);
+	
+	template <typename T> 
+	__host__  extern void GPU_CUDA_allocMem(T* &d_list, size_t byteCount);
+	template <typename T>
+	__host__ extern void GPU_CUDA_freeMem(T* &d_list);
 
-	__host__ void GPU_CUDA_transferToDevice(float* d_list, float* h_list, size_t byteCount);
-	__host__ void GPU_CUDA_transferToHost(  float* d_list, float* h_list, size_t byteCount);
-	__host__ void GPU_CUDA_convertWeightMatrix(float *d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount);
+	template <typename T>
+	__host__ extern void GPU_CUDA_transferToDevice(T* d_list, T* h_list, size_t byteCount);
+	template <typename T>
+	__host__ extern void GPU_CUDA_transferToHost(  T* d_list, T* h_list, size_t byteCount);
+	__host__ void GPU_CUDA_convertWeightMatrix(float *d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount,Direction dir);
 
 
 	__host__ size_t gaussSum(size_t val);
@@ -73,9 +82,9 @@ namespace NeuronalNet
 	__device__ kernel_ActFp* kernel_net_getActivationFunction(Activation act);
 
 
-	__global__ void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
+	__global__ void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals, 
 											  size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act);
-	__global__ void kernel_calculateNet(float* weights, float* signals, float* outpuSignals,
+	__global__ void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
 										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
 										CUDA_info* d_info = nullptr);
 
@@ -86,7 +95,6 @@ namespace NeuronalNet
 	__device__ inline size_t kernel_invGaussSum(size_t sum);
 
 	__global__ void kernel_transposeMatrix(float* d_list, size_t width, size_t height, CUDA_info* d_info = nullptr);
-	__global__ void kernel_copy(float* d_dest, float *d_source, size_t size);
 	__global__ void kernel_transposeMatrix_rect_internal(float* d_list, float* tmpBuffer, size_t width, size_t height);
 	
 

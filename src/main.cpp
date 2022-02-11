@@ -10,7 +10,9 @@ using std::string;
 sf::RenderWindow* window;
 
 void printSignal(const SignalVector& sig);
+void printSignal(const MultiSignalVector& sig);
 bool signalEqual(const SignalVector& a, const SignalVector& b);
+bool signalEqual(const MultiSignalVector& a, const MultiSignalVector& b);
 string getByteString(double bytes);
 
 
@@ -20,6 +22,7 @@ int main(void)
 	//NeuronalNet::testCUDA();
 	//return 0;
 	{
+		bool pass = true;
 		//NeuronalNet::GPU_CUDA_getSpecs();
 		//memcopyTest();
 		//for(int i=0; i<10;i++)
@@ -30,39 +33,28 @@ int main(void)
 		//cudaGetDeviceProperties(&h_deviceProp, 0);
 
 		net.setDimensions(3, 100, 4000, 5);
+		net.setStreamSize(5);
 		net.setActivation(Activation::sigmoid);
 		net.setHardware(Hardware::cpu);
 		net.build();
 
-		net.setInputVector(SignalVector{ 0,1,1 });
-		//net.calculate();
-		net.calculate();
-		net.calculate();
-		net.calculate();
+		net.setInputVector(MultiSignalVector{ { 0,0,0 },{ 0,0,1 },{ 0,1,0 },{ 0,1,1 },{ 1,0,0 } });
+		//net.setInputVector(MultiSignalVector{ { 1,1,1 },{ 1,1,1 },{ 1,1,1 },{ 1,1,1 },{ 1,1,1 } });
 		net.calculate();
 		cout << "\n";
-		SignalVector resultA = net.getOutputVector();
+		MultiSignalVector resultA = net.getOutputStreamVector();
 		printSignal(resultA);
 
-
 		net.setHardware(Hardware::gpu_cuda);
-		//net.calculate();
-		//net.calculate();
-		//net.calculate();
-		net.calculate();
-		net.calculate();
-		net.calculate();
 		net.calculate();
 		cout << "\n";
-		SignalVector resultB = net.getOutputVector();
+		MultiSignalVector resultB = net.getOutputStreamVector();
 		printSignal(resultB);
 
 		net.setHardware(Hardware::cpu);
 		net.calculate();
-		net.calculate();
-		net.calculate();
 		cout << "\n";
-		SignalVector resultC = net.getOutputVector();
+		MultiSignalVector resultC = net.getOutputStreamVector();
 		printSignal(resultC);
 
 		cout << "Result:\n";
@@ -83,6 +75,16 @@ void printSignal(const SignalVector& sig)
 	for (size_t i = 0; i < sig.size(); ++i)
 	{
 		printf("%f\t", sig[i]);
+	}
+	std::cout << "\n";
+}
+void printSignal(const MultiSignalVector& sig)
+{
+	std::cout << "Streams:\n";
+	for (size_t i = 0; i < sig.size(); ++i)
+	{
+		printf(" Stream [%5li]\t", i);
+		printSignal(sig[i]);
 	}
 	std::cout << "\n";
 }
@@ -121,6 +123,18 @@ bool signalEqual(const SignalVector& a, const SignalVector& b)
 	for (size_t i = 0; i < a.size(); ++i)
 	{
 		if (abs(a[i] - b[i]) > 0.00001)
+			return false;
+	}
+	return true;
+}
+bool signalEqual(const MultiSignalVector& a, const MultiSignalVector& b)
+{
+	if (a.size() != b.size())
+		return false;
+
+	for (size_t i = 0; i < a.size(); ++i)
+	{
+		if (!signalEqual(a[i],b[i]))
 			return false;
 	}
 	return true;
