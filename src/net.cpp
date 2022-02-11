@@ -14,6 +14,8 @@ double milliseconds(T t) {
 
 Net::Net()
 {
+	NeuronalNet::GPU_CUDA_getSpecs();
+
 	m_inputSignalList	= nullptr;
 	m_weightsList		= nullptr;
 	m_outputSingalList  = nullptr;
@@ -161,7 +163,14 @@ bool Net::build()
 	if (success)
 	{
 		m_neuronCount = m_hiddenX * m_hiddenY + m_outputs;
-		m_weightsCount = m_inputs * m_hiddenY + m_hiddenX * m_hiddenY * m_hiddenY + m_hiddenY * m_outputs;
+		if (m_hiddenX == 0 || m_hiddenY == 0)
+		{
+			m_hiddenX = 0; 
+			m_hiddenY = 0;
+			m_weightsCount = m_inputs * m_outputs;
+		}
+		else
+			m_weightsCount = m_inputs * m_hiddenY + m_hiddenX * m_hiddenY * m_hiddenY + m_hiddenY * m_outputs;
 
 		CONSOLE("  Inputs       : " << m_inputs)
 		CONSOLE("  Hidden X     : " << m_hiddenX)
@@ -180,6 +189,7 @@ bool Net::build()
 		m_built = true;
 		randomizeWeights();
 		buildDevice();
+		transferWeightsToDevice();
 		if (m_hardware != Hardware::cpu)
 		{
 			destroyHostWeights();
@@ -329,7 +339,8 @@ void Net::GPU_CUDA_calculate()
 {
 	transferSignalsToDevice();
 	NeuronalNet::GPU_CUDA_calculateNet(d_weightsList, d_inputSignalList, d_outputSingalList,
-									   m_inputs, m_hiddenX, m_hiddenY, m_outputs,m_activation);
+									   m_inputs, m_hiddenX, m_hiddenY, m_outputs,m_activation,
+									   NeuronalNet::_d_cudaInfo);
 	transferSignalsToHost();
 }
 
@@ -342,25 +353,37 @@ void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 	VERIFY_VALID_PTR(activation, "", return)
 
 
-	float* tmpHiddenOutSignals1 = new float[hiddenY];
-	float* tmpHiddenOutSignals2 = new float[hiddenY];
-	CPU_calculateLayer(weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, activation);
-	weights += inputCount * hiddenY;
+	
 
+	bool noHiddenLayer = !(hiddenY * hiddenX);
 
-	for (size_t i = 1; i < hiddenX; ++i)
+	if (noHiddenLayer)
 	{
-		CPU_calculateLayer(weights, tmpHiddenOutSignals1, tmpHiddenOutSignals2, hiddenY, hiddenY, activation);
-		weights += hiddenY * hiddenY;
-		float* tmp = tmpHiddenOutSignals1;
-		tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
-		tmpHiddenOutSignals2 = tmp;
+		CPU_calculateLayer(weights, signals, outpuSignals, outputCount, inputCount, activation);
 	}
+	else
+	{
+		float* tmpHiddenOutSignals1 = new float[hiddenY];
+		float* tmpHiddenOutSignals2 = new float[hiddenY];
+
+		CPU_calculateLayer(weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, activation);
+		weights += inputCount * hiddenY;
+
+		for (size_t i = 1; i < hiddenX; ++i)
+		{
+			CPU_calculateLayer(weights, tmpHiddenOutSignals1, tmpHiddenOutSignals2, hiddenY, hiddenY, activation);
+			weights += hiddenY * hiddenY;
+			float* tmp = tmpHiddenOutSignals1;
+			tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
+			tmpHiddenOutSignals2 = tmp;
+		}
 
 
-	CPU_calculateLayer(weights, tmpHiddenOutSignals1, outpuSignals, outputCount, hiddenY, activation);
-	delete[] tmpHiddenOutSignals1;
-	delete[] tmpHiddenOutSignals2;
+		CPU_calculateLayer(weights, tmpHiddenOutSignals1, outpuSignals, outputCount, hiddenY, activation);
+		delete[] tmpHiddenOutSignals1;
+		delete[] tmpHiddenOutSignals2;
+	}
+	
 }
 void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
 							 size_t neuronCount, size_t inputSignalCount, ActFp* activation)
@@ -370,8 +393,8 @@ void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputS
 		float res = 0;
 		for (size_t i = 0; i < inputSignalCount; ++i)
 		{
-			//res += weights[index * inputSignalCount + i] * tmpSignals[i];
-			res += weights[index + inputSignalCount * i] * inputSignals[i];
+			res += weights[index * inputSignalCount + i] * inputSignals[i];
+			//res += weights[index + inputSignalCount * i] * inputSignals[i];
 		}
 		outputSignals[index] = (*activation)(res);
 	}
@@ -382,7 +405,9 @@ void Net::transferWeightsToDevice()
 	{
 		case Hardware::gpu_cuda:
 		{
+			
 			NeuronalNet::GPU_CUDA_transferToDevice(d_weightsList, m_weightsList, m_weightsCount * sizeof(float));
+			NeuronalNet::GPU_CUDA_convertWeightMatrix(d_weightsList, m_inputs, m_hiddenX, m_hiddenY, m_outputs);
 			break;
 		}
 		default:
@@ -395,6 +420,8 @@ void Net::transferWeightsToHost()
 	{
 		case Hardware::gpu_cuda:
 		{
+			
+			NeuronalNet::GPU_CUDA_convertWeightMatrix(d_weightsList, m_inputs, m_hiddenX, m_hiddenY, m_outputs);
 			NeuronalNet::GPU_CUDA_transferToHost(d_weightsList, m_weightsList, m_weightsCount * sizeof(float));
 			break;
 		}
@@ -436,7 +463,7 @@ void Net::buildDevice()
 		case Hardware::gpu_cuda:
 		{
 			NeuronalNet::GPU_CUDA_allocMem(d_inputSignalList, m_inputs * sizeof(float));
-			NeuronalNet::GPU_CUDA_allocMem(d_weightsList, (m_weightsCount+16) * sizeof(float));
+			NeuronalNet::GPU_CUDA_allocMem(d_weightsList, m_weightsCount * sizeof(float));
 			NeuronalNet::GPU_CUDA_allocMem(d_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
