@@ -12,6 +12,14 @@ namespace CudaUnitTest
 
 		TEST_METHOD(MemorySwitch)
 		{
+			/*Net net;
+			net.setDimensions(3, 100, 4000, 5);
+			net.setStreamSize(5);
+			net.setActivation(Activation::sigmoid);
+			net.setHardware(Hardware::cpu);
+			net.build();*/
+			SignalVector vec(1);
+
 			float* d_buffer = nullptr;
 			size_t elements = 10;
 			NeuronalNet::GPU_CUDA_allocMem(d_buffer, elements * sizeof(float));
@@ -35,13 +43,14 @@ namespace CudaUnitTest
 			for (size_t i = 0; i < elements; ++i)
 			{
 				double dif = abs(h_buffer[i] - h_buffer2[i]);
-				Assert::IsFalse(dif>0.00001, (std::wstring(L"Buffer not copied correct ")+ std::to_wstring(h_buffer[i]) + std::wstring(L" != ")+std::to_wstring(h_buffer2[i])).c_str());
+				Assert::IsFalse(dif > 0.00001, (std::wstring(L"Buffer not copied correct ") + std::to_wstring(h_buffer[i]) + std::wstring(L" != ") + std::to_wstring(h_buffer2[i])).c_str());
 			}
 
 			NeuronalNet::GPU_CUDA_freeMem(d_buffer);
 			CUDA_validateLastError();
 			delete[] h_buffer;
 			delete[] h_buffer2;
+			plotConsoleOutput();
 		}
 	};
 }

@@ -1,5 +1,6 @@
 ﻿#include "../inc/net_kernel.cuh"
 
+
 #define BLOCK_DIM 16
 
 namespace NeuronalNet 
@@ -144,8 +145,8 @@ namespace NeuronalNet
         d_list = nullptr;
         cuda_handleError(cudaMalloc(&d_list, byteCount));
     }
-    template __host__ void GPU_CUDA_allocMem<float>(float*& d_list, size_t byteCount);
-    template __host__ void GPU_CUDA_allocMem<float*>(float**& d_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_allocMem<float>(float*& d_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_allocMem<float*>(float**& d_list, size_t byteCount);
 
     template <typename T>
     __host__ void GPU_CUDA_freeMem(T*& d_list)
@@ -157,24 +158,24 @@ namespace NeuronalNet
         if (err == cudaError::cudaSuccess)
             d_list = nullptr;
     }
-    template __host__ void GPU_CUDA_freeMem<float>(float*& d_list);
-    template __host__ void GPU_CUDA_freeMem<float*>(float**& d_list);
+    template NET_API __host__ void GPU_CUDA_freeMem<float>(float*& d_list);
+    template NET_API __host__ void GPU_CUDA_freeMem<float*>(float**& d_list);
 
     template <typename T>
     __host__ void GPU_CUDA_transferToDevice(T* d_list, T* h_list, size_t byteCount)
     {
         cuda_handleError(cudaMemcpy(d_list, h_list, byteCount, cudaMemcpyHostToDevice));
     }
-    template __host__ void GPU_CUDA_transferToDevice<float>(float* d_list, float* h_list, size_t byteCount);
-    template __host__ void GPU_CUDA_transferToDevice<float*>(float** d_list, float** h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToDevice<float>(float* d_list, float* h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToDevice<float*>(float** d_list, float** h_list, size_t byteCount);
 
     template <typename T>
     __host__ void GPU_CUDA_transferToHost(T* d_list, T* h_list, size_t byteCount)
     {
         cuda_handleError(cudaMemcpy(h_list, d_list, byteCount, cudaMemcpyDeviceToHost));
     }
-    template __host__ void GPU_CUDA_transferToHost<float>(float* d_list, float* h_list, size_t byteCount);
-    template __host__ void GPU_CUDA_transferToHost<float*>(float** d_list, float** h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToHost<float>(float* d_list, float* h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToHost<float*>(float** d_list, float** h_list, size_t byteCount);
 
     
 
@@ -536,6 +537,17 @@ namespace NeuronalNet
     }
 
 
-
+    __host__ void cuda_handleError(cudaError_t err)
+    {
+        switch (err)
+        {
+            case cudaError_t::cudaSuccess:
+                return;
+            default:
+            {
+                std::cout << "CudaError: " << err << "\n";
+            }
+        }
+    }
 }
 

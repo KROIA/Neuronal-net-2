@@ -7,18 +7,15 @@
 #include "layer.h"
 #include "activation.h"
 #include "net_kernel.cuh"
+#include "multiSignalVector.h"
+#include "debug.h"
 
 
-#include <chrono>
 
 
-#define NET_DEBUG
 
 
-// helper functions for cleaner time measuring code
-extern std::chrono::time_point<std::chrono::high_resolution_clock> now();
-template <typename T>
-extern double milliseconds(T t);
+
 
 enum Hardware
 {
@@ -26,12 +23,12 @@ enum Hardware
 	gpu_cuda
 };
 
-typedef std::vector<float> SignalVector;
-typedef std::vector<SignalVector> MultiSignalVector;
+//typedef std::vector<float> SignalVector;
+//typedef std::vector<SignalVector> MultiSignalVector;
 
 
 
-class Net
+class NET_API Net
 {
 
 	typedef float ActFp(float);
@@ -49,7 +46,7 @@ class Net
 	void setActivation(Activation act);
 	Activation getActivation() const;
 
-	void setHardware(Hardware ware);
+	void setHardware(enum Hardware ware);
 	Hardware getHardware() const;
 
 	bool build();
@@ -71,6 +68,16 @@ class Net
 	const MultiSignalVector &getInputStreamVector();
 	const SignalVector& getOutputVector(size_t stream = 0);
 	const MultiSignalVector &getOutputStreamVector();
+
+	void setWeight(size_t layer, size_t neuron, size_t input, float weight);
+	void setWeight(const std::vector<float>&list);
+	void setWeight(const float* list);
+	void setWeight(const float* list,size_t to);
+	void setWeight(const float* list,size_t insertOffset, size_t count);
+	float getWeight(size_t layer, size_t neuron, size_t input) const;
+	const float* getWeight() const;
+	size_t getWeightSize() const;
+
 
 	void calculate();
 	void calculate(size_t stream);
@@ -111,9 +118,9 @@ class Net
 	MultiSignalVector m_outputStream;
 
 
-	float** m_inputSignalList;
+	//float** m_inputSignalList;
 	float* m_weightsList;
-	float** m_outputSingalList;
+	//float** m_outputSingalList;
 	bool   m_built;
 
 	// Extern hardware
@@ -125,28 +132,9 @@ class Net
 	float** h_d_outputStream;
 
 	private:
-	static inline float activation_linear(float inp);
-	static inline float activation_gauss(float inp);
-	static inline float activation_sigmoid(float inp);
+	static float activation_linear(float inp);
+	static float activation_gauss(float inp);
+	static float activation_sigmoid(float inp);
 
 };
-
-#ifdef NET_DEBUG
-#define CONSOLE(x) std::cout<<__FUNCTION__<<" : "<< x << "\n";
-#else
-#define CONSOLE(x)
-#endif
-
-
-#define __VERIFY_RANGE_COMP1(min,var,max) if(min>var || var>max){ CONSOLE("Error: "<<#var<<" out of range: "<<min<<" > "<<#var<<" = "<<var<<" > "<<max)
-#define VERIFY_RANGE(min,var,max) __VERIFY_RANGE_COMP1(min,var,max)}
-#define VERIFY_RANGE(min,var,max,ret)__VERIFY_RANGE_COMP1(min,var,max) ret;}
-
-#define __VERIFY_BOOL_COMP1(val,comp,message) if(val != comp){CONSOLE("Error: "<<message)
-#define VERIFY_BOOL(val,comp,message) __VERIFY_BOOL_COMP1(val,comp,message)}
-#define VERIFY_BOOL(val,comp,message,ret) __VERIFY_BOOL_COMP1(val,comp,message) ret;}
-
-#define __VERIFY_VALID_PTR_COMP1(ptr, message) if(!ptr){CONSOLE("Error: "<<#ptr<<" == nullltr "<<message)
-#define VERIFY_VALID_PTR(ptr, message) __VERIFY_VALID_PTR_COMP1(ptr,message)}
-#define VERIFY_VALID_PTR(ptr, message, ret) __VERIFY_VALID_PTR_COMP1(ptr,message) ret;}
 

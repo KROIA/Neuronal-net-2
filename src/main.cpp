@@ -1,13 +1,15 @@
 #include "../inc/net.h"
 #include <string>
 #include <vector>
-#include <SFML/Graphics.hpp>
+//#include <SFML/Graphics.hpp>
+
+//#define USE_MAIN
 
 using std::vector;
 using std::cout;
 using std::string;
 
-sf::RenderWindow* window;
+//sf::RenderWindow* window;
 
 void printSignal(const SignalVector& sig);
 void printSignal(const MultiSignalVector& sig);
@@ -15,6 +17,7 @@ bool signalEqual(const SignalVector& a, const SignalVector& b);
 bool signalEqual(const MultiSignalVector& a, const MultiSignalVector& b);
 string getByteString(double bytes);
 
+#ifdef USE_MAIN
 
 int main(void)
 {
@@ -38,7 +41,7 @@ int main(void)
 		net.setHardware(Hardware::cpu);
 		net.build();
 
-		net.setInputVector(MultiSignalVector{ { 0,0,0 },{ 0,0,1 },{ 0,1,0 },{ 0,1,1 },{ 1,0,0 } });
+		net.setInputVector(MultiSignalVector({ { 0,0,0 },{ 0,0,1 },{ 0,1,0 },{ 0,1,1 },{ 1,0,0 } }));
 		//net.setInputVector(MultiSignalVector{ { 1,1,1 },{ 1,1,1 },{ 1,1,1 },{ 1,1,1 },{ 1,1,1 } });
 		net.calculate();
 		cout << "\n";
@@ -51,8 +54,8 @@ int main(void)
 		MultiSignalVector resultB = net.getOutputStreamVector();
 		printSignal(resultB);
 
-		net.setHardware(Hardware::cpu);
-		net.calculate();
+		//net.setHardware(Hardware::cpu);
+		//net.calculate();
 		cout << "\n";
 		MultiSignalVector resultC = net.getOutputStreamVector();
 		printSignal(resultC);
@@ -67,7 +70,7 @@ int main(void)
 	std::cout << "exiting";
 	return 0;
 }
-
+#endif
 
 void printSignal(const SignalVector& sig)
 {

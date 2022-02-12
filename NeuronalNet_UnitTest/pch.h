@@ -10,5 +10,5 @@
 #include "testHelper.h"
 
 // Fügen Sie hier Header hinzu, die vorkompiliert werden sollen.
-#include "..\inc\net.h"
+#include "net.h"
 #endif //PCH_H

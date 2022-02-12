@@ -11,6 +11,8 @@ Global
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		UnitTest|x64 = UnitTest|x64
+		UnitTest|x86 = UnitTest|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{941A844E-DAD7-4436-AABB-9B41D0568D98}.Debug|x64.ActiveCfg = Debug|x64
@@ -19,6 +21,9 @@ Global
 		{941A844E-DAD7-4436-AABB-9B41D0568D98}.Release|x64.ActiveCfg = Release|x64
 		{941A844E-DAD7-4436-AABB-9B41D0568D98}.Release|x64.Build.0 = Release|x64
 		{941A844E-DAD7-4436-AABB-9B41D0568D98}.Release|x86.ActiveCfg = Release|x64
+		{941A844E-DAD7-4436-AABB-9B41D0568D98}.UnitTest|x64.ActiveCfg = UnitTest|x64
+		{941A844E-DAD7-4436-AABB-9B41D0568D98}.UnitTest|x64.Build.0 = UnitTest|x64
+		{941A844E-DAD7-4436-AABB-9B41D0568D98}.UnitTest|x86.ActiveCfg = UnitTest|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

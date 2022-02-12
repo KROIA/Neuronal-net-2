@@ -1,24 +1,15 @@
 #include "..\inc\net.h"
 
 
-// helper functions for cleaner time measuring code
-std::chrono::time_point<std::chrono::high_resolution_clock> now() {
-	return std::chrono::high_resolution_clock::now();
-}
-
-template <typename T>
-double milliseconds(T t) {
-	return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(t).count() / 1000000;
-}
 
 
 Net::Net()
 {
 	NeuronalNet::GPU_CUDA_getSpecs();
 
-	m_inputSignalList	= nullptr;
+	//m_inputSignalList	= nullptr;
 	m_weightsList		= nullptr;
-	m_outputSingalList  = nullptr;
+	//m_outputSingalList  = nullptr;
 	m_activationFunc	= nullptr;
 
 	d_inputSignalList	= nullptr;
@@ -35,13 +26,14 @@ Net::Net()
 	m_streamSize = 1;
 	setActivation(Activation::sigmoid);
 	setHardware(Hardware::cpu);
+
 }
 
 Net::~Net()
 {
 	destroyDevice();
 	m_built = false;
-	if (m_inputSignalList)
+	/*if (m_inputSignalList)
 	{
 		for (size_t i = 0; i < m_streamSize; ++i)
 			delete[] m_inputSignalList[i];
@@ -55,7 +47,7 @@ Net::~Net()
 	}
 
 	m_inputSignalList = nullptr;
-	m_outputSingalList = nullptr;
+	m_outputSingalList = nullptr;*/
 	destroyHostWeights();
 }
 
@@ -117,13 +109,15 @@ Activation Net::getActivation() const
 	return m_activation;
 }
 
-void Net::setHardware(Hardware ware)
+void Net::setHardware(enum Hardware ware)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	if (m_hardware == ware)
 		return;
+	
 	//m_hardware = ware;
-	CONSOLE("begin")
-	auto t1 = now();
+	//CONSOLE("begin")
+	//auto t1 = now();
 	switch (ware)
 	{
 		default:
@@ -132,9 +126,11 @@ void Net::setHardware(Hardware ware)
 		{
 			if (!m_built)
 				break;
-			for (size_t i = 0; i < m_streamSize; ++i)
-				memset(m_outputSingalList[i],0,m_outputs*sizeof(float));
-			CONSOLE("  Hardware: CPU")
+			/*for (size_t i = 0; i < m_streamSize; ++i)
+				memset(m_outputSingalList[i],0,m_outputs*sizeof(float));*/
+			for(size_t i = 0; i < m_streamSize; ++i)
+				memset(m_outputStream[i].begin(),0,m_outputs*sizeof(float));
+			CONSOLE("Hardware: CPU")
 			buildHostWeights();
 			transferWeightsToHost();
 			transferSignalsToHost();
@@ -149,16 +145,16 @@ void Net::setHardware(Hardware ware)
 				break;
 			m_hardware = ware;
 			for (size_t i = 0; i < m_streamSize; ++i)
-				memset(m_outputSingalList[i], 0, m_outputs * sizeof(float));
-			CONSOLE("  Hardware: GPU CUDA device")
+				memset(m_outputStream[i].begin(), 0, m_outputs * sizeof(float));
+			CONSOLE("Hardware: GPU CUDA device")
 			buildDevice();
 			transferWeightsToDevice();
 			destroyHostWeights();
 		}
 	}
 	m_hardware = ware;
-	auto t2 = now();
-	CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
+	//auto t2 = now();
+	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
 }
 
 Hardware Net::getHardware() const
@@ -168,10 +164,12 @@ Hardware Net::getHardware() const
 
 bool Net::build()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	if (m_built)
 		return 1;
-	CONSOLE("begin")
-	auto t1 = now();
+	
+	//CONSOLE("begin")
+	//auto t1 = now();
 	bool success = true;
 
 	success &= m_inputs > 0 && m_outputs > 0;
@@ -190,18 +188,18 @@ bool Net::build()
 		if (m_streamSize == 0)
 			m_streamSize = 1;
 
-		CONSOLE("  Inputs       : " << m_inputs)
-		CONSOLE("  Hidden X     : " << m_hiddenX)
-		CONSOLE("  Hidden Y     : " << m_hiddenY)
-		CONSOLE("  Outputs      : " << m_outputs)
+		CONSOLE("Inputs       : " << m_inputs)
+		CONSOLE("Hidden X     : " << m_hiddenX)
+		CONSOLE("Hidden Y     : " << m_hiddenY)
+		CONSOLE("Outputs      : " << m_outputs)
 
 
-		CONSOLE("  Neuron  count: " << m_neuronCount)
-		CONSOLE("  Weights count: " << m_weightsCount)
-		CONSOLE("  Storage      : " << m_weightsCount * sizeof(float) + m_inputs * sizeof(float) + m_outputs * sizeof(float) << " bytes")
-		CONSOLE("  Streams      : " << m_streamSize)
+		CONSOLE("Neuron  count: " << m_neuronCount)
+		CONSOLE("Weights count: " << m_weightsCount)
+		CONSOLE("Storage      : " << Debug::bytesToString(m_weightsCount * sizeof(float) + m_inputs * sizeof(float) + m_outputs * sizeof(float)))
+		CONSOLE("Streams      : " << m_streamSize)
 
-		m_inputSignalList = new float* [m_streamSize];
+		/*m_inputSignalList = new float* [m_streamSize];
 		m_outputSingalList = new float* [m_streamSize];
 		for (size_t i = 0; i < m_streamSize; ++i)
 		{
@@ -210,9 +208,9 @@ bool Net::build()
 
 			memset(m_inputSignalList[i], 0, m_inputs * sizeof(float));
 			memset(m_outputSingalList[i], 0, m_outputs * sizeof(float));
-		}
-		m_inputStream = MultiSignalVector(m_streamSize, SignalVector(m_inputs, 0));
-		m_outputStream = MultiSignalVector(m_streamSize, SignalVector(m_outputs, 0));
+		}*/
+		m_inputStream = MultiSignalVector(m_streamSize, m_inputs);
+		m_outputStream = MultiSignalVector(m_streamSize, m_outputs);
 		
 		
 		
@@ -229,18 +227,20 @@ bool Net::build()
 		
 	}
 
-	auto t2 = now();
-	CONSOLE("end. return "<<success<< " time: "<<milliseconds(t2-t1)<<"ms")
+	//auto t2 = now();
+	//CONSOLE("end. return "<<success<< " time: "<<milliseconds(t2-t1)<<"ms")
 	return success;
 }
 
 void Net::randomizeWeights()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	if (!m_built) { CONSOLE("Error: build the net first") return; }
 	randomizeWeights(0, m_weightsCount-1);
 }
 bool Net::randomizeWeights(size_t from, size_t to)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_BOOL(m_built, true, "build the net first", return false)
 	if (from > to)
 	{
@@ -291,59 +291,68 @@ float Net::getRandomValue(float min, float max)
 
 void Net::setInputVector(float* signalList)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_BOOL(m_built, true, "build the net first", return)
-	memcpy(m_inputSignalList[0], signalList, m_inputs * sizeof(float));
-	m_inputStream[0] = std::vector<float>(signalList, signalList + m_inputs);
+	//memcpy(m_inputSignalList[0], signalList, m_inputs * sizeof(float));
+	m_inputStream[0].fill(signalList, m_inputs);// std::vector<float>(signalList, signalList + m_inputs);
 }
 void Net::setInputVector(size_t stream, float* signalList)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
-	memcpy(m_inputSignalList[stream], signalList, m_inputs * sizeof(float));
-	m_inputStream[stream] = std::vector<float>(signalList, signalList + m_inputs);
+	//memcpy(m_inputSignalList[stream], signalList, m_inputs * sizeof(float));
+	m_inputStream[stream].fill(signalList, m_inputs);// = std::vector<float>(signalList, signalList + m_inputs);
 }
 
 
 void Net::setInputVector(const SignalVector& signalList)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	size_t max = signalList.size();
 	if (m_inputs < max) max = m_inputs;
-	memcpy(m_inputSignalList[0], signalList.data(), max * sizeof(float));
+	m_inputStream[0].fill(signalList.begin(), max);
+	//memcpy(m_inputSignalList[0], signalList.begin(), max * sizeof(float));
 }
 void Net::setInputVector(size_t stream, const SignalVector& signalList)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
 	size_t max = signalList.size();
 	if (m_inputs < max) max = m_inputs;
-	memcpy(m_inputSignalList[stream], signalList.data(), max * sizeof(float));
-	m_inputStream[stream] = signalList;
+	//memcpy(m_inputSignalList[stream], signalList.begin(), max * sizeof(float));
+	m_inputStream[stream].fill(signalList.begin(), max);
 }
 void Net::setInputVector(const MultiSignalVector& streamVector)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	VERIFY_RANGE(m_streamSize, streamVector.size(), m_streamSize, return)
-	VERIFY_RANGE(m_inputs, streamVector[0].size(), m_inputs, return)
+	VERIFY_RANGE(m_inputs, streamVector.signalSize(), m_inputs, return)
 	size_t streams = streamVector.size();
 	if (streams == 0)
 		return;
 	if (streams > m_streamSize)
 		streams = m_streamSize;
-	size_t max = streamVector[0].size();
+	size_t max = streamVector.signalSize();
 	if (m_inputs < max) max = m_inputs;
-	for (size_t s = 0; s < streams; ++s)
+	
+	m_inputStream.fill(streamVector.begin(), streams);
+	/*for (size_t s = 0; s < streams; ++s)
 	{
-		memcpy(m_inputSignalList[s], streamVector[s].data(), max * sizeof(float));
-	}
-	m_inputStream = streamVector;
+
+		memcpy(m_inputSignalList[s], streamVector[s].begin(), max * sizeof(float));
+	}*/
+	//m_inputStream = streamVector;
 }
 
 void Net::setInput(size_t input, float signal)
 {
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	VERIFY_RANGE(0, input, m_inputs-1, return)
-	m_inputSignalList[0][input] = signal;
+	//m_inputSignalList[0][input] = signal;
 	m_inputStream[0][input] = signal;
 }
 void Net::setInput(size_t stream, size_t input, float signal)
@@ -351,7 +360,7 @@ void Net::setInput(size_t stream, size_t input, float signal)
 	VERIFY_BOOL(m_built,true,"build the net first",return)
 	VERIFY_RANGE(0, input,m_inputs-1,return)
 	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
-	m_inputSignalList[stream][input] = signal;
+	//m_inputSignalList[stream][input] = signal;
 	m_inputStream[stream][input] = signal;
 }
 
@@ -371,11 +380,11 @@ float Net::getInput(size_t stream, size_t input) const
 
 const SignalVector &Net::getInputVector(size_t stream)
 {
-	VERIFY_BOOL(m_built, true, "build the net first", return std::vector<float>())
+	VERIFY_BOOL(m_built, true, "build the net first", return SignalVector())
 	std::vector<float> inputVec(m_inputs);
 	if (stream >= m_streamSize)
 		stream = m_streamSize - 1;
-	m_inputStream[stream] = std::vector<float>(m_inputSignalList[stream], m_inputSignalList[stream] + m_inputs);
+	//m_inputStream[stream].fill(m_inputSignalList[stream], m_inputs);
 	return m_inputStream[stream];
 }
 const MultiSignalVector& Net::getInputStreamVector()
@@ -385,39 +394,154 @@ const MultiSignalVector& Net::getInputStreamVector()
 
 const SignalVector &Net::getOutputVector(size_t stream) 
 {
-	VERIFY_BOOL(m_built, true, "build the net first", return std::vector<float>())
+	VERIFY_BOOL(m_built, true, "build the net first", return SignalVector())
 	
 	if (stream >= m_streamSize)
 		stream = m_streamSize - 1;
-	m_outputStream[stream] = std::vector<float>(m_outputSingalList[stream], m_outputSingalList[stream] + m_outputs);
+	//m_outputStream[stream].fill(m_outputSingalList[stream], m_outputs);
 	return m_outputStream[stream];
 }
 const MultiSignalVector &Net::getOutputStreamVector() 
 {
-	for (size_t i = 0; i < m_streamSize; ++i)
+	/*for (size_t i = 0; i < m_streamSize; ++i)
 	{
-		m_outputStream[i] = std::vector<float>(m_outputSingalList[i], m_outputSingalList[i] + m_outputs);
-	}
+		m_outputStream[i].fill(m_outputSingalList[i], m_outputs);
+	}*/
 	return m_outputStream;
 }
 
+void Net::setWeight(size_t layer, size_t neuron, size_t input, float weight)
+{
+	VERIFY_RANGE(0, layer, m_hiddenX, return)
+	size_t index;
+	if(m_hiddenX * m_hiddenY == 0 || layer == 0)
+	{
+		index = m_inputs * neuron + input;
+	}
+	else
+	{
+		index = m_inputs * m_hiddenY + (layer - 1) * m_hiddenX * m_hiddenY + m_hiddenY * neuron + input;
+	}
+	VERIFY_RANGE(0, index, m_weightsCount, return)
+	switch (m_hardware)
+	{
+		case Hardware::cpu:
+		{
+			m_weightsList[index] = weight;
+			break;
+		}
+		case Hardware::gpu_cuda:
+		{
+			CONSOLE_FUNCTION("Not implemented for GPU yet, use CPU as device")
+			break;
+		}
+		default:
+			CONSOLE_FUNCTION("Device not defined "<<m_hardware)
+	}
+}
+void Net::setWeight(const std::vector<float>& list)
+{
+	setWeight(list.data());
+}
+void Net::setWeight(const float* list)
+{
+	setWeight(list, 0, m_weightsCount);
+}
+void Net::setWeight(const float* list, size_t to)
+{
+	setWeight(list, 0, to);
+}
+void Net::setWeight(const float* list, size_t insertOffset, size_t count)
+{
+	switch (m_hardware)
+	{
+		case Hardware::cpu:
+		{
+			memcpy(m_weightsList+ insertOffset, list, count * sizeof(float));
+			break;
+		}
+		case Hardware::gpu_cuda:
+		{
+			CONSOLE_FUNCTION("Not implemented for GPU yet, use CPU as device")
+				break;
+		}
+		default:
+			CONSOLE_FUNCTION("Device not defined " << m_hardware)
+	}
+}
+float Net::getWeight(size_t layer, size_t neuron, size_t input) const
+{
+	size_t index;
+	if (m_hiddenX * m_hiddenY == 0 || layer == 0)
+	{
+		index = m_inputs * neuron + input;
+	}
+	else
+	{
+		index = m_inputs * m_hiddenY + (layer - 1) * m_hiddenX * m_hiddenY + m_hiddenY * neuron + input;
+	}
+	VERIFY_RANGE(0, index, m_weightsCount, return 0)
+	switch (m_hardware)
+	{
+		case Hardware::cpu:
+		{
+			return m_weightsList[index];
+			break;
+		}
+		case Hardware::gpu_cuda:
+		{
+			CONSOLE_FUNCTION("Not implemented for GPU yet, use CPU as device")
+				break;
+		}
+		default:
+			CONSOLE_FUNCTION("Device not defined " << m_hardware)
+	}
+	return 0;
+}
+const float* Net::getWeight() const
+{
+	switch (m_hardware)
+	{
+		case Hardware::cpu:
+		{
+			return m_weightsList;
+		}
+		case Hardware::gpu_cuda:
+		{
+			CONSOLE_FUNCTION("Memory is on device, therefore not available for host code")
+			return nullptr;
+		}
+		default:
+			CONSOLE_FUNCTION("Device not defined " << m_hardware)
+	}
+	return nullptr;
+}
+size_t Net::getWeightSize() const
+{
+	return m_weightsCount;
+}
+
+
 void Net::calculate()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	calculate(0, m_streamSize);
 }
 void Net::calculate(size_t stream)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	calculate(stream, stream+1);
 }
 void Net::calculate(size_t streamBegin, size_t streamEnd)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	if (streamBegin > streamEnd)
 		std::swap(streamBegin, streamEnd);
 
 	VERIFY_RANGE(0,streamBegin,m_streamSize,return)
 	VERIFY_RANGE(0, streamEnd,m_streamSize,return)
-	CONSOLE("begin")
-		auto t1 = now();
+	//CONSOLE("begin")
+	//	auto t1 = now();
 	switch (m_hardware)
 	{
 		case Hardware::cpu:
@@ -435,20 +559,24 @@ void Net::calculate(size_t streamBegin, size_t streamEnd)
 			CONSOLE("Error: hardware undefined")
 		}
 	}
-	auto t2 = now();
-	CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
+	//auto t2 = now();
+	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
 }
 
 
 void Net::CPU_calculate(size_t streamBegin, size_t streamEnd)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	for(size_t i= streamBegin; i< streamEnd; ++i)
-		CPU_calculateNet(m_weightsList, m_inputSignalList[i], m_outputSingalList[i],
-						 m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
-}
+		//CPU_calculateNet(m_weightsList, m_inputSignalList[i], m_outputSingalList[i],
+		//				 m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
+	    CPU_calculateNet(m_weightsList, m_inputStream[i].begin(), m_outputStream[i].begin(),
+					     m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
+} 
 
 void Net::GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	transferSignalsToDevice();
 	NeuronalNet::GPU_CUDA_calculateNet(d_weightsList, d_inputSignalList+streamBegin, d_outputSingalList, streamEnd-streamBegin,
 									   m_inputs, m_hiddenX, m_hiddenY, m_outputs,m_activation,
@@ -459,16 +587,17 @@ void Net::GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd)
 void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 					   size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation)
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_VALID_PTR(weights, "", return)
-		VERIFY_VALID_PTR(signals, "", return)
-		VERIFY_VALID_PTR(outpuSignals, "", return)
-		VERIFY_VALID_PTR(activation, "", return)
+	VERIFY_VALID_PTR(signals, "", return)
+	VERIFY_VALID_PTR(outpuSignals, "", return)
+	VERIFY_VALID_PTR(activation, "", return)
 
 
-		/*std::cout << "signals: ";
-		for (size_t i = 0; i < inputCount; ++i)
-			std::cout << signals[i] << "\t";
-		std::cout << "\n";*/
+	/*std::cout << "signals: ";
+	for (size_t i = 0; i < inputCount; ++i)
+		std::cout << signals[i] << "\t";
+	std::cout << "\n";*/
 	bool noHiddenLayer = !(hiddenY * hiddenX);
 
 	if (noHiddenLayer)
@@ -502,7 +631,7 @@ void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
 							 size_t neuronCount, size_t inputSignalCount, ActFp* activation)
 {
-
+	//DEBUG_FUNCTION_TIME_INTERVAL
 	//std::cout << "Weights:\n";
 	for (size_t index = 0; index < neuronCount; ++index)
 	{
@@ -520,6 +649,7 @@ void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputS
 }
 void Net::transferWeightsToDevice()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
 		case Hardware::gpu_cuda:
@@ -535,6 +665,7 @@ void Net::transferWeightsToDevice()
 }
 void Net::transferWeightsToHost()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
 		case Hardware::gpu_cuda:
@@ -550,13 +681,15 @@ void Net::transferWeightsToHost()
 }
 void Net::transferSignalsToDevice()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
 			{
-				NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputSignalList[i], m_inputs * sizeof(float));
+				//NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputSignalList[i], m_inputs * sizeof(float));
+				NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputStream[i].begin(), m_inputs * sizeof(float));
 			}
 			
 			break;
@@ -567,13 +700,15 @@ void Net::transferSignalsToDevice()
 }
 void Net::transferSignalsToHost()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
 			{
-				NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputSingalList[i], m_outputs * sizeof(float));
+				//NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputSingalList[i], m_outputs * sizeof(float));
+				NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputStream[i].begin(), m_outputs * sizeof(float));
 			}
 			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
 			break;
@@ -585,6 +720,7 @@ void Net::transferSignalsToHost()
 
 void Net::buildDevice()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
 		case Hardware::gpu_cuda:
@@ -615,6 +751,7 @@ void Net::buildDevice()
 }
 void Net::destroyDevice()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
 		case Hardware::gpu_cuda:
@@ -641,23 +778,33 @@ void Net::destroyDevice()
 }
 void Net::buildHostWeights()
 {	
+	DEBUG_FUNCTION_TIME_INTERVAL
+	//CONSOLE("begin")
+	//auto t1 = now();
 	m_weightsList = new float[m_weightsCount];
+	//auto t2 = now();
+	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
 }
 void Net::destroyHostWeights()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
+	//CONSOLE("begin")
+	//	auto t1 = now();
 	if (m_weightsList) delete[] m_weightsList;
 	m_weightsList = nullptr;
+	//auto t2 = now();
+	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
 }
-inline float Net::activation_linear(float inp)
+float Net::activation_linear(float inp)
 {
 	return NET_ACTIVATION_LINEAR(inp);
 }
-inline float Net::activation_gauss(float inp)
+float Net::activation_gauss(float inp)
 {
 	//https://www.wolframalpha.com/input/?i=exp%28-pow%28x%2C2%29%29*2-1
 	return NET_ACTIVATION_GAUSSIAN(inp);
 }
-inline float Net::activation_sigmoid(float inp) 
+float Net::activation_sigmoid(float inp) 
 {
 	return NET_ACTIVATION_SIGMOID(inp);
 }
