@@ -103,3 +103,11 @@ float* SignalVector::end() const
 {
 	return m_list + m_size;
 }
+
+void SignalVector::clear()
+{
+	if (m_list)
+		delete[] m_list;
+	m_list = nullptr;
+	m_size = 0;
+}

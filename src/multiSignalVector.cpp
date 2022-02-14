@@ -177,3 +177,14 @@ const SignalVector** MultiSignalVector::end() const
 {
 	return (const SignalVector**)(m_list + m_vecCount);
 }
+
+void MultiSignalVector::clear()
+{
+	for (size_t i = 0; i < m_vecCount; ++i)
+		delete m_list[i];
+	delete[] m_list;
+	m_list = nullptr;
+	m_vecCount = 0;
+	m_signalCount = 0;
+}
+

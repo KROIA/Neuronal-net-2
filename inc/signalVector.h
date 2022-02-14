@@ -27,6 +27,8 @@ class NET_API SignalVector
 	float* begin() const;
 	float* end() const;
 
+	void clear();
+
 	private:
 	size_t m_size;
 	float* m_list;

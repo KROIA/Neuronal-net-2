@@ -31,6 +31,7 @@ class NET_API MultiSignalVector
 	const SignalVector** begin() const;
 	const SignalVector** end() const;
 
+	void clear();
 	private:
 
 	SignalVector** m_list;

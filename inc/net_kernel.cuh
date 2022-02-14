@@ -48,7 +48,7 @@ namespace NeuronalNet
 	NET_API __host__ void testCUDA();
 
 	NET_API __host__ cudaDeviceProp GPU_CUDA_getSpecs();
-	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
+	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
 										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
 										CUDA_info * d_info = nullptr);
 
@@ -85,9 +85,9 @@ namespace NeuronalNet
 	NET_API __device__ kernel_ActFp* kernel_net_getActivationFunction(Activation act);
 
 
-	NET_API __global__ void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
+	NET_API __global__ void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals, float* netinputList,
 											  size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act);
-	NET_API __global__ void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
+	NET_API __global__ void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
 										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
 										CUDA_info* d_info = nullptr);
 
@@ -101,7 +101,8 @@ namespace NeuronalNet
 	NET_API __global__ void kernel_transposeMatrix_rect_internal(float* d_list, float* tmpBuffer, size_t width, size_t height);
 	
 
-	
+	NET_API __global__ void kernel_offsetScale(float *d_list, float offset, float scale, size_t size, CUDA_info* d_info = nullptr);
 
 	NET_API __host__ void cuda_handleError(cudaError_t err);
+	NET_API __device__ void kernel_handleError(cudaError_t err);
 }

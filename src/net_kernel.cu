@@ -54,7 +54,7 @@ namespace NeuronalNet
         {
             matrix[y] = 0;
         }
-        cudaDeviceSynchronize();
+        cuda_handleError(cudaDeviceSynchronize());
 
         GPU_CUDA_transferToHost(dMatrix, matrix, w * h * sizeof(float));
 
@@ -112,15 +112,15 @@ namespace NeuronalNet
         return h_deviceProp;
     }
     __host__ 
-        void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
+        void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
                                    size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
                                    CUDA_info* d_info)
     {
 
-        kernel_calculateNet << <1, 1 >> > (weights, multiSignalVec, multiOutputVec, multiSignalSize,
+        kernel_calculateNet << <1, 1 >> > (weights, multiSignalVec, multiOutputVec, multiNetinputList, multiSignalSize,
                                            inputCount, hiddenX, hiddenY, outputCount, activation,
                                            d_info);
-        cudaDeviceSynchronize();
+        cuda_handleError(cudaDeviceSynchronize());
     }
     __host__
         void GPU_CUDA_getRandomWeight(float min, float max, float* h_list, size_t elements)
@@ -133,7 +133,9 @@ namespace NeuronalNet
         curandCreateGenerator(&gen, CURAND_RNG_PSEUDO_DEFAULT);
         curandSetPseudoRandomGeneratorSeed(gen, 1234ULL);
         curandGenerateUniform(gen, d_list, elements);
-        cudaDeviceSynchronize();
+        cuda_handleError(cudaDeviceSynchronize());
+        kernel_offsetScale << <numBlocks, blockSize >> > (d_list, -0.5, 2, elements, _d_cudaInfo);
+        cuda_handleError(cudaDeviceSynchronize());
         cudaMemcpy(h_list, d_list, elements * sizeof(float), cudaMemcpyDeviceToHost);
         cudaFree(d_list);
     }
@@ -257,7 +259,7 @@ namespace NeuronalNet
     }
 
     __global__
-        void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
+        void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals, float* netinputList,
                                           size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act)
     {
         // Get "Neuron index"
@@ -275,7 +277,7 @@ namespace NeuronalNet
         short loadIndex = loadCount * threadIdx.x;
 
         // Split the neuron in segments for faster compute
-        for (short tile = 0; tile <tiles; ++tile)
+        /*for (short tile = 0; tile <tiles; ++tile)
         {
             // Set new signal pointer (inputs of neuron)
             signalsBegin = signalsEnd;
@@ -309,17 +311,55 @@ namespace NeuronalNet
                 // Ad the product of signal and weight
                 res += weight * sharedSignals[i - signalsBegin];
             }
-        }
+        }*/
+        //double res_ = 0;
+        for (size_t i = 0; i < inputSignalCount; ++i)
+        //for (size_t i = 0; i < 1; ++i)
+        {
+
+            // Read weights
+            float weight = weights[index + neuronCount * i];
+           
+           // float weight = weights[i * neuronCount + index];
+
+            // Ad the product of signal and weight
+            //res_ += (double)weight * (double)inputSignals[i];
+            // 
+            // 
+            // 
+            //res += weight * inputSignals[i];
+            res += weight * inputSignals[i];
+            
+
+
+
+           /* float delta = (float)round((double)(weight * inputSignals[i] * 1000.l)) / 1000.f;
+            
+            uint32_t* valueBits = (uint32_t*)&delta;
+
+            *valueBits = *valueBits & 0xffff0000;
+            res += *(float*)valueBits;*/
+            //res += inputSignals[i];
+        } 
+
+        //printf("%lf\n", res);
         // Set the resultat of the activationfunction of the netinput (res)
-        outputSignals[index] = (*act)(res);
+       // if (index == 3906)
+        //    printf("%i %f\n", index,res);
+        //res = (float)res_;
+
+        res = round(res * 100.f) / 100.f;
+        netinputList[index] = res;
+        printf("o: %f\n", res);
+        outputSignals[index] = round((*act)(res) * 100.f) / 100.f;
     }
 
     __global__
-        void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, size_t multiSignalSize,
+        void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
                                  size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
                                  CUDA_info* d_info)
     {
-        
+       
         kernel_ActFp* actPtr = kernel_net_getActivationFunction(act);
         
         size_t maxThreadsPerBlock = 256;
@@ -330,6 +370,12 @@ namespace NeuronalNet
 
         bool noHiddenLayer = !(hiddenY * hiddenX);
 
+        // TEST
+        for (size_t i = 0; i < multiSignalSize; ++i)
+        {
+            memset(multiNetinputList[i], 0, (hiddenX * hiddenY + outputCount) *sizeof(float));
+        }
+
         if (noHiddenLayer)
         {
             size_t blockSize = maxThreadsPerBlock;
@@ -337,12 +383,14 @@ namespace NeuronalNet
             for (size_t i = 0; i < multiSignalSize; ++i)
             {
                 // Calculate the first Layer
-                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[i], multiOutputVec[i], outputCount, inputCount, actPtr);
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[i], multiOutputVec[i], multiNetinputList[i], outputCount, inputCount, actPtr);
             }
             
         }
         else
         {
+            float** _multiNetinputList = new float* [multiSignalSize];
+            memcpy(_multiNetinputList, multiNetinputList, multiSignalSize * sizeof(float*));
             size_t blockSize = maxThreadsPerBlock;
             size_t numBlocks = (hiddenY - 1) / blockSize + 1;
             float** tmpHiddenOutSignals1 = new float*[multiSignalSize];
@@ -353,21 +401,24 @@ namespace NeuronalNet
                 tmpHiddenOutSignals2[j] = new float[hiddenY];
 
                 // Calculate the first Layer
-                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[j], tmpHiddenOutSignals1[j], hiddenY, inputCount, actPtr);
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[j], tmpHiddenOutSignals1[j], _multiNetinputList[j], hiddenY, inputCount, actPtr);
+                _multiNetinputList[j] += hiddenY;
             }
             
             // Increment the current start pos of the weights
             weights += inputCount * hiddenY;
 
             // Wait until layer kernel is finished
-            cudaDeviceSynchronize();
+            kernel_handleError(cudaDeviceSynchronize());
 
             for (size_t i = 1; i < hiddenX; ++i)
             {
                 for (size_t j = 0; j < multiSignalSize; ++j)
                 {
                     // Calculate all hidden Layers
-                    kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], tmpHiddenOutSignals2[j], hiddenY, hiddenY, actPtr);
+                    
+                    kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], tmpHiddenOutSignals2[j], _multiNetinputList[j], hiddenY, hiddenY, actPtr);
+                    _multiNetinputList[j] += hiddenY;
                 }
                 // Increment the current start pos of the weights
                 weights += hiddenY * hiddenY;
@@ -378,17 +429,18 @@ namespace NeuronalNet
                 tmpHiddenOutSignals2 = tmp;
 
                 // Wait until layer kernel is finished
-                cudaDeviceSynchronize();
+                kernel_handleError(cudaDeviceSynchronize());
             }
 
             numBlocks = (outputCount - 1) / blockSize + 1;
             for (size_t j = 0; j < multiSignalSize; ++j)
             {
-                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], multiOutputVec[j], outputCount, hiddenY, actPtr);
+                
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], multiOutputVec[j], _multiNetinputList[j], outputCount, hiddenY, actPtr);
             }
 
             // Wait until layer kernel is finished
-            cudaDeviceSynchronize();
+            kernel_handleError(cudaDeviceSynchronize());
 
             for (size_t j = 0; j < multiSignalSize; ++j)
             {
@@ -397,6 +449,7 @@ namespace NeuronalNet
             }
             delete[] tmpHiddenOutSignals1;
             delete[] tmpHiddenOutSignals2;
+            delete[] _multiNetinputList;
         }
 
        
@@ -487,11 +540,11 @@ namespace NeuronalNet
         }
 
         dim3 numBlocks = dim3(width / sqrt((double)maxThreadsPerBlock) + 1, height / sqrt((double)maxThreadsPerBlock) + 1);
-        dim3  numThreads = dim3(width / numBlocks.x, height / numBlocks.y);
+        dim3 numThreads = dim3(width / numBlocks.x+1, height / numBlocks.y+1);
         
         memcpy(newList, d_list, size * sizeof(float));
         kernel_transposeMatrix_rect_internal <<< numBlocks, numThreads >>> (d_list, newList, width, height);
-        cudaDeviceSynchronize();
+        kernel_handleError(cudaDeviceSynchronize());
         
         delete[] newList;
     }
@@ -506,11 +559,15 @@ namespace NeuronalNet
         if (x >= width || y >= height)
             return;
 
+      //  size_t inputIndex = y * width + x;
+      //  size_t outputIndex = 
+
+
         size_t inputIndex = y * width + x;
        
         size_t outputIndex = x * height + y;
         d_list[outputIndex] = tmpBuffer[inputIndex];
-
+       
     }
 
     __host__ 
@@ -536,7 +593,21 @@ namespace NeuronalNet
         return (size_t)floor((sqrt(8 * (double)sum + 1) - 1) / 2);
     }
 
+    __global__
+        void kernel_offsetScale(float *d_list, float offset, float scale, size_t size, CUDA_info* d_info)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+        
+        // size may differ on other devices
+        __shared__ float buffer[1024];
+        if (index >= size)
+            return;
 
+        buffer[threadIdx.x] = d_list[index];
+        buffer[threadIdx.x] = (buffer[threadIdx.x] + offset) * scale;
+        __syncthreads();
+        d_list[index] = buffer[threadIdx.x];
+    }
     __host__ void cuda_handleError(cudaError_t err)
     {
         switch (err)
@@ -545,7 +616,19 @@ namespace NeuronalNet
                 return;
             default:
             {
-                std::cout << "CudaError: " << err << "\n";
+                printf("CudaError: %i\n",err);
+            }
+        }
+    }
+    __device__ void kernel_handleError(cudaError_t err)
+    {
+        switch (err)
+        {
+            case cudaError_t::cudaSuccess:
+                return;
+            default:
+            {
+                printf("CudaError: %i\n",err);
             }
         }
     }

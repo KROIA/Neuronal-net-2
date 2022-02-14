@@ -154,6 +154,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="inc\activation.h" />
+    <ClInclude Include="inc\backpropNet.h" />
     <ClInclude Include="inc\config.h" />
     <ClInclude Include="inc\debug.h" />
     <ClInclude Include="inc\layer.cuh" />
@@ -164,6 +165,7 @@
     <ClInclude Include="inc\signalVector.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\backpropNet.cpp" />
     <ClCompile Include="src\debug.cpp" />
     <ClCompile Include="src\layer.cpp" />
     <ClCompile Include="src\main.cpp" />

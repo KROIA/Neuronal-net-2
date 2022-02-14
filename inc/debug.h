@@ -51,9 +51,13 @@ namespace Debug
 
 
 #ifdef UNIT_TEST
+#define STANDARD_CONSOLE_OUTPUT(x) \
+{ \
+	std::stringstream strm; \
+	strm<<x; \
+	Debug::_unitTest_consoleBuffer.push_back(strm.str()); \
+}
 
-
-#define STANDARD_CONSOLE_OUTPUT(x) { std::stringstream strm; strm<<x; Debug::_unitTest_consoleBuffer.push_back(strm.str()); }
 #else
 #define STANDARD_CONSOLE_OUTPUT(x) std::cout<<x;
 #endif

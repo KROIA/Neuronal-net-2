@@ -69,6 +69,8 @@ class NET_API Net
 	const SignalVector& getOutputVector(size_t stream = 0);
 	const MultiSignalVector &getOutputStreamVector();
 
+	MultiSignalVector getNetinputStreamVector() const;
+
 	void setWeight(size_t layer, size_t neuron, size_t input, float weight);
 	void setWeight(const std::vector<float>&list);
 	void setWeight(const float* list);
@@ -87,9 +89,9 @@ class NET_API Net
 
 	void CPU_calculate(size_t streamBegin, size_t streamEnd); // including begin, excluding end
 	void GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd);
-	static void CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
+	static void CPU_calculateNet(float* weights, float* signals, float* outpuSignals, float* netinputList,
 							 size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp *activation);
-	static void CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
+	static void CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals, float* netinputList,
 							   size_t neuronCount, size_t inputSignalCount, ActFp* activation);
 
 	void transferWeightsToDevice();
@@ -116,7 +118,7 @@ class NET_API Net
 
 	MultiSignalVector m_inputStream;
 	MultiSignalVector m_outputStream;
-
+	MultiSignalVector m_netinputList;
 
 	//float** m_inputSignalList;
 	float* m_weightsList;
@@ -127,6 +129,8 @@ class NET_API Net
 	Hardware m_hardware;
 	float** d_inputSignalList;
 	float** h_d_inputSignalList;
+	float** d_netinputList;
+	float** h_d_netinputList;
 	float* d_weightsList;
 	float** d_outputSingalList;
 	float** h_d_outputStream;

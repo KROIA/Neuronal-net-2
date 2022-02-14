@@ -132,6 +132,7 @@ void Net::setHardware(enum Hardware ware)
 				memset(m_outputStream[i].begin(),0,m_outputs*sizeof(float));
 			CONSOLE("Hardware: CPU")
 			buildHostWeights();
+			m_netinputList = MultiSignalVector(m_streamSize, m_neuronCount);
 			transferWeightsToHost();
 			transferSignalsToHost();
 			destroyDevice();
@@ -149,6 +150,8 @@ void Net::setHardware(enum Hardware ware)
 			CONSOLE("Hardware: GPU CUDA device")
 			buildDevice();
 			transferWeightsToDevice();
+			transferSignalsToDevice();
+			m_netinputList.clear();
 			destroyHostWeights();
 		}
 	}
@@ -211,7 +214,8 @@ bool Net::build()
 		}*/
 		m_inputStream = MultiSignalVector(m_streamSize, m_inputs);
 		m_outputStream = MultiSignalVector(m_streamSize, m_outputs);
-		
+		if (m_hardware == Hardware::cpu)
+			m_netinputList = MultiSignalVector(m_streamSize,m_neuronCount);
 		
 		
 		buildHostWeights();
@@ -249,6 +253,12 @@ bool Net::randomizeWeights(size_t from, size_t to)
 		from = tmp;
 	}
 	VERIFY_RANGE(0, to, m_weightsCount+1,return false)
+/*
+		for (size_t i = from; i <= to; ++i)
+		{
+			m_weightsList[i] = 1/(float)((i%10)+1)-0.5f;
+		}
+	return 1;*/
 
 	if ((to - from) > 1024)
 	{
@@ -409,6 +419,31 @@ const MultiSignalVector &Net::getOutputStreamVector()
 	}*/
 	return m_outputStream;
 }
+MultiSignalVector Net::getNetinputStreamVector() const
+{
+	switch (m_hardware)
+	{
+		case Hardware::cpu:
+		{
+			return m_netinputList;
+		}
+		case Hardware::gpu_cuda:
+		{
+			MultiSignalVector tmpVec(m_streamSize, m_neuronCount);
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				//NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputSingalList[i], m_outputs * sizeof(float));
+				NeuronalNet::GPU_CUDA_transferToHost(h_d_netinputList[i], tmpVec[i].begin(), m_neuronCount * sizeof(float));
+			}
+			return tmpVec;
+			break;
+		}
+		default:
+		{
+			CONSOLE("Error: hardware undefined")
+		}
+	}
+}
 
 void Net::setWeight(size_t layer, size_t neuron, size_t input, float weight)
 {
@@ -567,24 +602,24 @@ void Net::calculate(size_t streamBegin, size_t streamEnd)
 void Net::CPU_calculate(size_t streamBegin, size_t streamEnd)
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
-	for(size_t i= streamBegin; i< streamEnd; ++i)
-		//CPU_calculateNet(m_weightsList, m_inputSignalList[i], m_outputSingalList[i],
-		//				 m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
-	    CPU_calculateNet(m_weightsList, m_inputStream[i].begin(), m_outputStream[i].begin(),
-					     m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
+		for (size_t i = streamBegin; i < streamEnd; ++i)
+			//CPU_calculateNet(m_weightsList, m_inputSignalList[i], m_outputSingalList[i],
+			//				 m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
+			CPU_calculateNet(m_weightsList, m_inputStream[i].begin(), m_outputStream[i].begin(), m_netinputList[i].begin(),
+							 m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_activationFunc);
 } 
 
 void Net::GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd)
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
 	transferSignalsToDevice();
-	NeuronalNet::GPU_CUDA_calculateNet(d_weightsList, d_inputSignalList+streamBegin, d_outputSingalList, streamEnd-streamBegin,
+	NeuronalNet::GPU_CUDA_calculateNet(d_weightsList, d_inputSignalList+streamBegin, d_outputSingalList, d_netinputList, streamEnd-streamBegin,
 									   m_inputs, m_hiddenX, m_hiddenY, m_outputs,m_activation,
 									   NeuronalNet::_d_cudaInfo);
 	transferSignalsToHost();
 }
 
-void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
+void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals, float* netinputList,
 					   size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation)
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
@@ -602,33 +637,39 @@ void Net::CPU_calculateNet(float* weights, float* signals, float* outpuSignals,
 
 	if (noHiddenLayer)
 	{
-		CPU_calculateLayer(weights, signals, outpuSignals, outputCount, inputCount, activation);
+		CPU_calculateLayer(weights, signals, outpuSignals, netinputList,
+						   outputCount, inputCount, activation);
 	}
 	else
 	{
 		float* tmpHiddenOutSignals1 = new float[hiddenY];
 		float* tmpHiddenOutSignals2 = new float[hiddenY];
 
-		CPU_calculateLayer(weights, signals, tmpHiddenOutSignals1, hiddenY, inputCount, activation);
+		CPU_calculateLayer(weights, signals, tmpHiddenOutSignals1, netinputList,
+						   hiddenY, inputCount, activation);
 		weights += inputCount * hiddenY;
+		netinputList += hiddenY;
 
 		for (size_t i = 1; i < hiddenX; ++i)
 		{
-			CPU_calculateLayer(weights, tmpHiddenOutSignals1, tmpHiddenOutSignals2, hiddenY, hiddenY, activation);
+			CPU_calculateLayer(weights, tmpHiddenOutSignals1, tmpHiddenOutSignals2, netinputList,
+							   hiddenY, hiddenY, activation);
 			weights += hiddenY * hiddenY;
+			netinputList += hiddenY;
 			float* tmp = tmpHiddenOutSignals1;
 			tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
 			tmpHiddenOutSignals2 = tmp;
 		}
 
 
-		CPU_calculateLayer(weights, tmpHiddenOutSignals1, outpuSignals, outputCount, hiddenY, activation);
+		CPU_calculateLayer(weights, tmpHiddenOutSignals1, outpuSignals, netinputList,
+						   outputCount, hiddenY, activation);
 		delete[] tmpHiddenOutSignals1;
 		delete[] tmpHiddenOutSignals2;
 	}
 	
 }
-void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals,
+void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals, float* netinputList,
 							 size_t neuronCount, size_t inputSignalCount, ActFp* activation)
 {
 	//DEBUG_FUNCTION_TIME_INTERVAL
@@ -636,15 +677,34 @@ void Net::CPU_calculateLayer(float* weights, float* inputSignals, float* outputS
 	for (size_t index = 0; index < neuronCount; ++index)
 	{
 		float res = 0;
-		
+		//double res_ = 0;
 		for (size_t i = 0; i < inputSignalCount; ++i)
+		//for (size_t i = 0; i < 1; ++i)
 		{
 			//printf("%3.2f ", weights[index * inputSignalCount + i]);
+			//res += inputSignals[i];
+
+
+			//res += weights[index * inputSignalCount + i] * inputSignals[i];
 			res += weights[index * inputSignalCount + i] * inputSignals[i];
-			//res += weights[index + inputSignalCount * i] * inputSignals[i];
+
+
+
+			//res_ += (double)weights[index * inputSignalCount + i] * (double)inputSignals[i];
+			
+			
+			
+			/*float delta = (float)round((double)(weights[index * inputSignalCount + i] * inputSignals[i] * 1000.l)) / 1000.f;
+			uint32_t* valueBits = (uint32_t*)&delta;
+
+			*valueBits = *valueBits & 0xffff0000;
+			res += *(float*)valueBits;*/
 		}
-		//std::cout << "\n";
-		outputSignals[index] = (*activation)(res);
+		//res = (float)res_;
+		res = round(res * 100.f) / 100.f;
+		netinputList[index] = res;
+		outputSignals[index] = round((*activation)(res) * 100.f) / 100.f;
+
 	}
 }
 void Net::transferWeightsToDevice()
@@ -690,6 +750,8 @@ void Net::transferSignalsToDevice()
 			{
 				//NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputSignalList[i], m_inputs * sizeof(float));
 				NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputStream[i].begin(), m_inputs * sizeof(float));
+				if(m_netinputList.size() > 0)
+					NeuronalNet::GPU_CUDA_transferToDevice(h_d_netinputList[i], m_netinputList[i].begin(), m_neuronCount * sizeof(float));
 			}
 			
 			break;
@@ -709,7 +771,11 @@ void Net::transferSignalsToHost()
 			{
 				//NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputSingalList[i], m_outputs * sizeof(float));
 				NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputStream[i].begin(), m_outputs * sizeof(float));
+				if (m_netinputList.size() > 0)
+					NeuronalNet::GPU_CUDA_transferToHost(h_d_netinputList[i], m_netinputList[i].begin(), m_neuronCount * sizeof(float));
 			}
+
+			
 			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
@@ -727,23 +793,32 @@ void Net::buildDevice()
 		{
 			h_d_inputSignalList = new float* [m_streamSize];
 			h_d_outputStream = new float* [m_streamSize];
+			h_d_netinputList = new float* [m_streamSize];
 			for (size_t i = 0; i < m_streamSize; ++i)
 			{
 				float* inpVec;
 				float* outVec;
+				float* netinputVec;
 				NeuronalNet::GPU_CUDA_allocMem(inpVec, m_inputs * sizeof(float));
 				NeuronalNet::GPU_CUDA_allocMem(outVec, m_outputs * sizeof(float));
+				NeuronalNet::GPU_CUDA_allocMem(netinputVec, m_neuronCount * sizeof(float));
 
 				h_d_inputSignalList[i] = inpVec;
 				h_d_outputStream[i] = outVec;
+				h_d_netinputList[i] = netinputVec;
 			}
 
 			NeuronalNet::GPU_CUDA_allocMem(d_inputSignalList, m_streamSize * sizeof(float*));
-			NeuronalNet::GPU_CUDA_allocMem(d_outputSingalList, m_outputs * sizeof(float*));
+			NeuronalNet::GPU_CUDA_allocMem(d_outputSingalList, m_streamSize * sizeof(float*));
+			NeuronalNet::GPU_CUDA_allocMem(d_netinputList, m_streamSize * sizeof(float*));
+
 			NeuronalNet::GPU_CUDA_transferToDevice(d_inputSignalList, h_d_inputSignalList, m_streamSize * sizeof(float*));
 			NeuronalNet::GPU_CUDA_transferToDevice(d_outputSingalList, h_d_outputStream, m_streamSize * sizeof(float*));
+			NeuronalNet::GPU_CUDA_transferToDevice(d_netinputList, h_d_netinputList, m_streamSize * sizeof(float*));
 
 			NeuronalNet::GPU_CUDA_allocMem(d_weightsList, m_weightsCount * sizeof(float));
+
+			
 			break;
 		}
 		default: {}
@@ -758,18 +833,22 @@ void Net::destroyDevice()
 		{
 			NeuronalNet::GPU_CUDA_transferToHost(d_inputSignalList, h_d_inputSignalList, m_streamSize * sizeof(float*));
 			NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, h_d_outputStream, m_streamSize * sizeof(float*));
+			NeuronalNet::GPU_CUDA_transferToHost(d_netinputList, h_d_netinputList, m_streamSize * sizeof(float*));
 
 			for (size_t i = 0; i < m_streamSize; ++i)
 			{
 				NeuronalNet::GPU_CUDA_freeMem(h_d_inputSignalList[i]);
 				NeuronalNet::GPU_CUDA_freeMem(h_d_outputStream[i]);
+				NeuronalNet::GPU_CUDA_freeMem(h_d_netinputList[i]);
 			}
 
 			NeuronalNet::GPU_CUDA_freeMem(d_inputSignalList);
 			NeuronalNet::GPU_CUDA_freeMem(d_weightsList);
 			NeuronalNet::GPU_CUDA_freeMem(d_outputSingalList);
+			NeuronalNet::GPU_CUDA_freeMem(d_netinputList);
 			delete[] h_d_inputSignalList;
 			delete[] h_d_outputStream;
+			delete[] h_d_netinputList;
 			break;
 		}
 		default: {}
