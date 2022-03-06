@@ -149,16 +149,15 @@
     </CudaLink>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="src\layer.cu" />
+    <CudaCompile Include="backpropNet_kernel.cu" />
     <CudaCompile Include="src\net_kernel.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="backpropNet_kernel.cuh" />
     <ClInclude Include="inc\activation.h" />
     <ClInclude Include="inc\backpropNet.h" />
     <ClInclude Include="inc\config.h" />
     <ClInclude Include="inc\debug.h" />
-    <ClInclude Include="inc\layer.cuh" />
-    <ClInclude Include="inc\layer.h" />
     <ClInclude Include="inc\multiSignalVector.h" />
     <ClInclude Include="inc\net.h" />
     <ClInclude Include="inc\net_kernel.cuh" />
@@ -167,8 +166,6 @@
   <ItemGroup>
     <ClCompile Include="src\backpropNet.cpp" />
     <ClCompile Include="src\debug.cpp" />
-    <ClCompile Include="src\layer.cpp" />
-    <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\multiSignalVector.cpp" />
     <ClCompile Include="src\net.cpp" />
     <ClCompile Include="src\signalVector.cpp" />

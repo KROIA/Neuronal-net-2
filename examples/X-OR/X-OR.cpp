@@ -32,11 +32,16 @@ int main()
 {
     Net net;
 
-	net.setDimensions(3, 1000, 1000, 5);
+	net.setDimensions(3, 10, 100, 5);
 	net.setStreamSize(1);
 	net.setActivation(Activation::sigmoid);
 	net.setHardware(Hardware::cpu);
 	net.build();
+/*	cout << net.getWeight()[0] << "\n";
+	cout << net.getWeight()[1] << "\n";
+	cout << net.getWeight()[2] << "\n";
+	cout << net.getWeight()[3] << "\n";*/
+	//getchar();
 	//net.setWeight(generateWeights(net.getInputCount(), net.getHiddenXCount(), net.getHiddenYCount(), net.getOutputCount()).data());
 	//setWeight(net);
 
@@ -311,6 +316,9 @@ void saveDifference(const SignalVector& a, const SignalVector& b, size_t width, 
 	for (size_t i = 0; i < a.size(); ++i)
 	{
 		res[i] = sqrt(pow(a[i] - b[i],2))*100.f;
+		//res[i] = a[i] - b[i];
+		//if (res[i] < 0)
+		//	res[i] = -res[i];
 		
 		//if(res[i]>0.1)
 		//	cout << res[i]<<"\n";

@@ -112,18 +112,20 @@ namespace NeuronalNet
         return h_deviceProp;
     }
     __host__ 
-        void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
+        void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
+                                   float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
                                    size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
                                    CUDA_info* d_info)
     {
 
-        kernel_calculateNet << <1, 1 >> > (weights, multiSignalVec, multiOutputVec, multiNetinputList, multiSignalSize,
+        kernel_calculateNet << <1, 1 >> > (weights, biasList, multiSignalVec, multiOutputVec, 
+                                           multiNetinputList, multiNeuronSignalList, multiSignalSize,
                                            inputCount, hiddenX, hiddenY, outputCount, activation,
                                            d_info);
         cuda_handleError(cudaDeviceSynchronize());
     }
     __host__
-        void GPU_CUDA_getRandomWeight(float min, float max, float* h_list, size_t elements)
+        void GPU_CUDA_getRandomValues(float* h_list, size_t elements, float min, float max)
     {
         size_t blockSize = _h_cudaInfo->maxThreadsPerBlock;
         size_t numBlocks = (elements - 1) / blockSize + 1;
@@ -232,6 +234,11 @@ namespace NeuronalNet
         return NET_ACTIVATION_LINEAR(x);
     }
     __device__
+        inline float kernel_net_activation_finiteLinear(float x)
+    {
+        return NET_ACTIVATION_FINITELINEAR(x);
+    }
+    __device__
         inline float kernel_net_activation_gaussian(float x)
     {
         return NET_ACTIVATION_GAUSSIAN(x);
@@ -240,6 +247,32 @@ namespace NeuronalNet
         inline float kernel_net_activation_sigmoid(float x)
     {
         return NET_ACTIVATION_SIGMOID(x);
+    }
+    __device__
+        inline float kernel_net_activation_binary(float x)
+    {
+        return NET_ACTIVATION_BINARY(x);
+    }
+
+    __device__
+        inline float kernel_net_activation_linear_derivetive(float x)
+    {
+        return NET_ACTIVATION_LINEAR_DERIVETIVE(x);
+    }
+    __device__
+        inline float kernel_net_activation_finiteLinear_derivetive(float x)
+    {
+        return NET_ACTIVATION_FINITELINEAR_DERIVETIVE(x);
+    }
+    __device__
+        inline float kernel_net_activation_gaussian_derivetive(float x)
+    {
+        return NET_ACTIVATION_GAUSSIAN_DERIVETIVE(x);
+    }
+    __device__
+        inline float kernel_net_activation_sigmoid_derivetive(float x)
+    {
+        return NET_ACTIVATION_SIGMOID_DERIVETIVE(x);
     }
 
     __device__ 
@@ -252,14 +285,20 @@ namespace NeuronalNet
                 return &kernel_net_activation_sigmoid;
             case Activation::linear:
                 return &kernel_net_activation_linear;
+            case Activation::finiteLinear:
+                return &kernel_net_activation_finiteLinear;
+            case Activation::binary:
+                return &kernel_net_activation_binary;
             case Activation::gauss:
                 return &kernel_net_activation_gaussian;
 
         }
+        return nullptr;
     }
 
     __global__
-        void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals, float* netinputList,
+        void kernel_net_calculateLayer(float* weights, float* biasList, float* inputSignals, 
+                                       float* netinputList, float* neuronSignalList,
                                           size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act)
     {
         // Get "Neuron index"
@@ -347,15 +386,18 @@ namespace NeuronalNet
        // if (index == 3906)
         //    printf("%i %f\n", index,res);
         //res = (float)res_;
-
+        res += biasList[index];
         res = round(res * 100.f) / 100.f;
         netinputList[index] = res;
-        printf("o: %f\n", res);
-        outputSignals[index] = round((*act)(res) * 100.f) / 100.f;
+        //if(index==0)
+        //printf("G: %f\n", res);
+        //outputSignals[index] = round(res * 100.f) / 100.f;
+        neuronSignalList[index] = round((*act)(res) * 100.f) / 100.f;
     }
 
     __global__
-        void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
+        void kernel_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
+                                 float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
                                  size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
                                  CUDA_info* d_info)
     {
@@ -374,6 +416,7 @@ namespace NeuronalNet
         for (size_t i = 0; i < multiSignalSize; ++i)
         {
             memset(multiNetinputList[i], 0, (hiddenX * hiddenY + outputCount) *sizeof(float));
+            memset(multiNeuronSignalList[i], 0, (hiddenX * hiddenY + outputCount) *sizeof(float));
         }
 
         if (noHiddenLayer)
@@ -383,30 +426,38 @@ namespace NeuronalNet
             for (size_t i = 0; i < multiSignalSize; ++i)
             {
                 // Calculate the first Layer
-                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[i], multiOutputVec[i], multiNetinputList[i], outputCount, inputCount, actPtr);
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, biasList, multiSignalVec[i],
+                                                                          multiNetinputList[i], multiNeuronSignalList[i],
+                                                                          outputCount, inputCount, actPtr);
+            }
+            for (size_t j = 0; j < multiSignalSize; ++j)
+            {
+                memcpy(multiOutputVec[j], multiNeuronSignalList[j], outputCount * sizeof(float));
             }
             
         }
         else
         {
-            float** _multiNetinputList = new float* [multiSignalSize];
-            memcpy(_multiNetinputList, multiNetinputList, multiSignalSize * sizeof(float*));
             size_t blockSize = maxThreadsPerBlock;
             size_t numBlocks = (hiddenY - 1) / blockSize + 1;
-            float** tmpHiddenOutSignals1 = new float*[multiSignalSize];
-            float** tmpHiddenOutSignals2 = new float*[multiSignalSize];
+            float** tmpHiddenOutSignals1 = new float*[multiSignalSize];;
+            //float** tmpHiddenOutSignals2 = new float*[multiSignalSize];
             for (size_t j = 0; j < multiSignalSize; ++j)
             {
-                tmpHiddenOutSignals1[j] = new float[hiddenY];
-                tmpHiddenOutSignals2[j] = new float[hiddenY];
+                tmpHiddenOutSignals1[j] = multiNeuronSignalList[j];
+                //tmpHiddenOutSignals2[j] = new float[hiddenY];
 
                 // Calculate the first Layer
-                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, multiSignalVec[j], tmpHiddenOutSignals1[j], _multiNetinputList[j], hiddenY, inputCount, actPtr);
-                _multiNetinputList[j] += hiddenY;
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, biasList, multiSignalVec[j], 
+                                                                          multiNetinputList[j], multiNeuronSignalList[j],
+                                                                          hiddenY, inputCount, actPtr);
+                multiNetinputList[j] += hiddenY;
+                multiNeuronSignalList[j] += hiddenY;
             }
             
             // Increment the current start pos of the weights
             weights += inputCount * hiddenY;
+            biasList += hiddenY;
 
             // Wait until layer kernel is finished
             kernel_handleError(cudaDeviceSynchronize());
@@ -417,16 +468,21 @@ namespace NeuronalNet
                 {
                     // Calculate all hidden Layers
                     
-                    kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], tmpHiddenOutSignals2[j], _multiNetinputList[j], hiddenY, hiddenY, actPtr);
-                    _multiNetinputList[j] += hiddenY;
+                    kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, biasList, tmpHiddenOutSignals1[j],  
+                                                                              multiNetinputList[j], multiNeuronSignalList[j],
+                                                                              hiddenY, hiddenY, actPtr);
+                    tmpHiddenOutSignals1[j] = multiNeuronSignalList[j];
+                    multiNetinputList[j] += hiddenY;
+                    multiNeuronSignalList[j] += hiddenY;
                 }
                 // Increment the current start pos of the weights
                 weights += hiddenY * hiddenY;
+                biasList += hiddenY;
 
                 // Swap the the signal lists: last outputs become now the new inputs
-                float** tmp = tmpHiddenOutSignals1;
-                tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
-                tmpHiddenOutSignals2 = tmp;
+                //float** tmp = tmpHiddenOutSignals1;
+                //tmpHiddenOutSignals1 = tmpHiddenOutSignals2;
+                //tmpHiddenOutSignals2 = tmp;
 
                 // Wait until layer kernel is finished
                 kernel_handleError(cudaDeviceSynchronize());
@@ -436,23 +492,30 @@ namespace NeuronalNet
             for (size_t j = 0; j < multiSignalSize; ++j)
             {
                 
-                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, tmpHiddenOutSignals1[j], multiOutputVec[j], _multiNetinputList[j], outputCount, hiddenY, actPtr);
+                kernel_net_calculateLayer << < numBlocks, blockSize >> > (weights, biasList, tmpHiddenOutSignals1[j],  
+                                                                          multiNetinputList[j], multiNeuronSignalList[j],
+                                                                          outputCount, hiddenY, actPtr);
             }
 
             // Wait until layer kernel is finished
             kernel_handleError(cudaDeviceSynchronize());
 
-            for (size_t j = 0; j < multiSignalSize; ++j)
+            /*for (size_t j = 0; j < multiSignalSize; ++j)
             {
                 delete[] tmpHiddenOutSignals1[j];
                 delete[] tmpHiddenOutSignals2[j]; 
-            }
+            }*/
             delete[] tmpHiddenOutSignals1;
-            delete[] tmpHiddenOutSignals2;
-            delete[] _multiNetinputList;
-        }
+            //delete[] tmpHiddenOutSignals2;
 
-       
+            for (size_t j = 0; j < multiSignalSize; ++j)
+            {
+                size_t delta = hiddenY * hiddenX;;
+                multiNetinputList[j] -= delta;
+                memcpy(multiOutputVec[j], multiNeuronSignalList[j], outputCount * sizeof(float));
+                multiNeuronSignalList[j] -= delta;
+            }
+        }
     }
 
     __global__

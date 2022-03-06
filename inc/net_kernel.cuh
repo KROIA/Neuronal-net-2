@@ -48,11 +48,12 @@ namespace NeuronalNet
 	NET_API __host__ void testCUDA();
 
 	NET_API __host__ cudaDeviceProp GPU_CUDA_getSpecs();
-	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
+	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
+												float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
 										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
 										CUDA_info * d_info = nullptr);
 
-	NET_API __host__ void GPU_CUDA_getRandomWeight(float min, float max, float* h_list, size_t elements);
+	NET_API __host__ void GPU_CUDA_getRandomValues(float* h_list,  size_t elements, float min, float max );
 
 	
 	template <typename T> 
@@ -78,16 +79,26 @@ namespace NeuronalNet
 	// Kernel functions
 	typedef float kernel_ActFp(float);
 	NET_API __device__ inline float kernel_net_activation_linear(float x);
+	NET_API __device__ inline float kernel_net_activation_finiteLinear(float x);
 	NET_API __device__ inline float kernel_net_activation_gaussian(float x);
 	NET_API __device__ inline float kernel_net_activation_sigmoid(float x);
+	NET_API __device__ inline float kernel_net_activation_binary(float x);
+	
+	NET_API __device__ inline float kernel_net_activation_linear_derivetive(float x);
+	NET_API __device__ inline float kernel_net_activation_finiteLinear_derivetive(float x);
+	NET_API __device__ inline float kernel_net_activation_gaussian_derivetive(float x);
+	NET_API __device__ inline float kernel_net_activation_sigmoid_derivetive(float x);
+
 
 
 	NET_API __device__ kernel_ActFp* kernel_net_getActivationFunction(Activation act);
 
 
-	NET_API __global__ void kernel_net_calculateLayer(float* weights, float* inputSignals, float* outputSignals, float* netinputList,
+	NET_API __global__ void kernel_net_calculateLayer(float* weights, float* biasList, float* inputSignals,
+													  float* netinputList, float* neuronSignalList,
 											  size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act);
-	NET_API __global__ void kernel_calculateNet(float* weights, float** multiSignalVec, float** multiOutputVec, float** multiNetinputList, size_t multiSignalSize,
+	NET_API __global__ void kernel_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
+												float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
 										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
 										CUDA_info* d_info = nullptr);
 

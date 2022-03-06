@@ -8,10 +8,18 @@ class NET_API BackpropNet : public Net
 	BackpropNet();
 	~BackpropNet();
 
-	void learn(MultiSignalVector expectedOutputVec);
-	void learn(SignalVector expectedOutputVec);
+	void learn(const MultiSignalVector &expectedOutputVec);
+	void learn(const SignalVector &expectedOutputVec);
 
 	private:
+	
+	void CPU_learn(const MultiSignalVector& expectedOutputVec);
+	void CPU_learn(const SignalVector& expectedOutputVec);
+
+	void GPU_learn(const MultiSignalVector& expectedOutputVec);
+	void GPU_learn(const SignalVector& expectedOutputVec);
+
+	float m_lernParameter;
 	//static float calculateOutputError(float output)
 
 };

@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <vector>
 
-#include "layer.h"
 #include "activation.h"
 #include "net_kernel.cuh"
 #include "multiSignalVector.h"
@@ -23,16 +22,12 @@ enum Hardware
 	gpu_cuda
 };
 
-//typedef std::vector<float> SignalVector;
-//typedef std::vector<SignalVector> MultiSignalVector;
-
-
 
 class NET_API Net
 {
-
-	typedef float ActFp(float);
 	public:
+	
+
 	Net();
 	~Net();
 
@@ -53,6 +48,8 @@ class NET_API Net
 	void randomizeWeights();
 	bool randomizeWeights(size_t from, size_t to);
 	static float getRandomValue(float min, float max);
+	void randomizeBias();
+	void randomize(float* list, size_t size, float min, float max);
 
 	void setInputVector(float* signalList);
 	void setInputVector(size_t stream, float* signalList);
@@ -70,6 +67,8 @@ class NET_API Net
 	const MultiSignalVector &getOutputStreamVector();
 
 	MultiSignalVector getNetinputStreamVector() const;
+	MultiSignalVector getNeuronValueStreamVector() const;
+
 
 	void setWeight(size_t layer, size_t neuron, size_t input, float weight);
 	void setWeight(const std::vector<float>&list);
@@ -86,22 +85,32 @@ class NET_API Net
 	void calculate(size_t streamBegin, size_t streamEnd);
 
 	protected:
+	typedef float ActFp(float);
+
+
 
 	void CPU_calculate(size_t streamBegin, size_t streamEnd); // including begin, excluding end
 	void GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd);
-	static void CPU_calculateNet(float* weights, float* signals, float* outpuSignals, float* netinputList,
+	static void CPU_calculateNet(float* weights, float* biasList, float* signals, float* outpuSignals, 
+								 float* netinputList, float *neuronSignalList,
 							 size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp *activation);
-	static void CPU_calculateLayer(float* weights, float* inputSignals, float* outputSignals, float* netinputList,
-							   size_t neuronCount, size_t inputSignalCount, ActFp* activation);
+	static void CPU_calculateLayer(float* weights, float *biasList, float* inputSignals,
+								   float* netinputList, float* neuronSignalList,
+								   size_t neuronCount, size_t inputSignalCount, ActFp* activation);
 
 	void transferWeightsToDevice();
 	void transferWeightsToHost();
 	void transferSignalsToDevice();
 	void transferSignalsToHost();
+	void transferBiasToDevice();
+	void transferBiasToHost();
+
 	void buildDevice();
 	void destroyDevice();
 	void buildHostWeights();
+	void buildHostBias();
 	void destroyHostWeights();
+	void destroyHostBias();
 
 	size_t m_inputs;
 	size_t m_hiddenX;
@@ -115,13 +124,16 @@ class NET_API Net
 
 	Activation m_activation;
 	ActFp* m_activationFunc;
+	ActFp* m_activationDerivetiveFunc;
 
 	MultiSignalVector m_inputStream;
 	MultiSignalVector m_outputStream;
 	MultiSignalVector m_netinputList;
+	MultiSignalVector m_neuronValueList;
 
 	//float** m_inputSignalList;
 	float* m_weightsList;
+	float* m_biasList;
 	//float** m_outputSingalList;
 	bool   m_built;
 
@@ -131,14 +143,23 @@ class NET_API Net
 	float** h_d_inputSignalList;
 	float** d_netinputList;
 	float** h_d_netinputList;
+	float** d_neuronValueList;    
+	float** h_d_neuronValueList; 
 	float* d_weightsList;
+	float* d_biasList;
 	float** d_outputSingalList;
 	float** h_d_outputStream;
 
 	private:
 	static float activation_linear(float inp);
+	static float activation_finiteLinear(float inp);
+	static float activation_binary(float inp);
 	static float activation_gauss(float inp);
 	static float activation_sigmoid(float inp);
 
+	static float activation_linear_derivetive(float inp);
+	static float activation_finiteLinear_derivetive(float inp);
+	static float activation_gauss_derivetive(float inp);
+	static float activation_sigmoid_derivetive(float inp);
 };
 
