@@ -32,5 +32,4 @@ class NET_API SignalVector
 	private:
 	size_t m_size;
 	float* m_list;
-
 };

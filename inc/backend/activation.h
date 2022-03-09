@@ -1,14 +1,14 @@
 #pragma once
 #include <math.h>
 
-typedef enum
+typedef enum class Activation
 {
 	linear,
 	finiteLinear,
 	binary,
 	sigmoid,
 	gauss
-} Activation;
+};
 
 #define NET_ACTIVATION_LINEAR(x) x
 #define NET_ACTIVATION_LINEAR_DERIVETIVE(x) 1

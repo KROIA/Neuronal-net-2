@@ -16,7 +16,7 @@
 
 
 
-enum Hardware
+enum class Hardware
 {
 	cpu,
 	gpu_cuda
@@ -44,7 +44,7 @@ class NET_API Net
 	void setHardware(enum Hardware ware);
 	Hardware getHardware() const;
 
-	bool build();
+	virtual bool build();
 	void randomizeWeights();
 	bool randomizeWeights(size_t from, size_t to);
 	static float getRandomValue(float min, float max);
@@ -122,7 +122,7 @@ class NET_API Net
 	size_t m_neuronCount;
 	size_t m_weightsCount;
 
-	Activation m_activation;
+    Activation m_activation;
 	ActFp* m_activationFunc;
 	ActFp* m_activationDerivetiveFunc;
 
@@ -161,5 +161,8 @@ class NET_API Net
 	static float activation_finiteLinear_derivetive(float inp);
 	static float activation_gauss_derivetive(float inp);
 	static float activation_sigmoid_derivetive(float inp);
+
+	const static SignalVector m_emptySignalVectorDummy;
+	const static MultiSignalVector m_emptyMultiSignalVectorDummy;
 };
 

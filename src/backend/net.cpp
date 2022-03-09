@@ -1,7 +1,8 @@
-#include "..\inc\net.h"
+#include "backend/net.h"
 
 
-
+const SignalVector Net::m_emptySignalVectorDummy(0);
+const MultiSignalVector Net::m_emptyMultiSignalVectorDummy(0,0);
 
 Net::Net()
 {
@@ -214,7 +215,7 @@ bool Net::build()
 			m_weightsCount = m_inputs * m_outputs;
 		}
 		else
-			m_weightsCount = m_inputs * m_hiddenY + m_hiddenX * m_hiddenY * m_hiddenY + m_hiddenY * m_outputs;
+			m_weightsCount = m_inputs * m_hiddenY + (m_hiddenX - 1)* m_hiddenY * m_hiddenY + m_hiddenY * m_outputs;
 		if (m_streamSize == 0)
 			m_streamSize = 1;
 
@@ -434,7 +435,7 @@ float Net::getInput(size_t stream, size_t input) const
 
 const SignalVector &Net::getInputVector(size_t stream)
 {
-	VERIFY_BOOL(m_built, true, "build the net first", return SignalVector())
+	VERIFY_BOOL(m_built, true, "build the net first", return m_emptySignalVectorDummy)
 	std::vector<float> inputVec(m_inputs);
 	if (stream >= m_streamSize)
 		stream = m_streamSize - 1;
@@ -448,7 +449,7 @@ const MultiSignalVector& Net::getInputStreamVector()
 
 const SignalVector &Net::getOutputVector(size_t stream) 
 {
-	VERIFY_BOOL(m_built, true, "build the net first", return SignalVector())
+	VERIFY_BOOL(m_built, true, "build the net first", return m_emptySignalVectorDummy)
 	
 	if (stream >= m_streamSize)
 		stream = m_streamSize - 1;
@@ -487,6 +488,7 @@ MultiSignalVector Net::getNetinputStreamVector() const
 			CONSOLE("Error: hardware undefined")
 		}
 	}
+	return MultiSignalVector(0, 0);
 }
 
 MultiSignalVector Net::getNeuronValueStreamVector() const
@@ -513,6 +515,7 @@ MultiSignalVector Net::getNeuronValueStreamVector() const
 			CONSOLE("Error: hardware undefined")
 		}
 	}
+	return MultiSignalVector(0, 0);
 }
 
 void Net::setWeight(size_t layer, size_t neuron, size_t input, float weight)
@@ -700,7 +703,7 @@ void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, floa
 	VERIFY_VALID_PTR(biasList, "", return)
 	VERIFY_VALID_PTR(signals, "", return)
 	VERIFY_VALID_PTR(outpuSignals, "", return)
-	VERIFY_VALID_PTR(activation, "", return)
+	VERIFY_VALID_PTR(activation, "",return)
 
 
 	/*std::cout << "signals: ";

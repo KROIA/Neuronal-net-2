@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClInclude Include="inc\backend\activation.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\backpropNet.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\config.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\debug.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\multiSignalVector.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\net.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\net_kernel.cuh">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\signalVector.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\display.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\drawable.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\neuron.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\neuronalNet.h">
+      <Filter>inc</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="inc">
+      <UniqueIdentifier>{1c2e14f1-e5e2-494f-b6c5-89d7ca0d73e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="inc\backend">
+      <UniqueIdentifier>{8438eec7-972a-4433-b4f5-2fae26af3607}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{aa93dac0-9ae3-4410-b11d-854ecdff95d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\backend">
+      <UniqueIdentifier>{b2cc6103-e540-4a1b-bcd3-bba9cae8c166}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="inc\graphics">
+      <UniqueIdentifier>{b5153ceb-64a5-4a1a-843b-eb60812ec573}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\graphics">
+      <UniqueIdentifier>{21c3bc9d-7041-4be2-9aa4-f85ea6437c96}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\backend\backpropNet.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\debug.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\multiSignalVector.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\net.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\signalVector.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\neuron.cpp">
+      <Filter>src\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\display.cpp">
+      <Filter>src\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\drawable.cpp">
+      <Filter>src\graphics</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\backend\net_kernel.cu">
+      <Filter>src\backend</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

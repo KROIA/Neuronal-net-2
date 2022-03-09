@@ -4,7 +4,9 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "net.h"
+#include <fstream>
+
+#include "neuronalNet.h"
 
 #include "SFML/Graphics.hpp"
 
@@ -28,8 +30,14 @@ string getByteString(double bytes);
 
 const std::string path = "export";
 
+void xorLoop();
+void printWeights(const Net* net);
+
 int main()
 {
+	xorLoop();
+	return 0;
+
     Net net;
 
 	net.setDimensions(3, 10, 100, 5);
@@ -37,13 +45,7 @@ int main()
 	net.setActivation(Activation::sigmoid);
 	net.setHardware(Hardware::cpu);
 	net.build();
-/*	cout << net.getWeight()[0] << "\n";
-	cout << net.getWeight()[1] << "\n";
-	cout << net.getWeight()[2] << "\n";
-	cout << net.getWeight()[3] << "\n";*/
-	//getchar();
-	//net.setWeight(generateWeights(net.getInputCount(), net.getHiddenXCount(), net.getHiddenYCount(), net.getOutputCount()).data());
-	//setWeight(net);
+
 
 
 	net.setInputVector(SignalVector({ 1.f,1.f,1.f }));
@@ -115,16 +117,193 @@ int main()
 		cout << "  FAIL Weights vectors are not equal\n";
 }
 
-// Programm ausführen: STRG+F5 oder Menüeintrag "Debuggen" > "Starten ohne Debuggen starten"
-// Programm debuggen: F5 oder "Debuggen" > Menü "Debuggen starten"
+void saveVec(const string& filename, const float *begin, size_t size)
+{
+	std::ofstream ofs(filename.c_str(), std::ofstream::app);
 
-// Tipps für den Einstieg: 
-//   1. Verwenden Sie das Projektmappen-Explorer-Fenster zum Hinzufügen/Verwalten von Dateien.
-//   2. Verwenden Sie das Team Explorer-Fenster zum Herstellen einer Verbindung mit der Quellcodeverwaltung.
-//   3. Verwenden Sie das Ausgabefenster, um die Buildausgabe und andere Nachrichten anzuzeigen.
-//   4. Verwenden Sie das Fenster "Fehlerliste", um Fehler anzuzeigen.
-//   5. Wechseln Sie zu "Projekt" > "Neues Element hinzufügen", um neue Codedateien zu erstellen, bzw. zu "Projekt" > "Vorhandenes Element hinzufügen", um dem Projekt vorhandene Codedateien hinzuzufügen.
-//   6. Um dieses Projekt später erneut zu öffnen, wechseln Sie zu "Datei" > "Öffnen" > "Projekt", und wählen Sie die SLN-Datei aus.
+	for (size_t i = 0; i < size; ++i)
+		ofs << begin[i] << ";";
+	ofs << "\n";
+
+	ofs.close();
+
+}
+void xorLoop()
+{
+	BackpropNet net;
+	MultiSignalVector trainigsSet(4, 2);
+	MultiSignalVector resultSet(4, 1);
+
+	net.setDimensions(2, 2, 3, 1);
+	net.setStreamSize(1);
+	net.setActivation(Activation::sigmoid);
+	net.setHardware(Hardware::cpu);
+	net.m_lernParameter = 0.1;
+	net.build();
+
+	trainigsSet[0] = SignalVector(vector<float>{ 0,0 });
+	trainigsSet[1] = SignalVector(vector<float>{ 0,1 });
+	trainigsSet[2] = SignalVector(vector<float>{ 1,0 });
+	trainigsSet[3] = SignalVector(vector<float>{ 1,1 });
+
+	resultSet[0] = SignalVector(vector<float>{ 0 });
+	resultSet[1] = SignalVector(vector<float>{ 1 });
+	resultSet[2] = SignalVector(vector<float>{ 1 });
+	resultSet[3] = SignalVector(vector<float>{ 0 });
+
+	float averageError = 0;
+	float currentError = 0;
+	size_t iteration = 0;
+
+	while (1)
+	{
+		++iteration;
+		currentError = 0;
+
+		std::vector<float> deltaW;
+		std::vector<float> deltaB;
+		for (size_t i = 0; i < trainigsSet.size(); ++i)
+		{
+			net.setInputVector(trainigsSet[i]);
+			net.calculate();
+			net.learn(resultSet[i]);
+
+			
+			if (iteration % 100 == 0 || iteration == 1)
+			{
+				if (i == 0)
+				{
+					deltaW = net.deltaWeight;
+					deltaB = net.deltaBias;
+				}
+				else
+				{
+					for (size_t j = 0; j < deltaW.size(); ++j)
+						deltaW[j] += net.deltaWeight[j];
+					for (size_t j = 0; j < deltaB.size(); ++j)
+						deltaB[j] += net.deltaBias[j];
+
+					if (i == trainigsSet.size() - 1)
+					{
+						for (size_t j = 0; j < deltaW.size(); ++j)
+							deltaW[j] /= (float)deltaW.size();
+						for (size_t j = 0; j < deltaB.size(); ++j)
+							deltaB[j] /= (float)deltaB.size();
+
+						saveVec("dW.csv", deltaW.data(), deltaW.size());
+						saveVec("dB.csv", deltaB.data(), deltaB.size());
+						saveVec("w.csv", net.getWeight(), net.getWeightSize());
+					}
+				}
+			}
+
+			SignalVector err = net.getError();
+			//std::cout << "Error [" << i << "]\t";
+			for (size_t j = 0; j < err.size(); ++j)
+			{
+				//std::cout << err[j] << "\t";
+				currentError += abs(err[j]);
+			}
+			
+			//std::cout << "\n";
+
+		}
+		currentError /= (trainigsSet.size() * net.getOutputCount());
+		//averageError = (averageError * 0.8) + (0.2 * currentError);
+		averageError = currentError;
+		
+		if (iteration % 1000 == 0)
+		{
+			std::cout << "iteration [" << iteration << "]\t Error: " << averageError<<"\n";
+			for (size_t i = 0; i < trainigsSet.size(); ++i)
+			{
+				net.setInputVector(trainigsSet[i]);
+				net.calculate();
+				SignalVector output = net.getOutputVector();
+				std::cout << "Set [" << i << "]\t";
+				for (size_t j = 0; j < output.size(); ++j)
+				{
+					std::cout << output[j] << "\t";
+					
+				}
+				std::cout << "\n";
+			}
+			printWeights(&net);
+			getchar();
+		}
+	}
+}
+
+void printWeights(const Net* net)
+{
+	size_t iterator = 0;
+	const float* weights = net->getWeight();
+	std::cout << "WeightCount = " << net->getWeightSize()<<"\n";
+
+	if (net->getHiddenYCount() * net->getHiddenXCount() == 0)
+	{
+		for (size_t i = 0; i < net->getOutputCount(); ++i)
+		{
+			std::cout << "O" << i<< " ";
+			for (size_t y = 0; y < net->getInputCount(); ++y)
+			{
+				char str[30];
+				sprintf_s(str, "%10.3f  ", weights[iterator]);
+				std::cout << str;
+				++iterator;
+			}
+			std::cout << "     ";
+		}
+	}
+	else
+	{
+
+		for (size_t i = 0; i < net->getHiddenYCount(); ++i)
+		{
+			std::cout << "H0_" << i << " ";
+			for (size_t y = 0; y < net->getInputCount(); ++y)
+			{
+				char str[30];
+				sprintf_s(str, "%10.3f  ", weights[iterator]);
+				std::cout << str;
+				++iterator;
+			}
+			std::cout << "     ";
+		}
+		std::cout << "\n";
+
+		for (size_t x = 1; x < net->getHiddenXCount(); ++x)
+		{
+			for (size_t i = 0; i < net->getHiddenYCount(); ++i)
+			{
+				std::cout << "H"<<x<<"_" << i << " ";
+				for (size_t y = 0; y < net->getHiddenYCount(); ++y)
+				{
+					char str[30];
+					sprintf_s(str, "%10.3f  ", weights[iterator]);
+					std::cout << str;
+					++iterator;
+				}
+				std::cout << "     ";
+			}
+			std::cout << "\n";
+		}
+		for (size_t i = 0; i < net->getOutputCount(); ++i)
+		{
+			std::cout << "O" << i << " ";
+			for (size_t y = 0; y < net->getHiddenYCount(); ++y)
+			{
+				char str[30];
+				sprintf_s(str, "%10.3f  ", weights[iterator]);
+				std::cout << str;
+				++iterator;
+			}
+			std::cout << "     ";
+		}
+	}
+	std::cout << "\n";
+}
+
 
 
 void printSignal(const SignalVector& sig, size_t maxSize)

@@ -14,6 +14,33 @@
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\backend\activation.h" />
+    <ClInclude Include="inc\backend\backpropNet.h" />
+    <ClInclude Include="inc\backend\config.h" />
+    <ClInclude Include="inc\backend\debug.h" />
+    <ClInclude Include="inc\backend\multiSignalVector.h" />
+    <ClInclude Include="inc\backend\net.h" />
+    <ClInclude Include="inc\backend\net_kernel.cuh" />
+    <ClInclude Include="inc\backend\signalVector.h" />
+    <ClInclude Include="inc\graphics\display.h" />
+    <ClInclude Include="inc\graphics\drawable.h" />
+    <ClInclude Include="inc\graphics\neuron.h" />
+    <ClInclude Include="inc\neuronalNet.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\backend\backpropNet.cpp" />
+    <ClCompile Include="src\backend\debug.cpp" />
+    <ClCompile Include="src\backend\multiSignalVector.cpp" />
+    <ClCompile Include="src\backend\net.cpp" />
+    <ClCompile Include="src\backend\signalVector.cpp" />
+    <ClCompile Include="src\graphics\display.cpp" />
+    <ClCompile Include="src\graphics\drawable.cpp" />
+    <ClCompile Include="src\graphics\neuron.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\backend\net_kernel.cu" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{941A844E-DAD7-4436-AABB-9B41D0568D98}</ProjectGuid>
     <RootNamespace>Neural_net_2</RootNamespace>
@@ -58,28 +85,28 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;$(IncludePath)</IncludePath>
-    <SourcePath>src;$(SourcePath)</SourcePath>
+    <SourcePath>src;$(SourcePath);src/backend;src/graphics</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;$(IncludePath)</IncludePath>
-    <SourcePath>src;$(VC_SourcePath);</SourcePath>
+    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;inc/backend;inc/graphics;$(IncludePath)</IncludePath>
+    <SourcePath>src;$(VC_SourcePath);;src/backend;src/graphics</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='UnitTest|x64'">
-    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;$(IncludePath)</IncludePath>
-    <SourcePath>src;$(VC_SourcePath);</SourcePath>
+    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;inc/backend;inc/graphics;$(IncludePath)</IncludePath>
+    <SourcePath>src;$(VC_SourcePath);;src/backend;src/graphics</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);DLL_EXPORT</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>SFML_STATIC;WIN32;WIN64;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);DLL_EXPORT</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);C:\SFML-2.5.1\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;curand.lib;cudadevrt.lib;opengl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;curand.lib;cudadevrt.lib;opengl32.lib;freetype.lib;winmm.lib;sfml-graphics-s-d.lib;sfml-system-s-d.lib;sfml-window-s-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);C:\SFML-2.5.1\lib</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -96,17 +123,17 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;DLL_EXPORT;%(PreprocessorDefinitions);DLL_EXPORT</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SFML_STATIC;WIN32;WIN64;NDEBUG;_CONSOLE;DLL_EXPORT;%(PreprocessorDefinitions);DLL_EXPORT</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);C:\SFML-2.5.1\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;curand.lib;cudadevrt.lib;opengl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;curand.lib;cudadevrt.lib;opengl32.lib;freetype.lib;winmm.lib;sfml-graphics-s.lib;sfml-system-s.lib;sfml-window-s.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);C:\SFML-2.5.1\lib</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -125,17 +152,17 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;WIN64;NDEBUG;_CONSOLE;DLL_EXPORT;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SFML_STATIC;WIN32;WIN64;NDEBUG;_CONSOLE;DLL_EXPORT;UNIT_TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);C:\SFML-2.5.1\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
-      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;curand.lib;cudadevrt.lib;opengl32.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>cudart_static.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;curand.lib;cudadevrt.lib;opengl32.lib;freetype.lib;winmm.lib;sfml-graphics-s.lib;sfml-system-s.lib;sfml-window-s.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories);$(CudaToolkitLibDir);C:\SFML-2.5.1\lib</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
@@ -148,28 +175,6 @@
       <Optimization>O3</Optimization>
     </CudaLink>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <CudaCompile Include="backpropNet_kernel.cu" />
-    <CudaCompile Include="src\net_kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="backpropNet_kernel.cuh" />
-    <ClInclude Include="inc\activation.h" />
-    <ClInclude Include="inc\backpropNet.h" />
-    <ClInclude Include="inc\config.h" />
-    <ClInclude Include="inc\debug.h" />
-    <ClInclude Include="inc\multiSignalVector.h" />
-    <ClInclude Include="inc\net.h" />
-    <ClInclude Include="inc\net_kernel.cuh" />
-    <ClInclude Include="inc\signalVector.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="src\backpropNet.cpp" />
-    <ClCompile Include="src\debug.cpp" />
-    <ClCompile Include="src\multiSignalVector.cpp" />
-    <ClCompile Include="src\net.cpp" />
-    <ClCompile Include="src\signalVector.cpp" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 11.6.targets" />

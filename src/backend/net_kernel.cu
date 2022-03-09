@@ -1,4 +1,4 @@
-﻿#include "../inc/net_kernel.cuh"
+﻿#include "backend/net_kernel.cuh"
 
 
 #define BLOCK_DIM 16
