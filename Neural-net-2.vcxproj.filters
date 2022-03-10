@@ -37,6 +37,12 @@
     <ClInclude Include="inc\neuronalNet.h">
       <Filter>inc</Filter>
     </ClInclude>
+    <ClInclude Include="inc\backend\graphicsNeuronInterface.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\netModel.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inc">
@@ -82,6 +88,12 @@
     </ClCompile>
     <ClCompile Include="src\graphics\drawable.cpp">
       <Filter>src\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\netModel.cpp">
+      <Filter>src\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\graphicsNeuronInterface.cpp">
+      <Filter>src\backend</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -13,6 +13,8 @@
 using std::vector;
 using std::cout;
 using std::string;
+using namespace NeuronalNet;
+using namespace Graphics;
 
 void printSignal(const SignalVector& sig,size_t maxSize = 10);
 void printSignal(const MultiSignalVector& sig,size_t maxSize = 10);
@@ -130,16 +132,21 @@ void saveVec(const string& filename, const float *begin, size_t size)
 }
 void xorLoop()
 {
+	Display display;
+	
 	BackpropNet net;
+	NetModel netModel(&net);
 	MultiSignalVector trainigsSet(4, 2);
 	MultiSignalVector resultSet(4, 1);
 
-	net.setDimensions(2, 2, 3, 1);
+	net.setDimensions(2, 3, 5, 1);
 	net.setStreamSize(1);
 	net.setActivation(Activation::sigmoid);
 	net.setHardware(Hardware::cpu);
 	net.m_lernParameter = 0.1;
 	net.build();
+	netModel.rebuild();
+	display.addDrawable(&netModel);
 
 	trainigsSet[0] = SignalVector(vector<float>{ 0,0 });
 	trainigsSet[1] = SignalVector(vector<float>{ 0,1 });
@@ -155,7 +162,7 @@ void xorLoop()
 	float currentError = 0;
 	size_t iteration = 0;
 
-	while (1)
+	while (display.isOpen())
 	{
 		++iteration;
 		currentError = 0;
@@ -167,6 +174,9 @@ void xorLoop()
 			net.setInputVector(trainigsSet[i]);
 			net.calculate();
 			net.learn(resultSet[i]);
+
+			display.processEvents();
+			display.draw();
 
 			
 			if (iteration % 100 == 0 || iteration == 1)
@@ -219,6 +229,8 @@ void xorLoop()
 			{
 				net.setInputVector(trainigsSet[i]);
 				net.calculate();
+				display.processEvents();
+				display.draw();
 				SignalVector output = net.getOutputVector();
 				std::cout << "Set [" << i << "]\t";
 				for (size_t j = 0; j < output.size(); ++j)
@@ -227,9 +239,10 @@ void xorLoop()
 					
 				}
 				std::cout << "\n";
+				getchar();
 			}
 			printWeights(&net);
-			getchar();
+			
 		}
 	}
 }

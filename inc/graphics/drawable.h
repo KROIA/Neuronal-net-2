@@ -22,7 +22,8 @@ namespace NeuronalNet
 			void pos(const sf::Vector2f& pos);
 			const sf::Vector2f &pos() const;
 
-			virtual void draw(sf::RenderWindow* window) = 0;
+			virtual void draw(sf::RenderWindow* window,
+							  const sf::Vector2f &offset=sf::Vector2f(0,0)) = 0;
 			protected:
 
 			private:

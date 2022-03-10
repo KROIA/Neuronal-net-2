@@ -1,6 +1,7 @@
 #include "backend/net.h"
 
-
+namespace NeuronalNet
+{
 const SignalVector Net::m_emptySignalVectorDummy(0);
 const MultiSignalVector Net::m_emptyMultiSignalVectorDummy(0,0);
 
@@ -33,6 +34,8 @@ Net::Net()
 	m_neuronCount = 0;
 	m_weightsCount = 0;
 	m_streamSize = 1;
+
+	m_useGraphics = false;
 	setActivation(Activation::sigmoid);
 	setHardware(Hardware::cpu);
 
@@ -270,7 +273,10 @@ bool Net::build()
 	//CONSOLE("end. return "<<success<< " time: "<<milliseconds(t2-t1)<<"ms")
 	return success;
 }
-
+bool Net::isBuilt() const
+{
+	return m_built;
+}
 void Net::randomizeWeights()
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
@@ -655,6 +661,8 @@ void Net::calculate(size_t streamBegin, size_t streamEnd)
 		case Hardware::cpu:
 		{
 			CPU_calculate(streamBegin, streamEnd);
+			if (m_useGraphics)
+				graphics_update();
 			break;
 		}
 		case Hardware::gpu_cuda:
@@ -671,7 +679,99 @@ void Net::calculate(size_t streamBegin, size_t streamEnd)
 	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
 }
 
+void Net::addGraphics(GraphicsNeuronInterface* obj)
+{
+	if (obj == nullptr)
+		return;
+	for (size_t i = 0; i < m_graphicsNeuronInterfaceList.size(); ++i)
+		if (m_graphicsNeuronInterfaceList[i] == obj)
+			return;
+	m_useGraphics = true;
+	m_graphicsNeuronInterfaceList.push_back(obj);
+}
+void Net::removeGraphics(GraphicsNeuronInterface* obj)
+{
+	for (size_t i = 0; i < m_graphicsNeuronInterfaceList.size(); ++i)
+		if (m_graphicsNeuronInterfaceList[i] == obj)
+		{
+			m_graphicsNeuronInterfaceList.erase(m_graphicsNeuronInterfaceList.begin() + i);
+			return;
+		}
+}
+void Net::clearGraphics()
+{
+	m_graphicsNeuronInterfaceList.clear();
+	m_useGraphics = true;
+}
+void Net::graphics_update()
+{
+	for (size_t i = 0; i < m_graphicsNeuronInterfaceList.size(); ++i)
+	{
+		graphics_update(m_graphicsNeuronInterfaceList[i]);
+	}
+}
+void Net::graphics_update(GraphicsNeuronInterface* obj)
+{
 
+	NeuronIndex index = obj->index();
+	size_t stramIndex = 0;
+	size_t neuronIndex;
+	float neuronOutput;
+	float netinput;
+
+	switch (index.type)
+	{
+		case NeuronType::input:
+		{
+			if (index.y >= m_inputs)
+			{
+				graphics_outOfRange(obj);
+				return;
+			}
+			neuronOutput = m_inputStream[stramIndex][index.y];
+			netinput = neuronOutput;
+			break;
+		}
+		case NeuronType::hidden:
+		{
+			if (index.y >= m_hiddenY || 
+				index.x >= m_hiddenX)
+			{
+				graphics_outOfRange(obj);
+				return;
+			}
+			neuronIndex = index.x * m_hiddenY + index.y;
+			neuronOutput = m_neuronValueList[stramIndex][neuronIndex];
+			netinput = m_netinputList[stramIndex][neuronIndex];
+			break;
+		}
+		case NeuronType::output:
+		{
+			if (index.y >= m_outputs)
+			{
+				graphics_outOfRange(obj);
+				return;
+			}
+			neuronIndex = m_hiddenX * m_hiddenY + index.y;
+			neuronOutput = m_neuronValueList[stramIndex][neuronIndex];
+			netinput = m_netinputList[stramIndex][neuronIndex];
+			break;
+		}
+		default:
+		{
+			graphics_outOfRange(obj);
+			return;
+		}
+	}
+
+	obj->update(netinput, neuronOutput);
+}
+void Net::graphics_outOfRange(GraphicsNeuronInterface* obj)
+{
+	NeuronIndex index = obj->index();
+	CONSOLE("Error: GraphicsInterface is out of range: type: " << TypeToString(index.type) <<
+			" x = " << index.x << " y = " << index.y);
+}
 void Net::CPU_calculate(size_t streamBegin, size_t streamEnd)
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
@@ -1063,3 +1163,4 @@ float Net::activation_sigmoid_derivetive(float inp)
 {
 	return NET_ACTIVATION_SIGMOID_DERIVETIVE(inp);
 }
+};

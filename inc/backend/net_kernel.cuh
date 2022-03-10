@@ -17,10 +17,9 @@
 
 
 
-
-namespace NeuronalNet 
+namespace NeuronalNet
 {
-	typedef enum 
+	typedef enum
 	{
 		toDevice = 0,
 		toHost = 1
@@ -42,30 +41,30 @@ namespace NeuronalNet
 	};
 
 	// Interface functions
-	
+
 	//__host__ double GPU_CUDA_transposeMatrix(float* d_list, size_t width);
 	//__host__ double GPU_CUDA_transposeMatrix2(float* d_list1,float* d_list2, size_t width);
 	NET_API __host__ void testCUDA();
 
 	NET_API __host__ cudaDeviceProp GPU_CUDA_getSpecs();
-	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
+	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec,
 												float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
-										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
-										CUDA_info * d_info = nullptr);
+												size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
+												CUDA_info* d_info = nullptr);
 
-	NET_API __host__ void GPU_CUDA_getRandomValues(float* h_list,  size_t elements, float min, float max );
+	NET_API __host__ void GPU_CUDA_getRandomValues(float* h_list, size_t elements, float min, float max);
 
-	
-	template <typename T> 
-	NET_API __host__  extern void GPU_CUDA_allocMem(T* &d_list, size_t byteCount);
+
 	template <typename T>
-	NET_API __host__ extern void GPU_CUDA_freeMem(T* &d_list);
+	NET_API __host__  extern void GPU_CUDA_allocMem(T*& d_list, size_t byteCount);
+	template <typename T>
+	NET_API __host__ extern void GPU_CUDA_freeMem(T*& d_list);
 
 	template <typename T>
 	NET_API __host__ extern void GPU_CUDA_transferToDevice(T* d_list, T* h_list, size_t byteCount);
 	template <typename T>
-	NET_API __host__ extern void GPU_CUDA_transferToHost(  T* d_list, T* h_list, size_t byteCount);
-	NET_API __host__ void GPU_CUDA_convertWeightMatrix(float *d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount,Direction dir);
+	NET_API __host__ extern void GPU_CUDA_transferToHost(T* d_list, T* h_list, size_t byteCount);
+	NET_API __host__ void GPU_CUDA_convertWeightMatrix(float* d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Direction dir);
 
 
 	NET_API __host__ size_t gaussSum(size_t val);
@@ -83,7 +82,7 @@ namespace NeuronalNet
 	NET_API __device__ inline float kernel_net_activation_gaussian(float x);
 	NET_API __device__ inline float kernel_net_activation_sigmoid(float x);
 	NET_API __device__ inline float kernel_net_activation_binary(float x);
-	
+
 	NET_API __device__ inline float kernel_net_activation_linear_derivetive(float x);
 	NET_API __device__ inline float kernel_net_activation_finiteLinear_derivetive(float x);
 	NET_API __device__ inline float kernel_net_activation_gaussian_derivetive(float x);
@@ -96,11 +95,11 @@ namespace NeuronalNet
 
 	NET_API __global__ void kernel_net_calculateLayer(float* weights, float* biasList, float* inputSignals,
 													  float* netinputList, float* neuronSignalList,
-											  size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act);
-	NET_API __global__ void kernel_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
+													  size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act);
+	NET_API __global__ void kernel_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec,
 												float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
-										size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
-										CUDA_info* d_info = nullptr);
+												size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
+												CUDA_info* d_info = nullptr);
 
 	//__global__ void kernel_convertLayerWeightToGPUWeight(float* d_list, size_t signalCount, size_t neuronCount);
 	NET_API __global__ void kernel_transposeMatrix(float* d_list, size_t width, CUDA_info* d_info = nullptr);
@@ -110,10 +109,11 @@ namespace NeuronalNet
 
 	NET_API __global__ void kernel_transposeMatrix(float* d_list, size_t width, size_t height, CUDA_info* d_info = nullptr);
 	NET_API __global__ void kernel_transposeMatrix_rect_internal(float* d_list, float* tmpBuffer, size_t width, size_t height);
-	
 
-	NET_API __global__ void kernel_offsetScale(float *d_list, float offset, float scale, size_t size, CUDA_info* d_info = nullptr);
+
+	NET_API __global__ void kernel_offsetScale(float* d_list, float offset, float scale, size_t size, CUDA_info* d_info = nullptr);
 
 	NET_API __host__ void cuda_handleError(cudaError_t err);
 	NET_API __device__ void kernel_handleError(cudaError_t err);
-}
+};
+

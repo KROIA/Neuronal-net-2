@@ -19,23 +19,27 @@
     <ClInclude Include="inc\backend\backpropNet.h" />
     <ClInclude Include="inc\backend\config.h" />
     <ClInclude Include="inc\backend\debug.h" />
+    <ClInclude Include="inc\backend\graphicsNeuronInterface.h" />
     <ClInclude Include="inc\backend\multiSignalVector.h" />
     <ClInclude Include="inc\backend\net.h" />
     <ClInclude Include="inc\backend\net_kernel.cuh" />
     <ClInclude Include="inc\backend\signalVector.h" />
     <ClInclude Include="inc\graphics\display.h" />
     <ClInclude Include="inc\graphics\drawable.h" />
+    <ClInclude Include="inc\graphics\netModel.h" />
     <ClInclude Include="inc\graphics\neuron.h" />
     <ClInclude Include="inc\neuronalNet.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\backend\backpropNet.cpp" />
     <ClCompile Include="src\backend\debug.cpp" />
+    <ClCompile Include="src\backend\graphicsNeuronInterface.cpp" />
     <ClCompile Include="src\backend\multiSignalVector.cpp" />
     <ClCompile Include="src\backend\net.cpp" />
     <ClCompile Include="src\backend\signalVector.cpp" />
     <ClCompile Include="src\graphics\display.cpp" />
     <ClCompile Include="src\graphics\drawable.cpp" />
+    <ClCompile Include="src\graphics\netModel.cpp" />
     <ClCompile Include="src\graphics\neuron.cpp" />
   </ItemGroup>
   <ItemGroup>

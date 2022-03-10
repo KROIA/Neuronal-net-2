@@ -13,41 +13,42 @@
 #endif
 
 
-
-namespace Debug
+namespace NeuronalNet
 {
-
-	class DebugFunctionTime;
-	extern size_t __DBG_stackDepth;
-
-
-
-	// helper functions for cleaner time measuring code
-	extern NET_API std::chrono::time_point<std::chrono::high_resolution_clock> now();
-	template <typename T>
-	extern NET_API double milliseconds(T t);
-
-
-	extern NET_API std::string timeToString(double timeMs);
-	extern NET_API std::string bytesToString(size_t byteCount);
-
-	class NET_API DebugFunctionTime
+	namespace Debug
 	{
-		public:
-		DebugFunctionTime(const std::string& funcName);
-		~DebugFunctionTime();
-	
-		private:
-		std::chrono::time_point<std::chrono::high_resolution_clock> t1;
-		std::string m_stackSpace;
-		std::string m_functionName;
-	
-	};
+
+		class DebugFunctionTime;
+		extern size_t __DBG_stackDepth;
+
+
+
+		// helper functions for cleaner time measuring code
+		extern NET_API std::chrono::time_point<std::chrono::high_resolution_clock> now();
+		template <typename T>
+		extern NET_API double milliseconds(T t);
+
+
+		extern NET_API std::string timeToString(double timeMs);
+		extern NET_API std::string bytesToString(size_t byteCount);
+
+		class NET_API DebugFunctionTime
+		{
+			public:
+			DebugFunctionTime(const std::string& funcName);
+			~DebugFunctionTime();
+
+			private:
+			std::chrono::time_point<std::chrono::high_resolution_clock> t1;
+			std::string m_stackSpace;
+			std::string m_functionName;
+
+		};
 
 #ifdef UNIT_TEST
-	extern NET_API std::vector<std::string> _unitTest_consoleBuffer;
+		extern NET_API std::vector<std::string> _unitTest_consoleBuffer;
 #endif
-};
+	};
 
 
 #ifdef UNIT_TEST
@@ -77,7 +78,7 @@ namespace Debug
 
 
 #define __VERIFY_RANGE_COMP1(min,var,max) if(min>var || var>max){ CONSOLE("Error: "<<#var<<" out of range: "<<min<<" > "<<#var<<" = "<<var<<" > "<<max)
-//#define VERIFY_RANGE(min,var,max) __VERIFY_RANGE_COMP1(min,var,max)}
+	//#define VERIFY_RANGE(min,var,max) __VERIFY_RANGE_COMP1(min,var,max)}
 #define VERIFY_RANGE(min,var,max,ret)__VERIFY_RANGE_COMP1(min,var,max) ret;}
 
 #define __VERIFY_BOOL_COMP1(val,comp,message) if(val != comp){CONSOLE("Error: "<<message)
@@ -87,3 +88,6 @@ namespace Debug
 #define __VERIFY_VALID_PTR_COMP1(ptr, message) if(!ptr){CONSOLE("Error: "<<#ptr<<" == nullltr "<<message)
 //#define VERIFY_VALID_PTR(ptr, message) __VERIFY_VALID_PTR_COMP1(ptr,message)}
 #define VERIFY_VALID_PTR(ptr, message, ret) __VERIFY_VALID_PTR_COMP1(ptr,message) ret;}
+
+
+};
