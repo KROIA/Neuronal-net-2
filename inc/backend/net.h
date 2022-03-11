@@ -9,6 +9,8 @@
 #include "multiSignalVector.h"
 #include "debug.h"
 #include "GraphicsNeuronInterface.h"
+#include "GraphicsConnectionInterface.h"
+#include "neuronIndex.h"
 
 
 
@@ -36,6 +38,7 @@ namespace NeuronalNet
 
 		void setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
 		void setStreamSize(size_t size);
+		size_t getStreamSize() const;
 		size_t getInputCount() const;
 		size_t getHiddenXCount() const;
 		size_t getHiddenYCount() const;
@@ -87,17 +90,24 @@ namespace NeuronalNet
 		void calculate();
 		void calculate(size_t stream);
 		void calculate(size_t streamBegin, size_t streamEnd);
+		void graphics_update(const vector<GraphicsNeuronInterface*> &graphicsNeuronInterfaceList,
+							 const vector<GraphicsConnectionInterface*> &graphicsConnectionInterfaceList,
+							 size_t streamIndex);
 
-		void addGraphics(GraphicsNeuronInterface* obj);
-		void removeGraphics(GraphicsNeuronInterface* obj);
-		void clearGraphics();
+		//void addGraphics(GraphicsNeuronInterface* obj);
+		//void removeGraphics(GraphicsNeuronInterface* obj);
+		//void addGraphics(GraphicsConnectionInterface* obj);
+		//void removeGraphics(GraphicsConnectionInterface* obj);
+		//void clearGraphics();
 
 		protected:
 		typedef float ActFp(float);
 
-		void graphics_update();
-		void graphics_update(GraphicsNeuronInterface*obj);
+		
+		void graphics_update(GraphicsNeuronInterface*obj, size_t streamIndex);
 		void graphics_outOfRange(GraphicsNeuronInterface* obj);
+		void graphics_update(GraphicsConnectionInterface*obj, size_t streamIndex);
+		void graphics_outOfRange(GraphicsConnectionInterface* obj);
 
 
 		void CPU_calculate(size_t streamBegin, size_t streamEnd); // including begin, excluding end
@@ -162,8 +172,9 @@ namespace NeuronalNet
 		float** h_d_outputStream;
 
 		private:
-		vector<GraphicsNeuronInterface*> m_graphicsNeuronInterfaceList;
-		bool m_useGraphics;
+		//vector<GraphicsNeuronInterface*> m_graphicsNeuronInterfaceList;
+		//vector<GraphicsConnectionInterface*> m_graphicsConnectionInterfaceList;
+		//bool m_useGraphics;
 
 		static float activation_linear(float inp);
 		static float activation_finiteLinear(float inp);

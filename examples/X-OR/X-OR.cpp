@@ -6,6 +6,7 @@
 #include <string>
 #include <fstream>
 
+
 #include "neuronalNet.h"
 
 #include "SFML/Graphics.hpp"
@@ -132,21 +133,53 @@ void saveVec(const string& filename, const float *begin, size_t size)
 }
 void xorLoop()
 {
-	Display display;
+	Display display(sf::Vector2u(1000,800),"X-OR Example");
 	
 	BackpropNet net;
-	NetModel netModel(&net);
+	
 	MultiSignalVector trainigsSet(4, 2);
 	MultiSignalVector resultSet(4, 1);
 
-	net.setDimensions(2, 3, 5, 1);
-	net.setStreamSize(1);
+	net.setDimensions(2, 2, 4, 1);
+	net.setStreamSize(trainigsSet.size());
 	net.setActivation(Activation::sigmoid);
 	net.setHardware(Hardware::cpu);
 	net.m_lernParameter = 0.1;
 	net.build();
-	netModel.rebuild();
-	display.addDrawable(&netModel);
+
+	sf::Vector2f spacing(40, 40);
+	float neuronSize = 20;
+
+	NetModel netModel1(&net);
+	netModel1.streamIndex(0);
+	netModel1.neuronSize(neuronSize);
+	netModel1.pos(sf::Vector2f(100, 100));
+	netModel1.neuronSpacing(spacing);
+	display.addDrawable(&netModel1);
+
+	NetModel netModel2(&net);
+	netModel2.streamIndex(1);
+	netModel2.neuronSize(neuronSize);
+	netModel2.pos(sf::Vector2f(100, 500));
+	netModel2.neuronSpacing(spacing);
+	display.addDrawable(&netModel2);
+
+	NetModel netModel3(&net);
+	netModel3.streamIndex(2);
+	netModel3.neuronSize(neuronSize);
+	netModel3.pos(sf::Vector2f(700, 100));
+	netModel3.neuronSpacing(spacing);
+	display.addDrawable(&netModel3);
+
+	NetModel netModel4(&net);
+	netModel4.streamIndex(3);
+	netModel4.neuronSize(neuronSize);
+	netModel4.pos(sf::Vector2f(700, 500));
+	netModel4.neuronSpacing(spacing);
+	display.addDrawable(&netModel4);
+
+	
+	display.frameRateTarget(60);
 
 	trainigsSet[0] = SignalVector(vector<float>{ 0,0 });
 	trainigsSet[1] = SignalVector(vector<float>{ 0,1 });
@@ -162,6 +195,7 @@ void xorLoop()
 	float currentError = 0;
 	size_t iteration = 0;
 
+	getchar();
 	while (display.isOpen())
 	{
 		++iteration;
@@ -169,17 +203,33 @@ void xorLoop()
 
 		std::vector<float> deltaW;
 		std::vector<float> deltaB;
-		for (size_t i = 0; i < trainigsSet.size(); ++i)
+		//for (size_t i = 0; i < trainigsSet.size(); ++i)
 		{
-			net.setInputVector(trainigsSet[i]);
-			net.calculate();
-			net.learn(resultSet[i]);
+			/*while (!display.needsFrameUpdate())
+			{
+				sf::sleep(sf::milliseconds(2));
+				display.processEvents();
+			}*/
+			for (size_t i = 0; i < trainigsSet.size(); ++i)
+			{
+				//net.setInputVector(trainigsSet);
+				net.setInputVector(i,trainigsSet[i]);
+				net.calculate(i);
+				//net.learn(resultSet);
+				net.learn(i,resultSet[i]);
+			}
 
-			display.processEvents();
-			display.draw();
+			if (display.needsFrameUpdate())
+			{
+				display.processEvents();
+				display.draw();
+			}
+
+			//SignalVector out = net.getOutputVector();
+			//for(size_t i=0; i< out)
 
 			
-			if (iteration % 100 == 0 || iteration == 1)
+			/*if (iteration % 100 == 0 || iteration == 1)
 			{
 				if (i == 0)
 				{
@@ -205,14 +255,17 @@ void xorLoop()
 						saveVec("w.csv", net.getWeight(), net.getWeightSize());
 					}
 				}
-			}
+			}*/
 
-			SignalVector err = net.getError();
+			MultiSignalVector err = net.getError();
 			//std::cout << "Error [" << i << "]\t";
 			for (size_t j = 0; j < err.size(); ++j)
 			{
 				//std::cout << err[j] << "\t";
-				currentError += abs(err[j]);
+				for (size_t k = 0; k < err[j].size(); ++k)
+				{
+					currentError += abs(err[j][k]);
+				}
 			}
 			
 			//std::cout << "\n";
@@ -225,13 +278,15 @@ void xorLoop()
 		if (iteration % 1000 == 0)
 		{
 			std::cout << "iteration [" << iteration << "]\t Error: " << averageError<<"\n";
+			net.setInputVector(trainigsSet);
+			net.calculate();
+			//display.processEvents();
+			//display.draw();
 			for (size_t i = 0; i < trainigsSet.size(); ++i)
 			{
-				net.setInputVector(trainigsSet[i]);
-				net.calculate();
-				display.processEvents();
-				display.draw();
-				SignalVector output = net.getOutputVector();
+				
+				
+				SignalVector output = net.getOutputVector(i);
 				std::cout << "Set [" << i << "]\t";
 				for (size_t j = 0; j < output.size(); ++j)
 				{
@@ -239,8 +294,9 @@ void xorLoop()
 					
 				}
 				std::cout << "\n";
-				getchar();
+				
 			}
+			getchar();
 			printWeights(&net);
 			
 		}

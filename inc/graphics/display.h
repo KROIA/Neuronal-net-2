@@ -3,6 +3,7 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <chrono>
 #include "backend/config.h"
 #include "graphics/drawable.h"
 
@@ -23,10 +24,13 @@ namespace NeuronalNet
 
 			void addDrawable(Drawable* obj);
 
-			void loop();
+			
 
+			void frameRateTarget(float fps);
 			bool isOpen();
+			void loop();
 			void processEvents();
+			bool needsFrameUpdate();
 			void draw();
 
 			
@@ -43,6 +47,8 @@ namespace NeuronalNet
 			bool m_exit;
 			vector<Drawable*> m_drawableObjList;
 
+			double m_targetFrameTimeMs;
+			std::chrono::time_point<std::chrono::high_resolution_clock> *m_frameIntervalTime;
 		};
 	};
 };

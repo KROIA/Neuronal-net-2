@@ -76,16 +76,19 @@ namespace NeuronalNet
 #define DEBUG_FUNCTION_TIME_INTERVAL ;
 #endif
 
+#define PRINT_ERROR(x) \
+	STANDARD_CONSOLE_OUTPUT("Error: " <<__PRETTY_FUNCTION__<<" : "<<x)
 
-#define __VERIFY_RANGE_COMP1(min,var,max) if(min>var || var>max){ CONSOLE("Error: "<<#var<<" out of range: "<<min<<" > "<<#var<<" = "<<var<<" > "<<max)
+
+#define __VERIFY_RANGE_COMP1(min,var,max) if(min>var || var>max){ PRINT_ERROR(std::string(#var)<<" out of range: "<<min<<" > "<<#var<<" = "<<var<<" > "<<max)
 	//#define VERIFY_RANGE(min,var,max) __VERIFY_RANGE_COMP1(min,var,max)}
 #define VERIFY_RANGE(min,var,max,ret)__VERIFY_RANGE_COMP1(min,var,max) ret;}
 
-#define __VERIFY_BOOL_COMP1(val,comp,message) if(val != comp){CONSOLE("Error: "<<message)
+#define __VERIFY_BOOL_COMP1(val,comp,message) if(val != comp){PRINT_ERROR(message)
 //#define VERIFY_BOOL(val,comp,message) __VERIFY_BOOL_COMP1(val,comp,message)}
 #define VERIFY_BOOL(val,comp,message,ret) __VERIFY_BOOL_COMP1(val,comp,message) ret;}
 
-#define __VERIFY_VALID_PTR_COMP1(ptr, message) if(!ptr){CONSOLE("Error: "<<#ptr<<" == nullltr "<<message)
+#define __VERIFY_VALID_PTR_COMP1(ptr, message) if(!ptr){PRINT_ERROR(#ptr<<" == nullltr "<<message)
 //#define VERIFY_VALID_PTR(ptr, message) __VERIFY_VALID_PTR_COMP1(ptr,message)}
 #define VERIFY_VALID_PTR(ptr, message, ret) __VERIFY_VALID_PTR_COMP1(ptr,message) ret;}
 

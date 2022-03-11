@@ -4,6 +4,8 @@ namespace NeuronalNet
 {
 	namespace Graphics
 	{
+		const float Neuron::standardSize = 20;
+
 		const string Neuron::m_fontPath = "C:\\Windows\\Fonts\\arial.ttf";
 			
 		Neuron::Neuron()
@@ -20,12 +22,13 @@ namespace NeuronalNet
 			m_output	= 0;
 
 			m_pos = sf::Vector2f(0, 0);
-			m_size = 20;
+			m_size = standardSize;
 
 			if (!m_font.loadFromFile(m_fontPath))
 			{
 				CONSOLE("Can't load font: "<<m_fontPath)
 			}
+			m_outputText.setFont(m_font);
 		}
 		Neuron::Neuron(const Neuron& other)
 			: Drawable(other)
@@ -57,10 +60,6 @@ namespace NeuronalNet
 			return *this;
 		}
 
-		void Neuron::index(const NeuronIndex& index)
-		{
-			m_index = index;
-		}
 		void Neuron::pos(const sf::Vector2f& pos)
 		{
 			m_pos = pos;
@@ -83,12 +82,28 @@ namespace NeuronalNet
 		{
 			sf::CircleShape shape(m_size);
 			shape.setFillColor(m_color);
+			shape.setOrigin(sf::Vector2f(m_size, m_size));
 			shape.setPosition(m_pos + offset);
+			
 
 			m_outputText.setPosition(m_pos + offset);
 
+			/*sf::FloatRect bound = m_outputText.getGlobalBounds();
+			sf::Vertex line[] =
+			{
+				sf::Vertex(sf::Vector2f(bound.left,bound.top)),
+				sf::Vertex(sf::Vector2f(bound.left+ bound.width,bound.top)),
+				sf::Vertex(sf::Vector2f(bound.left + bound.width,bound.top+ bound.height)),
+				sf::Vertex(sf::Vector2f(bound.left,bound.top + bound.height)),
+				sf::Vertex(sf::Vector2f(bound.left,bound.top))
+			};*/
+			//window->draw(line, 5, sf::LineStrip);
+			
+
 			window->draw(shape);
 			window->draw(m_outputText);
+
+			
 		}
 
 		// Interface implementation
@@ -99,34 +114,17 @@ namespace NeuronalNet
 
 			char str[10];
 			sprintf_s(str, "%6.3f", output);
+			m_outputText.setCharacterSize(m_size*4 / 5);
+			sf::Vector2f textSize((float)std::strlen(str) * m_outputText.getCharacterSize(),
+								  m_outputText.getCharacterSize());
+			//m_outputText.setOrigin(textSize / 2.f);
 			m_outputText.setString(str);
-			m_outputText.setCharacterSize(24);
 			
+			m_outputText.setFillColor(sf::Color(255, 255, 255));
+			sf::FloatRect bound = m_outputText.getGlobalBounds();
+			m_outputText.setOrigin(sf::Vector2f(bound.width / 2, bound.height / 2));
 
-			setColor(m_output);
-		}
-		const NeuronIndex& Neuron::index() const
-		{
-			return m_index;
-		}
-
-
-		void Neuron::setColor(float output)
-		{
-			if (output < 0)
-			{
-				if (output < -1.f)
-					output = -1.f;
-				m_color.g = 0;
-				m_color.r = 255.f * output;
-			}
-			else
-			{
-				if (output > 1.f)
-					output = 1.f;
-				m_color.r = 0;
-				m_color.g = 255.f * output;
-			}
+			m_color = getColor(m_output);
 		}
 	};
 };

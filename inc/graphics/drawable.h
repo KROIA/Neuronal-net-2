@@ -1,8 +1,6 @@
 #pragma once
 
-#include <SFML/Graphics.hpp>
-
-#include "backend/config.h"
+#include "graphicsUtilities.h"
 
 
 namespace NeuronalNet

@@ -43,6 +43,18 @@
     <ClInclude Include="inc\graphics\netModel.h">
       <Filter>inc\graphics</Filter>
     </ClInclude>
+    <ClInclude Include="inc\graphics\connection.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\neuronIndex.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\graphicsConnectionInterface.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\graphicsUtilities.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inc">
@@ -92,8 +104,14 @@
     <ClCompile Include="src\graphics\netModel.cpp">
       <Filter>src\graphics</Filter>
     </ClCompile>
-    <ClCompile Include="src\backend\graphicsNeuronInterface.cpp">
+    <ClCompile Include="src\graphics\connection.cpp">
+      <Filter>src\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\neuronIndex.cpp">
       <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\graphicsUtilities.cpp">
+      <Filter>src\graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

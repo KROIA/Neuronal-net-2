@@ -1,4 +1,4 @@
-#include "backend/graphicsNeuronInterface.h"
+#include "backend/neuronIndex.h"
 
 namespace NeuronalNet
 {

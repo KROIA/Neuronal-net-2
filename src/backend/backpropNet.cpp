@@ -16,12 +16,12 @@ namespace NeuronalNet
 	bool BackpropNet::build()
 	{
 		bool ret = Net::build();
-		m_outputDifference.resize(m_outputs);
+		m_outputDifference.resize(m_streamSize,m_outputs);
 
-		for (size_t y = 0; y < m_neuronCount; ++y)
+		/*for (size_t y = 0; y < m_neuronCount; ++y)
 		{
 			m_biasList[y] = 0;
-		}
+		}*/
 
 		return ret;
 	}
@@ -29,25 +29,46 @@ namespace NeuronalNet
 	void BackpropNet::learn(const MultiSignalVector& expectedOutputVec)
 	{
 		DEBUG_FUNCTION_TIME_INTERVAL
+		switch (m_hardware)
+		{
+			case Hardware::cpu:
+			{
+				CPU_learn(expectedOutputVec);
+				break;
+			}
+			case Hardware::gpu_cuda:
+			{
+
+				break;
+			}
+		}
 	}
 	void BackpropNet::learn(const SignalVector& expectedOutputVec)
 	{
-		DEBUG_FUNCTION_TIME_INTERVAL
-			switch (m_hardware)
-			{
-				case Hardware::cpu:
-				{
-					CPU_learn(expectedOutputVec);
-					break;
-				}
-				case Hardware::gpu_cuda:
-				{
-
-					break;
-				}
-			}
+		learn(0, expectedOutputVec);
 	}
-	const SignalVector& BackpropNet::getError()
+	void BackpropNet::learn(size_t streamIndex,  const SignalVector& expectedOutputVec)
+	{
+		DEBUG_FUNCTION_TIME_INTERVAL
+		switch (m_hardware)
+		{
+			case Hardware::cpu:
+			{
+				CPU_learn(streamIndex,expectedOutputVec);
+				break;
+			}
+			case Hardware::gpu_cuda:
+			{
+
+				break;
+			}
+		}
+	}
+	const SignalVector& BackpropNet::getError(size_t streamIndex)
+	{
+		return m_outputDifference[streamIndex];
+	}
+	const MultiSignalVector& BackpropNet::getError()
 	{
 		return m_outputDifference;
 	}
@@ -55,11 +76,16 @@ namespace NeuronalNet
 	void BackpropNet::CPU_learn(const MultiSignalVector& expectedOutputVec)
 	{
 		DEBUG_FUNCTION_TIME_INTERVAL
+		for(size_t i=0; i<expectedOutputVec.size(); ++i)
+			CPU_learn(i,expectedOutputVec[i]);
+
 	}
-	void BackpropNet::CPU_learn(const SignalVector& expectedOutputVec)
+	void BackpropNet::CPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec)
 	{
 		DEBUG_FUNCTION_TIME_INTERVAL
-			deltaWeight.clear();
+		VERIFY_RANGE(0, streamIndex,m_streamSize,return)
+
+		deltaWeight.clear();
 		deltaBias.clear();
 		// Calculate all output Errors:
 		//SignalVector outputError(m_outputs);
@@ -67,12 +93,12 @@ namespace NeuronalNet
 		SignalVector outputError(m_outputs);
 		for (size_t y = 0; y < m_outputs; ++y)
 		{
-			float netinput = m_netinputList[0][outputNeuronBeginIndex + y];
+			float netinput = m_netinputList[streamIndex][outputNeuronBeginIndex + y];
 			float derivetive = (*m_activationDerivetiveFunc)(netinput);
 			float expected = expectedOutputVec[y];
-			float output = m_outputStream[0][y];
+			float output = m_outputStream[streamIndex][y];
 			float difference = (expected - output);
-			m_outputDifference[y] = difference;
+			m_outputDifference[streamIndex][y] = difference;
 			outputError[y] = derivetive * difference;
 
 
@@ -104,7 +130,7 @@ namespace NeuronalNet
 							sumNextLayerErrors += outputError[i] * m_weightsList[weightIndex + i * m_hiddenY];
 
 							// Change the weight
-							float deltaW = m_lernParameter * m_neuronValueList[0][hiddenNeuronBeginIndex + y] * outputError[i];
+							float deltaW = m_lernParameter * m_neuronValueList[streamIndex][hiddenNeuronBeginIndex + y] * outputError[i];
 							m_weightsList[weightIndex + i * m_hiddenY] += deltaW;
 							deltaWeight.push_back(deltaW);
 						}
@@ -118,13 +144,13 @@ namespace NeuronalNet
 							sumNextLayerErrors += (*prevHiddenError)[i] * m_weightsList[weightIndex + i * m_hiddenY];
 
 							// Change the weight
-							float deltaW = m_lernParameter * m_neuronValueList[0][hiddenNeuronBeginIndex + y] * (*prevHiddenError)[i];
+							float deltaW = m_lernParameter * m_neuronValueList[streamIndex][hiddenNeuronBeginIndex + y] * (*prevHiddenError)[i];
 							m_weightsList[weightIndex + i * m_hiddenY] += deltaW;
 							deltaWeight.push_back(deltaW);
 						}
 					}
 
-					(*hiddenError)[y] = (*m_activationDerivetiveFunc)(m_netinputList[0][hiddenNeuronBeginIndex + y]) *
+					(*hiddenError)[y] = (*m_activationDerivetiveFunc)(m_netinputList[streamIndex][hiddenNeuronBeginIndex + y]) *
 						sumNextLayerErrors;
 
 					float deltaBias = m_lernParameter * (*hiddenError)[y];
@@ -144,7 +170,7 @@ namespace NeuronalNet
 						for (size_t i = 0; i < m_hiddenY; ++i)
 						{
 							// Change the weight
-							float deltaW = m_lernParameter * m_inputStream[0][y] * (*hiddenError)[i];
+							float deltaW = m_lernParameter * m_inputStream[streamIndex][y] * (*hiddenError)[i];
 							m_weightsList[y * m_hiddenY + i] += deltaW;
 							deltaWeight.push_back(deltaW);
 						}
@@ -163,7 +189,7 @@ namespace NeuronalNet
 				for (size_t i = 0; i < m_outputs; ++i)
 				{
 					// Change the weight
-					float deltaW = m_lernParameter * m_inputStream[0][y] * outputError[i];
+					float deltaW = m_lernParameter * m_inputStream[streamIndex][y] * outputError[i];
 					m_weightsList[y * m_outputs + i] += deltaW;
 					deltaWeight.push_back(deltaW);
 				}
@@ -175,7 +201,7 @@ namespace NeuronalNet
 	{
 		DEBUG_FUNCTION_TIME_INTERVAL
 	}
-	void BackpropNet::GPU_learn(const SignalVector& expectedOutputVec)
+	void BackpropNet::GPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec)
 	{
 		DEBUG_FUNCTION_TIME_INTERVAL
 	}

@@ -35,7 +35,7 @@ Net::Net()
 	m_weightsCount = 0;
 	m_streamSize = 1;
 
-	m_useGraphics = false;
+	//m_useGraphics = false;
 	setActivation(Activation::sigmoid);
 	setHardware(Hardware::cpu);
 
@@ -68,7 +68,7 @@ void Net::setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t ou
 {
 	if (m_built)
 	{
-		CONSOLE("Net is already built!")
+		PRINT_ERROR("Net is already built!")
 		return;
 	}
 	m_inputs  = inputs;
@@ -79,6 +79,10 @@ void Net::setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t ou
 void Net::setStreamSize(size_t size)
 {
 	m_streamSize = size;
+}
+size_t Net::getStreamSize() const
+{
+	return m_streamSize;
 }
 
 size_t Net::getInputCount() const
@@ -218,7 +222,7 @@ bool Net::build()
 			m_weightsCount = m_inputs * m_outputs;
 		}
 		else
-			m_weightsCount = m_inputs * m_hiddenY + (m_hiddenX - 1)* m_hiddenY * m_hiddenY + m_hiddenY * m_outputs;
+			m_weightsCount = m_inputs * m_hiddenY + (m_hiddenX -1) * m_hiddenY * m_hiddenY + m_hiddenY * m_outputs;
 		if (m_streamSize == 0)
 			m_streamSize = 1;
 
@@ -280,8 +284,8 @@ bool Net::isBuilt() const
 void Net::randomizeWeights()
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
-	if (!m_built) { CONSOLE("Error: build the net first") return; }
-	randomizeWeights(0, m_weightsCount-1);
+	if (!m_built) { PRINT_ERROR("Build the net first") return; }
+	randomizeWeights(0, m_weightsCount);
 }
 bool Net::randomizeWeights(size_t from, size_t to)
 {
@@ -491,7 +495,7 @@ MultiSignalVector Net::getNetinputStreamVector() const
 		}
 		default:
 		{
-			CONSOLE("Error: hardware undefined")
+			PRINT_ERROR("Error: hardware undefined")
 		}
 	}
 	return MultiSignalVector(0, 0);
@@ -518,7 +522,7 @@ MultiSignalVector Net::getNeuronValueStreamVector() const
 		}
 		default:
 		{
-			CONSOLE("Error: hardware undefined")
+			PRINT_ERROR("Error: hardware undefined")
 		}
 	}
 	return MultiSignalVector(0, 0);
@@ -546,11 +550,11 @@ void Net::setWeight(size_t layer, size_t neuron, size_t input, float weight)
 		}
 		case Hardware::gpu_cuda:
 		{
-			CONSOLE_FUNCTION("Not implemented for GPU yet, use CPU as device")
+			PRINT_ERROR("Not implemented for GPU yet, use CPU as device")
 			break;
 		}
 		default:
-			CONSOLE_FUNCTION("Device not defined "<<m_hardware)
+		{PRINT_ERROR("Device not defined " << (int)m_hardware)}
 	}
 }
 void Net::setWeight(const std::vector<float>& list)
@@ -576,11 +580,11 @@ void Net::setWeight(const float* list, size_t insertOffset, size_t count)
 		}
 		case Hardware::gpu_cuda:
 		{
-			CONSOLE_FUNCTION("Not implemented for GPU yet, use CPU as device")
+			PRINT_ERROR("Not implemented for GPU yet, use CPU as device")
 				break;
 		}
 		default:
-			CONSOLE_FUNCTION("Device not defined " << m_hardware)
+			PRINT_ERROR("Device not defined " << (int)m_hardware)
 	}
 }
 float Net::getWeight(size_t layer, size_t neuron, size_t input) const
@@ -604,11 +608,11 @@ float Net::getWeight(size_t layer, size_t neuron, size_t input) const
 		}
 		case Hardware::gpu_cuda:
 		{
-			CONSOLE_FUNCTION("Not implemented for GPU yet, use CPU as device")
+			PRINT_ERROR("Not implemented for GPU yet, use CPU as device")
 				break;
 		}
 		default:
-			CONSOLE_FUNCTION("Device not defined " << m_hardware)
+			PRINT_ERROR("Device not defined " << (int)m_hardware)
 	}
 	return 0;
 }
@@ -622,11 +626,11 @@ const float* Net::getWeight() const
 		}
 		case Hardware::gpu_cuda:
 		{
-			CONSOLE_FUNCTION("Memory is on device, therefore not available for host code")
+			PRINT_ERROR("Memory is on device, therefore not available for host code")
 			return nullptr;
 		}
 		default:
-			CONSOLE_FUNCTION("Device not defined " << m_hardware)
+			PRINT_ERROR("Device not defined " << (int)m_hardware)
 	}
 	return nullptr;
 }
@@ -661,8 +665,7 @@ void Net::calculate(size_t streamBegin, size_t streamEnd)
 		case Hardware::cpu:
 		{
 			CPU_calculate(streamBegin, streamEnd);
-			if (m_useGraphics)
-				graphics_update();
+			
 			break;
 		}
 		case Hardware::gpu_cuda:
@@ -672,13 +675,14 @@ void Net::calculate(size_t streamBegin, size_t streamEnd)
 		}
 		default:
 		{
-			CONSOLE("Error: hardware undefined")
+			PRINT_ERROR("Error: hardware undefined")
 		}
 	}
 	//auto t2 = now();
 	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
 }
 
+/*
 void Net::addGraphics(GraphicsNeuronInterface* obj)
 {
 	if (obj == nullptr)
@@ -698,23 +702,54 @@ void Net::removeGraphics(GraphicsNeuronInterface* obj)
 			return;
 		}
 }
+void Net::addGraphics(GraphicsConnectionInterface* obj)
+{
+	if (obj == nullptr)
+		return;
+	for (size_t i = 0; i < m_graphicsConnectionInterfaceList.size(); ++i)
+		if (m_graphicsConnectionInterfaceList[i] == obj)
+			return;
+	m_useGraphics = true;
+	m_graphicsConnectionInterfaceList.push_back(obj);
+}
+void Net::removeGraphics(GraphicsConnectionInterface* obj)
+{
+	for (size_t i = 0; i < m_graphicsConnectionInterfaceList.size(); ++i)
+		if (m_graphicsConnectionInterfaceList[i] == obj)
+		{
+			m_graphicsConnectionInterfaceList.erase(m_graphicsConnectionInterfaceList.begin() + i);
+			return;
+		}
+}
 void Net::clearGraphics()
 {
 	m_graphicsNeuronInterfaceList.clear();
-	m_useGraphics = true;
-}
-void Net::graphics_update()
+	m_graphicsConnectionInterfaceList.clear();
+	m_useGraphics = false;
+}*/
+void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuronInterfaceList,
+						  const vector<GraphicsConnectionInterface*>& graphicsConnectionInterfaceList,
+						  size_t streamIndex)
 {
-	for (size_t i = 0; i < m_graphicsNeuronInterfaceList.size(); ++i)
+	if (streamIndex >= m_streamSize)
 	{
-		graphics_update(m_graphicsNeuronInterfaceList[i]);
+		PRINT_ERROR("streamIndex is out of range")
+			return;
+	}
+	//if (!m_useGraphics)
+	//	return;
+	for (size_t i = 0; i < graphicsNeuronInterfaceList.size(); ++i)
+	{
+		graphics_update(graphicsNeuronInterfaceList[i], streamIndex);
+	}
+	for (size_t i = 0; i < graphicsConnectionInterfaceList.size(); ++i)
+	{
+		graphics_update(graphicsConnectionInterfaceList[i], streamIndex);
 	}
 }
-void Net::graphics_update(GraphicsNeuronInterface* obj)
+void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex)
 {
-
 	NeuronIndex index = obj->index();
-	size_t stramIndex = 0;
 	size_t neuronIndex;
 	float neuronOutput;
 	float netinput;
@@ -728,7 +763,7 @@ void Net::graphics_update(GraphicsNeuronInterface* obj)
 				graphics_outOfRange(obj);
 				return;
 			}
-			neuronOutput = m_inputStream[stramIndex][index.y];
+			neuronOutput = m_inputStream[streamIndex][index.y];
 			netinput = neuronOutput;
 			break;
 		}
@@ -741,8 +776,8 @@ void Net::graphics_update(GraphicsNeuronInterface* obj)
 				return;
 			}
 			neuronIndex = index.x * m_hiddenY + index.y;
-			neuronOutput = m_neuronValueList[stramIndex][neuronIndex];
-			netinput = m_netinputList[stramIndex][neuronIndex];
+			neuronOutput = m_neuronValueList[streamIndex][neuronIndex];
+			netinput = m_netinputList[streamIndex][neuronIndex];
 			break;
 		}
 		case NeuronType::output:
@@ -753,8 +788,8 @@ void Net::graphics_update(GraphicsNeuronInterface* obj)
 				return;
 			}
 			neuronIndex = m_hiddenX * m_hiddenY + index.y;
-			neuronOutput = m_neuronValueList[stramIndex][neuronIndex];
-			netinput = m_netinputList[stramIndex][neuronIndex];
+			neuronOutput = m_neuronValueList[streamIndex][neuronIndex];
+			netinput = m_netinputList[streamIndex][neuronIndex];
 			break;
 		}
 		default:
@@ -769,8 +804,129 @@ void Net::graphics_update(GraphicsNeuronInterface* obj)
 void Net::graphics_outOfRange(GraphicsNeuronInterface* obj)
 {
 	NeuronIndex index = obj->index();
-	CONSOLE("Error: GraphicsInterface is out of range: type: " << TypeToString(index.type) <<
+	PRINT_ERROR("NeuronIndex is out of range : type: " << typeToString(index.type) <<
 			" x = " << index.x << " y = " << index.y);
+}
+void Net::graphics_update(GraphicsConnectionInterface* obj, size_t streamIndex)
+{
+	ConnectionIndex index = obj->index();
+	size_t weightIndex = 0;
+	//size_t signalNeuronIndex;
+	
+	float neuronOutput = 0;
+	float weight = 0;
+	float signal = 0;
+
+	switch (index.neuron.type)
+	{
+		case NeuronType::input:
+		{
+			// Connections not possible on a input neuron
+				graphics_outOfRange(obj);
+				return;
+			break;
+		}
+		case NeuronType::hidden:
+		{
+			if (index.neuron.y >= m_hiddenY ||
+				index.neuron.x >= m_hiddenX)
+			{
+				graphics_outOfRange(obj);
+				return;
+			}
+			if (index.neuron.x == 0)
+			{
+				if (index.inputConnection >= m_inputs)
+				{
+					graphics_outOfRange(obj);
+					return;
+				}
+				weightIndex = m_inputs * index.neuron.y + 
+							  index.inputConnection;
+				neuronOutput = m_inputStream[streamIndex][index.inputConnection];
+			}
+			else
+			{
+				if (index.inputConnection >= m_hiddenY)
+				{
+					graphics_outOfRange(obj);
+					return;
+				}
+				
+				weightIndex = m_inputs * m_hiddenY + 
+							  (index.neuron.x -1) * m_hiddenY * m_hiddenY +
+					          m_hiddenY * index.neuron.y + index.inputConnection;
+				neuronOutput = m_neuronValueList[streamIndex][(index.neuron.x-1) * m_hiddenY + index.inputConnection];
+			}
+
+			weight = m_weightsList[weightIndex];
+			signal = weight * neuronOutput;
+
+			//neuronIndex = index.neuron.x * m_hiddenY + index.neuron.y;
+			//neuronOutput = m_neuronValueList[stramIndex][neuronIndex];
+			//netinput = m_netinputList[stramIndex][neuronIndex];
+			break;
+		}
+		case NeuronType::output:
+		{
+			
+				
+			if (index.neuron.y >= m_outputs)
+			{
+				graphics_outOfRange(obj);
+				return;
+			}
+			if (m_hiddenX == 0)
+			{
+				if (index.inputConnection >= m_inputs)
+				{
+					graphics_outOfRange(obj);
+					return;
+				}
+				weightIndex = m_inputs * index.neuron.y +
+					          index.inputConnection;
+				neuronOutput = m_inputStream[streamIndex][index.inputConnection];
+
+				/*weightIndex = m_inputs * m_hiddenY +
+					(m_hiddenX - 1) * m_hiddenY * m_hiddenY +
+					m_hiddenY * index.neuron.y + index.inputConnection;
+				neuronOutput = m_inputStream[stramIndex][(m_hiddenX - 1) * m_hiddenY + index.inputConnection];
+				*/
+				weight = m_weightsList[weightIndex];
+				signal = weight * neuronOutput;
+			}
+			else
+			{
+				if (index.inputConnection >= m_hiddenY)
+				{
+					graphics_outOfRange(obj);
+					return;
+				}
+				weightIndex = m_inputs * m_hiddenY +
+					(m_hiddenX - 1) * m_hiddenY * m_hiddenY +
+					m_hiddenY * index.neuron.y + index.inputConnection;
+				neuronOutput = m_neuronValueList[streamIndex][(m_hiddenX -1) * m_hiddenY + index.inputConnection];
+				weight = m_weightsList[weightIndex];
+				signal = weight * neuronOutput;
+			}
+			break;
+		}
+		default:
+		{
+			graphics_outOfRange(obj);
+			return;
+		}
+	}
+
+	
+
+	obj->update(weight, signal);
+}
+void Net::graphics_outOfRange(GraphicsConnectionInterface* obj)
+{
+	ConnectionIndex index = obj->index();
+	PRINT_ERROR("Connection is out of range: type: " << typeToString(index.neuron.type) <<
+			" x = " << index.neuron.x << " y = " << index.neuron.y << " Input: "<< index.inputConnection);
 }
 void Net::CPU_calculate(size_t streamBegin, size_t streamEnd)
 {
