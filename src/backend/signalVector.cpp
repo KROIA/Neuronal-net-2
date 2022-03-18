@@ -114,5 +114,58 @@ namespace NeuronalNet
 		m_list = nullptr;
 		m_size = 0;
 	}
+	long double SignalVector::getSum() const
+	{
+		long double sum = 0;
+		float* end = m_list + m_size;
+		for (float* elem = m_list; elem < end; ++elem)
+		{
+			sum += (long double)*elem;
+		}
+		return sum;
+	}
+	float SignalVector::getMean() const
+	{
+		if (m_size == 0)
+			return 0;
+		return getSum() / (long double)m_size;
+	}
+	float SignalVector::getRootMeanSquare() const
+	{
+		if (m_size == 0)
+			return 0;
+		long double sum = 0;
+		float* end = m_list + m_size;
+		for (float* elem = m_list; elem < end; ++elem)
+		{
+			sum += ((long double)(*elem) * (long double)(*elem));
+		}
+		sum = sum / (long double)m_size;
+		return (float)sqrtl(sum);
+	}
+	float SignalVector::getGeometricMean() const
+	{
+		if (m_size == 0)
+			return 0;
+		long double product = 0;
+		float* end = m_list + m_size;
+		for (float* elem = m_list; elem < end; ++elem)
+		{
+			product *= (long double)(*elem);
+		}
+		return (float)powl(product, (long double)1 / (long double)m_size);
+	}
+	float SignalVector::getHarmonicMean() const
+	{
+		if (m_size == 0)
+			return 0;
+		long double sum = 0;
+		float* end = m_list + m_size;
+		for (float* elem = m_list; elem < end; ++elem)
+		{
+			sum += (long double)1 / (long double)(*elem);
+		}
+		return (long double)m_size / sum;
+	}
 
 };

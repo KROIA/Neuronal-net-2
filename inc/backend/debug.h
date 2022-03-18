@@ -21,29 +21,44 @@ namespace NeuronalNet
 		class DebugFunctionTime;
 		extern size_t __DBG_stackDepth;
 
-
-
-		// helper functions for cleaner time measuring code
-		extern NET_API std::chrono::time_point<std::chrono::high_resolution_clock> now();
-		template <typename T>
-		extern NET_API double milliseconds(T t);
-
-
 		extern NET_API std::string timeToString(double timeMs);
 		extern NET_API std::string bytesToString(size_t byteCount);
 
-		class NET_API DebugFunctionTime
+		class NET_API Timer
+		{
+			public:
+			Timer(bool autoStart = false);
+			~Timer();
+
+			void start();
+			void stop();
+			double getMillis() const;
+			void reset();
+			bool isRunning() const;
+
+			static inline std::chrono::time_point<std::chrono::high_resolution_clock> getCurrentTimePoint();
+			template <typename T>
+			static inline double getMillis(T t);
+
+			protected:
+			std::chrono::time_point<std::chrono::high_resolution_clock> t1;
+			std::chrono::time_point<std::chrono::high_resolution_clock> t2;
+			bool m_running;
+		};
+
+		class NET_API DebugFunctionTime : public Timer
 		{
 			public:
 			DebugFunctionTime(const std::string& funcName);
 			~DebugFunctionTime();
 
 			private:
-			std::chrono::time_point<std::chrono::high_resolution_clock> t1;
 			std::string m_stackSpace;
 			std::string m_functionName;
 
 		};
+
+		
 
 #ifdef UNIT_TEST
 		extern NET_API std::vector<std::string> _unitTest_consoleBuffer;

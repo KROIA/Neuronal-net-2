@@ -34,6 +34,7 @@ string getByteString(double bytes);
 const std::string path = "export";
 
 void xorLoop();
+void xorBenchmark(size_t maxIteration, bool displayEnable);
 void printWeights(const Net* net);
 
 int main()
@@ -195,7 +196,7 @@ void xorLoop()
 	float currentError = 0;
 	size_t iteration = 0;
 
-	getchar();
+	
 	while (display.isOpen())
 	{
 		++iteration;
@@ -210,14 +211,19 @@ void xorLoop()
 				sf::sleep(sf::milliseconds(2));
 				display.processEvents();
 			}*/
-			for (size_t i = 0; i < trainigsSet.size(); ++i)
+			/*for (size_t i = 0; i < trainigsSet.size(); ++i)
 			{
 				//net.setInputVector(trainigsSet);
 				net.setInputVector(i,trainigsSet[i]);
 				net.calculate(i);
 				//net.learn(resultSet);
 				net.learn(i,resultSet[i]);
-			}
+			}*/
+
+			net.setInputVector(trainigsSet);
+			net.calculate();
+			net.learn(resultSet);
+			
 
 			if (display.needsFrameUpdate())
 			{
@@ -258,24 +264,25 @@ void xorLoop()
 			}*/
 
 			MultiSignalVector err = net.getError();
+			currentError = err.getRootMeanSquare();
 			//std::cout << "Error [" << i << "]\t";
-			for (size_t j = 0; j < err.size(); ++j)
+			/*for (size_t j = 0; j < err.size(); ++j)
 			{
 				//std::cout << err[j] << "\t";
 				for (size_t k = 0; k < err[j].size(); ++k)
 				{
 					currentError += abs(err[j][k]);
 				}
-			}
+			}*/
 			
 			//std::cout << "\n";
 
 		}
-		currentError /= (trainigsSet.size() * net.getOutputCount());
+		//currentError /= (trainigsSet.size() * net.getOutputCount());
 		//averageError = (averageError * 0.8) + (0.2 * currentError);
 		averageError = currentError;
 		
-		if (iteration % 1000 == 0)
+		if (averageError < 0.1)
 		{
 			std::cout << "iteration [" << iteration << "]\t Error: " << averageError<<"\n";
 			net.setInputVector(trainigsSet);
@@ -300,6 +307,176 @@ void xorLoop()
 			printWeights(&net);
 			
 		}
+	}
+}
+void xorBenchmark(size_t maxIteration, bool displayEnable)
+{
+	
+	
+
+	BackpropNet net;
+	MultiSignalVector trainigsSet(4, 2);
+	MultiSignalVector resultSet(4, 1);
+
+	net.setDimensions(2, 2, 4, 1);
+	net.setStreamSize(trainigsSet.size());
+	net.setActivation(Activation::sigmoid);
+	net.setHardware(Hardware::cpu);
+	net.m_lernParameter = 0.1;
+	net.build();
+
+	trainigsSet[0] = SignalVector(vector<float>{ 0, 0 });
+	trainigsSet[1] = SignalVector(vector<float>{ 0, 1 });
+	trainigsSet[2] = SignalVector(vector<float>{ 1, 0 });
+	trainigsSet[3] = SignalVector(vector<float>{ 1, 1 });
+
+	resultSet[0] = SignalVector(vector<float>{ 0 });
+	resultSet[1] = SignalVector(vector<float>{ 1 });
+	resultSet[2] = SignalVector(vector<float>{ 1 });
+	resultSet[3] = SignalVector(vector<float>{ 0 });
+	
+
+	Display* display = nullptr;
+	NetModel* netModel1 = nullptr;
+	NetModel* netModel2 = nullptr;
+	NetModel* netModel3 = nullptr;
+	NetModel* netModel4 = nullptr;
+	if (displayEnable)
+	{
+		display = new Display(sf::Vector2u(1000, 800), "X-OR Example");
+
+		sf::Vector2f spacing(40, 40);
+		float neuronSize = 20;
+
+		netModel1 = new NetModel(&net);
+		netModel1->streamIndex(0);
+		netModel1->neuronSize(neuronSize);
+		netModel1->pos(sf::Vector2f(100, 100));
+		netModel1->neuronSpacing(spacing);
+		display->addDrawable(netModel1);
+
+		netModel2 = new NetModel(&net);
+		netModel2->streamIndex(1);
+		netModel2->neuronSize(neuronSize);
+		netModel2->pos(sf::Vector2f(100, 500));
+		netModel2->neuronSpacing(spacing);
+		display->addDrawable(netModel2);
+
+		netModel3  = new NetModel(&net);
+		netModel3->streamIndex(2);
+		netModel3->neuronSize(neuronSize);
+		netModel3->pos(sf::Vector2f(700, 100));
+		netModel3->neuronSpacing(spacing);
+		display->addDrawable(netModel3);
+
+		netModel4 = new NetModel(&net);
+		netModel4->streamIndex(3);
+		netModel4->neuronSize(neuronSize);
+		netModel4->pos(sf::Vector2f(700, 500));
+		netModel4->neuronSpacing(spacing);
+		display->addDrawable(netModel4);
+
+
+		display->frameRateTarget(30);
+	}
+
+	
+
+	for(size_t benchIt = 0; benchIt < maxIteration; ++benchIt)
+	{
+		float averageError = 0;
+		float currentError = 0;
+		size_t iteration = 0;
+
+		if (displayEnable)
+		{
+			sf::Vector2f spacing(40, 40);
+			float neuronSize = 20;
+
+			netModel1 = new NetModel(&net);
+			netModel1->streamIndex(0);
+			netModel1->neuronSize(neuronSize);
+			netModel1->pos(sf::Vector2f(100, 100));
+			netModel1->neuronSpacing(spacing);
+			display->addDrawable(netModel1);
+
+			netModel2 = new NetModel(&net);
+			netModel2->streamIndex(1);
+			netModel2->neuronSize(neuronSize);
+			netModel2->pos(sf::Vector2f(100, 500));
+			netModel2->neuronSpacing(spacing);
+			display->addDrawable(netModel2);
+
+			netModel3 = new NetModel(&net);
+			netModel3->streamIndex(2);
+			netModel3->neuronSize(neuronSize);
+			netModel3->pos(sf::Vector2f(700, 100));
+			netModel3->neuronSpacing(spacing);
+			display->addDrawable(netModel3);
+
+			netModel4 = new NetModel(&net);
+			netModel4->streamIndex(3);
+			netModel4->neuronSize(neuronSize);
+			netModel4->pos(sf::Vector2f(700, 500));
+			netModel4->neuronSpacing(spacing);
+			display->addDrawable(netModel4);
+
+
+			display->frameRateTarget(30);
+		}
+
+
+		++iteration;
+		currentError = 0;
+
+		std::vector<float> deltaW;
+		std::vector<float> deltaB;
+
+
+			net.setInputVector(trainigsSet);
+			net.calculate();
+			net.learn(resultSet);
+
+
+			if (display.needsFrameUpdate())
+			{
+				display.processEvents();
+				display.draw();
+			}
+
+			MultiSignalVector err = net.getError();
+			currentError = err.getRootMeanSquare();
+
+		averageError = currentError;
+
+		if (averageError < 0.1)
+		{
+			std::cout << "iteration [" << iteration << "]\t Error: " << averageError << "\n";
+			net.setInputVector(trainigsSet);
+			net.calculate();
+
+			for (size_t i = 0; i < trainigsSet.size(); ++i)
+			{
+
+				SignalVector output = net.getOutputVector(i);
+				std::cout << "Set [" << i << "]\t";
+				for (size_t j = 0; j < output.size(); ++j)
+				{
+					std::cout << output[j] << "\t";
+
+				}
+				std::cout << "\n";
+
+			}
+			getchar();
+			printWeights(&net);
+
+		}
+		if (displayEnable)
+		{
+			//display->
+		}
+
 	}
 }
 
@@ -372,6 +549,8 @@ void printWeights(const Net* net)
 	}
 	std::cout << "\n";
 }
+
+
 
 
 

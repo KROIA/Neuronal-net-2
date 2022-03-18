@@ -8,15 +8,6 @@ namespace NeuronalNet
 #ifdef UNIT_TEST
 		std::vector<std::string> Debug::_unitTest_consoleBuffer;
 #endif
-		// helper functions for cleaner time measuring code
-		std::chrono::time_point<std::chrono::high_resolution_clock> now() {
-			return std::chrono::high_resolution_clock::now();
-		}
-
-		template <typename T>
-		double milliseconds(T t) {
-			return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(t).count() / 1000000;
-		}
 
 		std::string timeToString(double timeMs)
 		{
@@ -91,6 +82,52 @@ namespace NeuronalNet
 			return "";
 		}
 
+		Timer::Timer(bool autoStart)
+			: m_running(false)
+		{
+			if (autoStart)
+				start();
+		}
+		Timer::~Timer()
+		{
+
+		}
+
+		void Timer::start()
+		{
+			t1 = std::chrono::high_resolution_clock::now();
+			m_running = true;
+		}
+		void Timer::stop()
+		{
+			t2 = std::chrono::high_resolution_clock::now();
+			m_running = false;
+		}
+		double Timer::getMillis() const
+		{
+			auto current = std::chrono::high_resolution_clock::now();
+			return getMillis(current - t1);
+		}
+		void Timer::reset()
+		{
+			m_running = false;
+			t1 = t2;
+		}
+		bool Timer::isRunning() const
+		{
+			return m_running;
+		}
+
+		inline std::chrono::time_point<std::chrono::high_resolution_clock> Timer::getCurrentTimePoint()
+		{
+			return std::chrono::high_resolution_clock::now();
+		}
+		template <typename T>
+		inline double Timer::getMillis(T t)
+		{
+			return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(t).count() / 1000000;
+		}
+
 
 		size_t __DBG_stackDepth = 0;
 
@@ -104,14 +141,14 @@ namespace NeuronalNet
 
 			CONSOLE_RAW(m_stackSpace)
 				CONSOLE_RAW(m_functionName << " begin\n")
-				t1 = now();
+				t1 = getCurrentTimePoint();
 
 		}
 		DebugFunctionTime::~DebugFunctionTime()
 		{
-			auto t2 = now();
+			auto t2 = getCurrentTimePoint();
 			CONSOLE_RAW(m_stackSpace)
-				CONSOLE_RAW(m_functionName << " end time: " << timeToString(milliseconds(t2 - t1)) << "\n")
+				CONSOLE_RAW(m_functionName << " end time: " << timeToString(getMillis(t2 - t1)) << "\n")
 				if (__DBG_stackDepth != 0)
 					--__DBG_stackDepth;
 		}

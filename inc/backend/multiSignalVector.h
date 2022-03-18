@@ -35,6 +35,16 @@ namespace NeuronalNet
 		const SignalVector** end() const;
 
 		void clear();
+
+
+		long double getSum() const;			// SUM(elem)
+		float getMean() const;				// SUM(elem)/nElem
+		float getRootMeanSquare() const;    // sqrt(SUM(elem^2)/nElem)
+		float getGeometricMean() const;     // pow(PROD(elem),1/nElem)
+		float getHarmonicMean() const;		// nElem/SUM(1/elem)
+
+
+
 		private:
 
 		SignalVector** m_list;

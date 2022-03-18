@@ -190,6 +190,77 @@ namespace NeuronalNet
 		m_signalCount = 0;
 	}
 
-
+	long double MultiSignalVector::getSum() const
+	{
+		long double sum = 0;
+		for (size_t i = 0; i < m_vecCount; ++i)
+			sum += m_list[i]->getSum();
+		return sum;
+	}
+	float MultiSignalVector::getMean() const
+	{
+		if (m_vecCount == 0)
+			return 0;
+		long double sum = 0;
+		size_t elemCount = 0;
+		for (size_t i = 0; i < m_vecCount; ++i)
+		{
+			sum += m_list[i]->getSum();
+			elemCount += m_list[i]->size();
+		}
+		return getSum() / (long double)elemCount;
+	}
+	float MultiSignalVector::getRootMeanSquare() const
+	{
+		if (m_vecCount == 0)
+			return 0;
+		long double sum = 0;
+		size_t elemCount = 0;
+		for (size_t i = 0; i < m_vecCount; ++i)
+		{
+			float* end = m_list[i]->begin() + m_list[i]->size();
+			for (float* elem = m_list[i]->begin(); elem < end; ++elem)
+			{
+				sum += ((long double)(*elem) * (long double)(*elem));
+			}
+			elemCount += m_list[i]->size();
+		}
+		sum = sum / (long double)elemCount;
+		return (float)sqrtl(sum);
+	}
+	float MultiSignalVector::getGeometricMean() const
+	{
+		if (m_vecCount == 0)
+			return 0;
+		long double product = 0;
+		size_t elemCount = 0;
+		for (size_t i = 0; i < m_vecCount; ++i)
+		{
+			float* end = m_list[i]->begin() + m_list[i]->size();
+			for (float* elem = m_list[i]->begin(); elem < end; ++elem)
+			{
+				product *= (long double)(*elem);
+			}
+			elemCount += m_list[i]->size();
+		}
+		return (float)powl(product, (long double)1 / (long double)elemCount);
+	}
+	float MultiSignalVector::getHarmonicMean() const
+	{
+		if (m_vecCount == 0)
+			return 0;
+		long double sum = 0;
+		size_t elemCount = 0;
+		for (size_t i = 0; i < m_vecCount; ++i)
+		{
+			float* end = m_list[i]->begin() + m_list[i]->size();
+			for (float* elem = m_list[i]->begin(); elem < end; ++elem)
+			{
+				sum += (long double)1 / (long double)(*elem);
+			}
+			elemCount += m_list[i]->size();
+		}
+		return (long double)elemCount / sum;
+	}
 
 };
