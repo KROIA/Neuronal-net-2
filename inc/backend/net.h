@@ -11,6 +11,7 @@
 #include "GraphicsNeuronInterface.h"
 #include "GraphicsConnectionInterface.h"
 #include "neuronIndex.h"
+#include "utilities.h"
 
 
 
@@ -43,12 +44,16 @@ namespace NeuronalNet
 		size_t getHiddenXCount() const;
 		size_t getHiddenYCount() const;
 		size_t getOutputCount() const;
+		size_t getNeuronCount() const;
 
 		void setActivation(Activation act);
 		Activation getActivation() const;
 
 		void setHardware(enum Hardware ware);
 		Hardware getHardware() const;
+
+		void enableBias(bool enable);
+		bool isBiasEnabled() const;
 
 		virtual bool build();
 		bool isBuilt() const;
@@ -85,6 +90,7 @@ namespace NeuronalNet
 		float getWeight(size_t layer, size_t neuron, size_t input) const;
 		const float* getWeight() const;
 		size_t getWeightSize() const;
+		const float* getBias() const;
 
 
 		void calculate();
@@ -104,9 +110,11 @@ namespace NeuronalNet
 		typedef float ActFp(float);
 
 		
-		void graphics_update(GraphicsNeuronInterface*obj, size_t streamIndex);
+		void graphics_update(GraphicsNeuronInterface*obj, size_t streamIndex,
+							 float minN, float maxN, float minO, float maxO);
 		void graphics_outOfRange(GraphicsNeuronInterface* obj);
-		void graphics_update(GraphicsConnectionInterface*obj, size_t streamIndex);
+		void graphics_update(GraphicsConnectionInterface*obj, size_t streamIndex,
+							 float minW, float maxW, float minS, float maxS);
 		void graphics_outOfRange(GraphicsConnectionInterface* obj);
 
 
@@ -137,6 +145,7 @@ namespace NeuronalNet
 		size_t m_hiddenX;
 		size_t m_hiddenY;
 		size_t m_outputs;
+		bool m_useBias;
 
 		size_t m_streamSize;
 
@@ -189,6 +198,8 @@ namespace NeuronalNet
 
 		const static SignalVector m_emptySignalVectorDummy;
 		const static MultiSignalVector m_emptyMultiSignalVectorDummy;
+
+		static size_t m_net_instanceCount;
 	};
 
 };

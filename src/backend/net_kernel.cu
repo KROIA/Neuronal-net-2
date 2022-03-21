@@ -14,7 +14,7 @@ namespace NeuronalNet
     {
         size_t w = 3;
         size_t h = 5;
-        float* matrix = new float[w * h];
+        float* matrix = DBG_NEW float[w * h];
         /*for (size_t y = 0; y < w * h; ++y)
         {
             matrix[y] = 0;
@@ -102,7 +102,7 @@ namespace NeuronalNet
         }
         if (_h_cudaInfo == nullptr)
         {
-            _h_cudaInfo = new CUDA_info;
+            _h_cudaInfo = DBG_NEW CUDA_info;
             _h_cudaInfo->maxThreadDim.x = h_deviceProp.maxThreadsDim[0];
             _h_cudaInfo->maxThreadDim.y = h_deviceProp.maxThreadsDim[1];
             _h_cudaInfo->maxThreadDim.z = h_deviceProp.maxThreadsDim[2];
@@ -110,6 +110,20 @@ namespace NeuronalNet
             _h_cudaInfo->totalGlobalMemory = h_deviceProp.totalGlobalMem;
         }
         return h_deviceProp;
+    }
+    __host__
+        void GPU_CUDA_deleteSpecs()
+    {
+        if (_d_cudaInfo)
+        {
+            cudaFree(_d_cudaInfo);
+            _d_cudaInfo = nullptr;
+        }
+        if (_h_cudaInfo)
+        {
+            delete _h_cudaInfo;
+            _h_cudaInfo = nullptr;
+        }
     }
     __host__ 
         void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
@@ -655,6 +669,62 @@ namespace NeuronalNet
     {
         return (size_t)floor((sqrt(8 * (double)sum + 1) - 1) / 2);
     }
+
+    __device__ 
+        void kernel_calculateOutputError(float** d_netinpuitMultiSignals, float** d_outputMultiSignals, float** d_expectedOutputMultiSignal,
+                                         float** d_errorMultiList, kernel_ActFp* derivetiveFunc, 
+                                         size_t  outputCount, size_t signalCount)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index > outputCount)
+            return;
+
+        // Error = f'(netinput) * (expected - output)
+        for (size_t i = 0; i < signalCount; ++i)
+        {
+            d_errorMultiList[i][index] = (*derivetiveFunc)(d_netinpuitMultiSignals[i][index]) *
+                                         (d_expectedOutputMultiSignal[i][index] - d_outputMultiSignals[i][index]);
+        }
+    }
+
+    #define CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE 32
+  //  #define CUDA_CHANGE_LAYER_WEIGHTS_ITERATION_SIZE 
+    __device__ 
+        void kernel_changeLayerWeights(float* d_weightList, float** d_neuronMultiSignals, float** d_errorMultiList,
+                                       size_t neuronCount, size_t signalCount, float learnRate)
+    {
+
+    }
+    __device__ 
+        void kernel_changeLayerWeights_slice(float* d_deltaW, float** d_neuronMultiSignals, float** d_errorMultiList,
+                                             size_t neuronCountI, size_t neuronCountJ, size_t signalCount,
+                                             size_t iteration, size_t iterationSize)
+    {
+        size_t x = blockIdx.x * blockDim.x + threadIdx.x;
+        size_t y = blockIdx.y * blockDim.y + threadIdx.y;
+        if (x >= neuronCountJ || y >= neuronCountI)
+            return;
+        size_t iterationOffset = iteration * iterationSize;
+        __shared__ float outputSignals[CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE][CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE];
+        __shared__ float errorValues  [CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE][CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE];
+        __shared__ float result[CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE][CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE];
+
+        outputSignals[threadIdx.x][threadIdx.y] = d_neuronMultiSignals[iterationOffset + x][y];
+        errorValues  [threadIdx.x][threadIdx.y] = d_errorMultiList    [x][iterationOffset + y];
+
+        result[threadIdx.x][threadIdx.y] = 0;
+        __syncthreads();
+
+        for (size_t i = 0; i < CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE; ++i)
+        {
+            result[threadIdx.x][threadIdx.y] += outputSignals[i][threadIdx.y] * errorValues[threadIdx.x][i];
+        }
+        __syncthreads();
+
+        d_deltaW[threadIdx.x + threadIdx.y * CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE] = result[threadIdx.x][threadIdx.y];
+
+    }
+
 
     __global__
         void kernel_offsetScale(float *d_list, float offset, float scale, size_t size, CUDA_info* d_info)

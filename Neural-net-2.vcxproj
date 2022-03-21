@@ -26,12 +26,16 @@
     <ClInclude Include="inc\backend\net_kernel.cuh" />
     <ClInclude Include="inc\backend\neuronIndex.h" />
     <ClInclude Include="inc\backend\signalVector.h" />
-    <ClInclude Include="inc\graphics\connection.h" />
+    <ClInclude Include="inc\backend\utilities.h" />
+    <ClInclude Include="inc\graphics\connectionPainter.h" />
     <ClInclude Include="inc\graphics\display.h" />
+    <ClInclude Include="inc\graphics\displayInterface.h" />
     <ClInclude Include="inc\graphics\drawable.h" />
+    <ClInclude Include="inc\graphics\drawableInterface.h" />
     <ClInclude Include="inc\graphics\graphicsUtilities.h" />
     <ClInclude Include="inc\graphics\netModel.h" />
-    <ClInclude Include="inc\graphics\neuron.h" />
+    <ClInclude Include="inc\graphics\neuronPainter.h" />
+    <ClInclude Include="inc\graphics\pixelPainter.h" />
     <ClInclude Include="inc\neuronalNet.h" />
   </ItemGroup>
   <ItemGroup>
@@ -41,12 +45,14 @@
     <ClCompile Include="src\backend\net.cpp" />
     <ClCompile Include="src\backend\neuronIndex.cpp" />
     <ClCompile Include="src\backend\signalVector.cpp" />
-    <ClCompile Include="src\graphics\connection.cpp" />
+    <ClCompile Include="src\backend\utilities.cpp" />
+    <ClCompile Include="src\graphics\connectionPainter.cpp" />
     <ClCompile Include="src\graphics\display.cpp" />
     <ClCompile Include="src\graphics\drawable.cpp" />
     <ClCompile Include="src\graphics\graphicsUtilities.cpp" />
     <ClCompile Include="src\graphics\netModel.cpp" />
-    <ClCompile Include="src\graphics\neuron.cpp" />
+    <ClCompile Include="src\graphics\neuronPainter.cpp" />
+    <ClCompile Include="src\graphics\pixelPainter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\backend\net_kernel.cu" />

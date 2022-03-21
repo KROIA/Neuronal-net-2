@@ -11,4 +11,6 @@
 
 #include "graphics/netModel.h"
 #include "graphics/display.h"
-#include "graphics/neuron.h"
+#include "graphics/neuronPainter.h"
+#include "graphics/connectionPainter.h"
+#include "graphics/pixelPainter.h"

@@ -9,7 +9,9 @@ namespace NeuronalNet
 	{
 		public:
 
-		virtual void update(float weight, float signal) = 0;
+		virtual void update(float weight, float signal, 
+							float minW, float maxW,
+							float minS, float maxS) = 0;
 
 		void index(const ConnectionIndex& index)
 		{

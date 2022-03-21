@@ -4,8 +4,9 @@
 #include <vector>
 
 #include "backend/net.h"
-#include "neuron.h"
-#include "connection.h"
+#include "neuronPainter.h"
+#include "connectionPainter.h"
+#include "pixelPainter.h"
 
 namespace NeuronalNet
 {
@@ -19,41 +20,46 @@ namespace NeuronalNet
 			NetModel(Net* net);
 			~NetModel();
 
-			void rebuild();
+			void build();
 
-			void streamIndex(size_t index);
-			size_t streamIndex() const;
+			void setStreamIndex(size_t index);
+			size_t getStreamIndex() const;
 
-			void pos(const sf::Vector2f& pos);
-			const sf::Vector2f& pos() const;
+			void setPos(const sf::Vector2f& pos);
+			const sf::Vector2f& getPos() const;
 
-			void neuronSpacing(const sf::Vector2f& sp);
-			const sf::Vector2f& neuronSpacing();
+			void setNeuronSpacing(const sf::Vector2f& sp);
+			const sf::Vector2f& getNeuronSpacing();
 
-			void connectionWidth(float w);
-			void signalWidth(float w);
-			void neuronSize(float size);
+			void setConnectionWidth(float w);
+			void setSignalWidth(float w);
+			void setNeuronSize(float size);
 
-			float connectionWidth() const;
-			float signalWidth() const;
-			float neuronSize() const;
+			float getConnectionWidth() const;
+			float getSignalWidth() const;
+			float getNeuronSize() const;
 
 			void draw(sf::RenderWindow* window,
 					  const sf::Vector2f &offset = sf::Vector2f(0, 0));
+			void drawDebug(sf::RenderWindow* window,
+						   const sf::Vector2f& offset = sf::Vector2f(0, 0));
 
 			protected:
 			void clear();
 			void updateNeuronDimensions();
+			void updateGraphics();
 			//void internal_neuronSize(float size);
 
 			vector<GraphicsNeuronInterface*> m_neuronInterface;
-			vector<Neuron*> m_neuronList;
-			vector<Neuron*> m_inputNeurons;
-			vector<vector<Neuron*> > m_hiddenNeurons;
-			vector<Neuron*> m_outputNeurons;
+			vector<NeuronPainter*> m_neuronList;
+			vector<NeuronPainter*> m_inputNeurons;
+			vector<vector<NeuronPainter*> > m_hiddenNeurons;
+			vector<NeuronPainter*> m_outputNeurons;
 
 			vector<GraphicsConnectionInterface*> m_connectionInterface;
-			vector<Connection*> m_connectionList;
+			vector<ConnectionPainter*> m_connectionList;
+			vector<PixelPainter*> m_pixelPainterList;
+
 			Net* m_net;
 
 			float m_connectionWidth;
@@ -61,7 +67,7 @@ namespace NeuronalNet
 			float m_neuronSize;
 			size_t m_streamIndex;
 
-			sf::Vector2f m_pos;
+			//sf::Vector2f m_pos;
 			sf::Vector2f m_neuronSpacing;
 		};
 	};

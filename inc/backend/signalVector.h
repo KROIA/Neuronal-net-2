@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "config.h"
+#include "debug.h"
 
 namespace NeuronalNet
 {

@@ -4,34 +4,38 @@
 namespace NeuronalNet
 {
 	SignalVector::SignalVector()
+		: m_size(0)
+		, m_list(nullptr)
 	{
-		m_size = 0;
-		m_list = nullptr;
 	}
 
 	SignalVector::SignalVector(size_t size)
+		: m_list(nullptr)
 	{
 		m_size = size;
-		m_list = new float[m_size];
+		m_list = DBG_NEW float[m_size];
 		memset(m_list, 0, m_size * sizeof(float));
 	}
 	SignalVector::SignalVector(const SignalVector& other)
+		: m_list(nullptr)
 	{
 		m_size = other.m_size;
-		m_list = new float[m_size];
+		m_list = DBG_NEW float[m_size];
 		memcpy(m_list, other.m_list, m_size * sizeof(float));
 	}
 
 	SignalVector::SignalVector(const std::vector<float>& other)
+		: m_list(nullptr)
 	{
 		m_size = other.size();
-		m_list = new float[m_size];
+		m_list = DBG_NEW float[m_size];
 		memcpy(m_list, other.data(), m_size * sizeof(float));
 	}
 	SignalVector::SignalVector(const float* begin, size_t elemCount)
+		: m_list(nullptr)
 	{
 		m_size = elemCount;
-		m_list = new float[m_size];
+		m_list = DBG_NEW float[m_size];
 		memcpy(m_list, begin, m_size * sizeof(float));
 	}
 
@@ -39,6 +43,8 @@ namespace NeuronalNet
 	{
 		if (m_list)
 			delete[] m_list;
+		m_list = nullptr;
+		m_size = 0;
 	}
 
 	const SignalVector& SignalVector::operator=(const SignalVector& other)
@@ -51,7 +57,8 @@ namespace NeuronalNet
 		{
 			if (m_list)
 				delete[] m_list;
-			m_list = new float[other.m_size];
+			m_list = nullptr;
+			m_list = DBG_NEW float[other.m_size];
 			m_size = other.m_size;
 			memcpy(m_list, other.m_list, m_size * sizeof(float));
 		}
@@ -71,7 +78,7 @@ namespace NeuronalNet
 		float* oldData = m_list;
 		size_t oldSize = m_size;
 		m_size = size;
-		m_list = new float[m_size];
+		m_list = DBG_NEW float[m_size];
 
 		size_t cpySize = m_size;
 		if (cpySize > oldSize)
@@ -88,7 +95,7 @@ namespace NeuronalNet
 		if (elemCount > m_size)
 		{
 			delete[] m_list;
-			m_list = new float[elemCount];
+			m_list = DBG_NEW float[elemCount];
 			m_size = elemCount;
 		}
 		memcpy(m_list, begin, elemCount * sizeof(float));

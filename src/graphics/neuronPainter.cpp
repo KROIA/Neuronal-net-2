@@ -1,14 +1,15 @@
-#include "graphics/neuron.h"
+#include "graphics/neuronPainter.h"
 
 namespace NeuronalNet
 {
 	namespace Graphics
 	{
-		const float Neuron::standardSize = 20;
+		const float NeuronPainter::standardSize = 20;
 
-		const string Neuron::m_fontPath = "C:\\Windows\\Fonts\\arial.ttf";
+		const string NeuronPainter::m_fontPath = "C:\\Windows\\Fonts\\arial.ttf";
+		sf::Font NeuronPainter::m_font;
 			
-		Neuron::Neuron()
+		NeuronPainter::NeuronPainter()
 			: Drawable()
 		{
 			m_color.b	= 0;
@@ -24,13 +25,14 @@ namespace NeuronalNet
 			m_pos = sf::Vector2f(0, 0);
 			m_size = standardSize;
 
+			if(m_font.getInfo().family =="")
 			if (!m_font.loadFromFile(m_fontPath))
 			{
 				CONSOLE("Can't load font: "<<m_fontPath)
 			}
 			m_outputText.setFont(m_font);
 		}
-		Neuron::Neuron(const Neuron& other)
+		NeuronPainter::NeuronPainter(const NeuronPainter& other)
 			: Drawable(other)
 		{
 			m_index		= other.m_index;
@@ -42,12 +44,12 @@ namespace NeuronalNet
 			m_pos = other.m_pos;
 			m_size = other.m_size;
 		}
-		Neuron::~Neuron()
+		NeuronPainter::~NeuronPainter()
 		{
 
 		}
 
-		const Neuron& Neuron::operator=(const Neuron& other)
+		const NeuronPainter& NeuronPainter::operator=(const NeuronPainter& other)
 		{
 			m_index = other.m_index;
 			m_color = other.m_color;
@@ -60,24 +62,24 @@ namespace NeuronalNet
 			return *this;
 		}
 
-		void Neuron::pos(const sf::Vector2f& pos)
+		void NeuronPainter::setPos(const sf::Vector2f& pos)
 		{
 			m_pos = pos;
 		}
-		const sf::Vector2f& Neuron::pos() const
+		const sf::Vector2f& NeuronPainter::getPos() const
 		{
 			return m_pos;
 		}
-		void Neuron::size(float size)
+		void NeuronPainter::setSize(float size)
 		{
 			m_size = size;
 		}
-		float Neuron::size() const
+		float NeuronPainter::getSize() const
 		{
 			return m_size;
 		}
 
-		void Neuron::draw(sf::RenderWindow* window,
+		void NeuronPainter::draw(sf::RenderWindow* window,
 						  const sf::Vector2f &offset)
 		{
 			sf::CircleShape shape(m_size);
@@ -107,7 +109,9 @@ namespace NeuronalNet
 		}
 
 		// Interface implementation
-		void Neuron::update(float netinput, float output)
+		void NeuronPainter::update(float netinput, float output,
+								   float minN, float maxN,
+								   float minO, float maxO)
 		{
 			m_netinput	= netinput;
 			m_output	= output;
@@ -124,7 +128,7 @@ namespace NeuronalNet
 			sf::FloatRect bound = m_outputText.getGlobalBounds();
 			m_outputText.setOrigin(sf::Vector2f(bound.width / 2, bound.height / 2));
 
-			m_color = getColor(m_output);
+			m_color = getColor(m_output, minO, maxO);
 		}
 	};
 };

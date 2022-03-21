@@ -12,20 +12,20 @@ namespace NeuronalNet
 	{
 		using std::string;
 
-		class NET_API Neuron	:	public Drawable, public GraphicsNeuronInterface
+		class NET_API NeuronPainter	:	public Drawable, public GraphicsNeuronInterface
 		{
 			public:
-			Neuron();
-			Neuron(const Neuron& other);
-			~Neuron();
+			NeuronPainter();
+			NeuronPainter(const NeuronPainter& other);
+			~NeuronPainter();
 
-			const Neuron& operator=(const Neuron& other);
+			const NeuronPainter& operator=(const NeuronPainter& other);
 
 			
-			void pos(const sf::Vector2f& pos);
-			const sf::Vector2f& pos() const;
-			void size(float size);
-			float size() const;
+			void setPos(const sf::Vector2f& pos);
+			const sf::Vector2f& getPos() const;
+			void setSize(float size);
+			float getSize() const;
 
 			
 
@@ -34,7 +34,9 @@ namespace NeuronalNet
 			void draw(sf::RenderWindow* window,
 					  const sf::Vector2f& offset = sf::Vector2f(0, 0));
 
-			virtual void update(float netinput, float output);
+			virtual void update(float netinput, float output,
+								float minN, float maxN,
+								float minO, float maxO);
 
 			static const float standardSize;
 			protected:
@@ -45,7 +47,7 @@ namespace NeuronalNet
 			float m_size;
 
 			static const string m_fontPath;
-			sf::Font m_font;
+			static sf::Font m_font;
 
 			// Data from Net
 			float m_netinput;

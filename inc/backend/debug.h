@@ -1,4 +1,7 @@
 #pragma once
+#define _CRTDBG_MAP_ALLOC
+#include <cstdlib>
+#include <crtdbg.h>
 
 #include <iostream>
 #include <stdio.h>
@@ -12,6 +15,14 @@
 #include <sstream>
 #endif
 
+
+#if  defined(_DEBUG) && defined(NET_MEMORY_LEACK_CKECK)
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+// Replace _NORMAL_BLOCK with _CLIENT_BLOCK if you want the
+// allocations to be of _CLIENT_BLOCK type
+#else
+#define DBG_NEW new
+#endif
 
 namespace NeuronalNet
 {
@@ -32,9 +43,12 @@ namespace NeuronalNet
 
 			void start();
 			void stop();
+			void pause();
+			void unpause();
 			double getMillis() const;
 			void reset();
 			bool isRunning() const;
+			bool isPaused() const;
 
 			static inline std::chrono::time_point<std::chrono::high_resolution_clock> getCurrentTimePoint();
 			template <typename T>
@@ -43,7 +57,12 @@ namespace NeuronalNet
 			protected:
 			std::chrono::time_point<std::chrono::high_resolution_clock> t1;
 			std::chrono::time_point<std::chrono::high_resolution_clock> t2;
+
+			std::chrono::time_point<std::chrono::high_resolution_clock> pause_t1;
+			std::chrono::time_point<std::chrono::high_resolution_clock> pause_t2;
 			bool m_running;
+			bool m_paused;
+			double m_pauseOffset;
 		};
 
 		class NET_API DebugFunctionTime : public Timer
@@ -55,7 +74,7 @@ namespace NeuronalNet
 			private:
 			std::string m_stackSpace;
 			std::string m_functionName;
-
+			
 		};
 
 		
@@ -103,9 +122,14 @@ namespace NeuronalNet
 //#define VERIFY_BOOL(val,comp,message) __VERIFY_BOOL_COMP1(val,comp,message)}
 #define VERIFY_BOOL(val,comp,message,ret) __VERIFY_BOOL_COMP1(val,comp,message) ret;}
 
-#define __VERIFY_VALID_PTR_COMP1(ptr, message) if(!ptr){PRINT_ERROR(#ptr<<" == nullltr "<<message)
+#define __VERIFY_VALID_PTR_COMP1(ptr, message) if(!ptr){PRINT_ERROR(#ptr<<" == nullptr "<<message)
 //#define VERIFY_VALID_PTR(ptr, message) __VERIFY_VALID_PTR_COMP1(ptr,message)}
-#define VERIFY_VALID_PTR(ptr, message, ret) __VERIFY_VALID_PTR_COMP1(ptr,message) ret;}
+//#define VERIFY_VALID_PTR(ptr, message, ret) __VERIFY_VALID_PTR_COMP1(ptr,message) ret;}
 
-
+#define PTR_CHECK_NULLPTR(ptr,ret) \
+    if(ptr == nullptr) \
+    {   \
+        PRINT_ERROR(std::string(#ptr) + " is a nullptr") \
+        ret; \
+    }
 };

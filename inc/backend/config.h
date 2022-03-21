@@ -1,8 +1,10 @@
 #pragma once
 
-
 //#define NET_DEBUG
 //#define UNIT_TEST
+
+// Use "_CrtDumpMemoryLeaks();" at the end of the application to dump the leaked memory
+//#define NET_MEMORY_LEACK_CKECK
 
 
 #ifdef DLL_EXPORT

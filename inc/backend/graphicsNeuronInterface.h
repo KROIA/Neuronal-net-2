@@ -10,7 +10,9 @@ namespace NeuronalNet
 	{
 		public:
 
-		virtual void update(float netinput, float output) = 0;
+		virtual void update(float netinput, float output,
+							float minN, float maxN,
+							float minO, float maxO) = 0;
 
 		void index(const NeuronIndex& index)
 		{

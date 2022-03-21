@@ -84,6 +84,8 @@ namespace NeuronalNet
 
 		Timer::Timer(bool autoStart)
 			: m_running(false)
+			, m_paused(false)
+			, m_pauseOffset(0)
 		{
 			if (autoStart)
 				start();
@@ -95,27 +97,63 @@ namespace NeuronalNet
 
 		void Timer::start()
 		{
-			t1 = std::chrono::high_resolution_clock::now();
+			m_pauseOffset = 0;
 			m_running = true;
+			m_paused = false;
+			t1 = std::chrono::high_resolution_clock::now();
 		}
 		void Timer::stop()
 		{
 			t2 = std::chrono::high_resolution_clock::now();
+			if (m_paused)
+			{
+				pause_t2 = std::chrono::high_resolution_clock::now();
+				m_pauseOffset += getMillis(pause_t2 - pause_t1);
+			}
 			m_running = false;
+			m_paused = false;
+		}
+		void Timer::pause()
+		{
+			if (!m_paused && m_running)
+			{
+				pause_t1 = std::chrono::high_resolution_clock::now();
+				m_paused = true;
+			}
+		}
+		void Timer::unpause()
+		{
+			if (m_paused && m_running)
+			{
+				pause_t2 = std::chrono::high_resolution_clock::now();
+				m_pauseOffset += getMillis(pause_t2 - pause_t1);
+				m_paused = false;
+			}
 		}
 		double Timer::getMillis() const
 		{
-			auto current = std::chrono::high_resolution_clock::now();
-			return getMillis(current - t1);
+			if (m_running)
+			{
+				auto current = std::chrono::high_resolution_clock::now();
+				return getMillis(current - t1) - m_pauseOffset;
+			}
+			return getMillis(t2 - t1) - m_pauseOffset;
 		}
 		void Timer::reset()
 		{
 			m_running = false;
+			m_paused  = false;
 			t1 = t2;
+			pause_t2 = pause_t1;
+			m_pauseOffset = 0;
 		}
 		bool Timer::isRunning() const
 		{
 			return m_running;
+		}
+		bool Timer::isPaused() const
+		{
+			return m_paused;
 		}
 
 		inline std::chrono::time_point<std::chrono::high_resolution_clock> Timer::getCurrentTimePoint()

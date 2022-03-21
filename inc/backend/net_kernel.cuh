@@ -10,6 +10,7 @@
 
 
 #include "config.h"
+#include "debug.h"
 #include <cuda.h>
 #include <math.h>
 #include <chrono>
@@ -47,6 +48,7 @@ namespace NeuronalNet
 	NET_API __host__ void testCUDA();
 
 	NET_API __host__ cudaDeviceProp GPU_CUDA_getSpecs();
+	NET_API __host__ void GPU_CUDA_deleteSpecs();
 	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec,
 												float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
 												size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
@@ -109,6 +111,22 @@ namespace NeuronalNet
 
 	NET_API __global__ void kernel_transposeMatrix(float* d_list, size_t width, size_t height, CUDA_info* d_info = nullptr);
 	NET_API __global__ void kernel_transposeMatrix_rect_internal(float* d_list, float* tmpBuffer, size_t width, size_t height);
+
+	// Training algorithm
+
+	// Calculates the errorValue of the output neurons for each signalVector
+	NET_API __device__ void kernel_calculateOutputError(float** d_netinpuitMultiSignals, float** d_outputMultiSignals, float** d_expectedOutputMultiSignal,
+														float** d_errorMultiList, kernel_ActFp* derivetiveFunc,
+														size_t outputCount, size_t signalCount);
+
+	// Calcualtes the deltaW of each weight between the Layer I and J
+	// The deltaW will also be applyied on the weightlist
+	NET_API __device__ void kernel_changeLayerWeights(float* d_weightList, float** d_neuronMultiSignals, float** d_errorMultiList,
+													  size_t neuronCountI, size_t neuronCountJ, size_t signalCount, float learnRate);
+	// Calculates a slice of the function "kernel_changeLayerWeights"
+	NET_API __device__ void kernel_changeLayerWeights_slice(float* d_deltaW, float** d_neuronMultiSignals, float** d_errorMultiList,
+															size_t neuronCountI, size_t neuronCountJ, size_t signalCount, 
+															size_t iteration,    size_t iterationSize);
 
 
 	NET_API __global__ void kernel_offsetScale(float* d_list, float offset, float scale, size_t size, CUDA_info* d_info = nullptr);

@@ -13,6 +13,9 @@ namespace NeuronalNet
 
 		bool build();
 
+		void setLearnParameter(float learnParam);
+		float getLearnParameter() const;
+
 		void learn(const MultiSignalVector& expectedOutputVec);
 		void learn(const SignalVector& expectedOutputVec);
 		void learn(size_t streamIndex, const SignalVector& expectedOutputVec);
@@ -22,10 +25,9 @@ namespace NeuronalNet
 		const SignalVector& getError(size_t streamIndex, const SignalVector& expectedOutputVec);
 		const MultiSignalVector& getError() const;
 
-		std::vector<float> deltaWeight;
-		std::vector<float> deltaBias;
-		float m_lernParameter;
+		
 		private:
+		float m_learnParameter;
 
 		void CPU_learn(const MultiSignalVector& expectedOutputVec);
 		void CPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec);
