@@ -63,11 +63,24 @@ namespace NeuronalNet
 	NET_API __host__ extern void GPU_CUDA_freeMem(T*& d_list);
 
 	template <typename T>
+	NET_API __host__ extern void GPU_CUDA_memset(T*& d_list, int value, size_t byteCount);
+
+	template <typename T>
 	NET_API __host__ extern void GPU_CUDA_transferToDevice(T* d_list, T* h_list, size_t byteCount);
 	template <typename T>
 	NET_API __host__ extern void GPU_CUDA_transferToHost(T* d_list, T* h_list, size_t byteCount);
 	NET_API __host__ void GPU_CUDA_convertWeightMatrix(float* d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Direction dir);
 
+
+	NET_API __host__ void GPU_CUDA_learnBackpropagation(float* d_weights, float* d_biasList, float* d_inputSignals, float* d_neuronOutputs, float* d_neuronNetinputs,
+														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
+														float* d_outputErrorList, float* d_expectedOutput, float learnParam);
+
+	NET_API __host__ void GPU_CUDA_learnBackpropagationStream(float* d_weights, float* d_biasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
+															  size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
+															  float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize);
+	NET_API __host__ void GPU_CUDA_learnBackpropagation_getOutputError(float* d_outputSignals, float* h_expectedOutputSignals,
+																	   float* h_outputErrors, size_t outputCount);
 
 	NET_API __host__ size_t gaussSum(size_t val);
 	NET_API __host__ size_t invGaussSum(size_t sum);
@@ -93,6 +106,7 @@ namespace NeuronalNet
 
 
 	NET_API __device__ kernel_ActFp* kernel_net_getActivationFunction(Activation act);
+	NET_API __device__ kernel_ActFp* kernel_net_getActivationDerivetiveFunction(Activation act);
 
 
 	NET_API __global__ void kernel_net_calculateLayer(float* weights, float* biasList, float* inputSignals,
@@ -114,10 +128,33 @@ namespace NeuronalNet
 
 	// Training algorithm
 
+	NET_API __global__ void kernel_learnBackpropagationStream(float* d_weights, float* d_biasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
+														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
+														float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize);
+
+	NET_API __device__ void kernel_learnBackpropagation(float* d_weights, float *d_deltaWeights, float *d_biasList, float*d_deltaBiasList,
+														float *d_inputSignals, float* d_neuronOutputs, float* d_neuronNetinputs,
+														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, kernel_ActFp* actDerivPtr,
+														float* d_outputErrorList, float* d_expectedOutput, float learnParam);
+
+	NET_API __global__ void kernel_learnBackpropagation_applyDeltaValue(float* d_originalList, float* d_deltaList, float factor, size_t cout);
+
+	// Calculates the Error of the output layer
+	NET_API __global__ void kernel_learnBackpropagation_getOutputError(float* d_outputSignals, float* d_expectedOutputSignals,
+																	   float* d_outputErrors, size_t outputCount);
+
+	//NET_API __device__ void kernel_learnBackpropagation_
+	/*
+
 	// Calculates the errorValue of the output neurons for each signalVector
 	NET_API __device__ void kernel_calculateOutputError(float** d_netinpuitMultiSignals, float** d_outputMultiSignals, float** d_expectedOutputMultiSignal,
 														float** d_errorMultiList, kernel_ActFp* derivetiveFunc,
-														size_t outputCount, size_t signalCount);
+														size_t outputNeuronStartIndex, size_t outputCount, size_t signalCount);
+	// Calculates the errorValue of the hidden Layers
+	NET_API __device__ void kernel_calculateHiddenError(float** d_netinpuitMultiSignals, float* d_weightList,
+														float** d_errorMultiList, kernel_ActFp* derivetiveFunc,
+														size_t hiddenNeuronStartIndex, size_t iNeuronYCount, 
+														size_t jNeuronYCount, size_t signalCount);
 
 	// Calcualtes the deltaW of each weight between the Layer I and J
 	// The deltaW will also be applyied on the weightlist
@@ -127,6 +164,7 @@ namespace NeuronalNet
 	NET_API __device__ void kernel_changeLayerWeights_slice(float* d_deltaW, float** d_neuronMultiSignals, float** d_errorMultiList,
 															size_t neuronCountI, size_t neuronCountJ, size_t signalCount, 
 															size_t iteration,    size_t iterationSize);
+	NET_API __device__ void kernel_applyDeltaWeight(float* d_deltaW, float* d_weights, size_t size);*/
 
 
 	NET_API __global__ void kernel_offsetScale(float* d_list, float offset, float scale, size_t size, CUDA_info* d_info = nullptr);

@@ -95,7 +95,7 @@ void xorLoop()
 	net.setStreamSize(trainigsSet.size());
 	net.setActivation(Activation::sigmoid);
 	net.setHardware(Hardware::cpu);
-	net.setLearnParameter(0.1);
+	net.setLearnParameter(2.0);
 	net.enableBias(true);
 	net.build();
 
@@ -147,28 +147,55 @@ void xorLoop()
 
 	Debug::Timer trainigTimer;
 	trainigTimer.start();
+	MultiSignalVector err;
 	while (display.isOpen())
 	{
-		++iteration;
+		
+		if (display.needsFrameUpdate())
+		{
+			++iteration;
 
-		trainigTimer.unpause();
-		net.setInputVector(trainigsSet);
-		net.calculate();
-		net.learn(resultSet);
-		trainigTimer.pause();
+			trainigTimer.unpause();
+			net.setInputVector(trainigsSet);
+			net.calculate();
+			net.learn(resultSet);
+			trainigTimer.pause();
+
+			err = net.getError();
+			currentError = err.getRootMeanSquare();
+		}
 
 		if (display.needsFrameUpdate())
 		{
 			
-			
+			Hardware h = net.getHardware();
+			if (h != Hardware::cpu)
+			{
+				net.setHardware(Hardware::cpu);
+			}
 			display.processEvents();
 			display.draw();
+			net.setHardware(h);
+			
 		}
 
-		MultiSignalVector err = net.getError();
-		currentError = err.getRootMeanSquare();
-
 		
+
+		static Debug::Timer timer(true);
+		if (timer.getMillis() > 1000)
+		{
+			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: " << trainigTimer.getMillis() << "ms\n";
+			timer.reset();
+			timer.start();
+		}
+		/*Hardware h = net.getHardware();
+		if (h != Hardware::cpu)
+		{
+			net.setHardware(Hardware::cpu);
+		}
+		printWeights(&net);
+		net.setHardware(h);
+		getchar();*/
 		if (currentError < 0.05)
 		{
 			std::cout << "iteration [" << iteration << "]\t Error: " << currentError <<"\tTrainigtime: "<< trainigTimer.getMillis() << "ms\n";
@@ -187,7 +214,7 @@ void xorLoop()
 				std::cout << "\n";
 			}
 			std::cout << "\n";
-			net.setHardware(Hardware::gpu_cuda);
+			/*net.setHardware(Hardware::gpu_cuda);
 			net.setInputVector(trainigsSet);
 			net.calculate();
 			for (size_t i = 0; i < trainigsSet.size(); ++i)
@@ -201,10 +228,9 @@ void xorLoop()
 				}
 				std::cout << "\n";
 			}
-			getchar();
 			net.setHardware(Hardware::cpu);
-			printWeights(&net);
-			
+			printWeights(&net);*/
+			getchar();
 			
 		}
 	}
@@ -586,6 +612,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 
 void printWeights(const Net* net)
 {
+	
 	size_t iterator = 0;
 	const float* weights = net->getWeight();
 	std::cout << "WeightCount = " << net->getWeightSize()<<"\n";

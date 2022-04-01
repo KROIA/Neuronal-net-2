@@ -258,6 +258,18 @@ namespace NeuronalNet
 		void NetModel::draw(sf::RenderWindow* window,
 							const sf::Vector2f &offset)
 		{
+			if (m_net->getHardware() != Hardware::cpu)
+			{
+				static Debug::Timer timer(true);
+
+				if (timer.getMillis() > 1000)
+				{
+					PRINT_ERROR("Wrong hardware configured for using graphical feedback.\nUse Hardware::cpu to enable get access to the memory of the net")
+					timer.reset();
+					timer.start();
+				}
+				return;
+			}
 			updateGraphics();
 
 			for (size_t i = 0; i < m_connectionList.size(); ++i)

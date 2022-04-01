@@ -11,6 +11,7 @@ namespace NeuronalNet
 		BackpropNet();
 		~BackpropNet();
 
+		//virtual void setHardware(enum Hardware ware);
 		bool build();
 
 		void setLearnParameter(float learnParam);
@@ -26,11 +27,18 @@ namespace NeuronalNet
 		const MultiSignalVector& getError() const;
 
 		
+		protected:
+
+		virtual void buildDevice();
+		virtual void destroyDevice();
+
 		private:
+		
+
 		float m_learnParameter;
 
 		void CPU_learn(const MultiSignalVector& expectedOutputVec);
-		void CPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec);
+		void CPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec, float*deltaWeights, float * deltaBiasList);
 
 		void GPU_learn(const MultiSignalVector& expectedOutputVec);
 		void GPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec);
@@ -42,5 +50,9 @@ namespace NeuronalNet
 		inline const SignalVector& internal_getError(size_t streamIndex, const SignalVector& expectedOutputVec);
 
 		MultiSignalVector m_outputDifference;
+
+
+		float** h_d_outputDifference;
+		float** d_outputDifference;
 	};
 };

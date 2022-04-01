@@ -1318,6 +1318,11 @@ void Net::destroyDevice()
 			delete[] h_d_outputStream;
 			delete[] h_d_netinputList;
 			delete[] h_d_neuronValueList;
+
+			h_d_inputSignalList = nullptr;
+			h_d_outputStream = nullptr;
+			h_d_netinputList = nullptr;
+			h_d_neuronValueList = nullptr;
 			break;
 		}
 		default: {}

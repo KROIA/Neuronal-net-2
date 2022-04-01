@@ -111,7 +111,7 @@ namespace NeuronalNet
 #endif
 
 #define PRINT_ERROR(x) \
-	STANDARD_CONSOLE_OUTPUT("Error: " <<__PRETTY_FUNCTION__<<" : "<<x)
+	STANDARD_CONSOLE_OUTPUT("Error: " <<__PRETTY_FUNCTION__<<" : "<<x<<"\n")
 
 
 #define __VERIFY_RANGE_COMP1(min,var,max) if(min>var || var>max){ PRINT_ERROR(std::string(#var)<<" out of range: "<<min<<" > "<<#var<<" = "<<var<<" > "<<max)
@@ -119,7 +119,8 @@ namespace NeuronalNet
 #define VERIFY_RANGE(min,var,max,ret)__VERIFY_RANGE_COMP1(min,var,max) ret;}
 
 #define __VERIFY_BOOL_COMP1(val,comp,message) if(val != comp){PRINT_ERROR(message)
-//#define VERIFY_BOOL(val,comp,message) __VERIFY_BOOL_COMP1(val,comp,message)}
+
+	// val must equal comp to not throw an error
 #define VERIFY_BOOL(val,comp,message,ret) __VERIFY_BOOL_COMP1(val,comp,message) ret;}
 
 #define __VERIFY_VALID_PTR_COMP1(ptr, message) if(!ptr){PRINT_ERROR(#ptr<<" == nullptr "<<message)
