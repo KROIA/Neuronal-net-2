@@ -31,7 +31,7 @@
     <ClInclude Include="inc\graphics\drawable.h">
       <Filter>inc\graphics</Filter>
     </ClInclude>
-    <ClInclude Include="inc\graphics\neuron.h">
+    <ClInclude Include="inc\graphics\neuronPainter.h">
       <Filter>inc\graphics</Filter>
     </ClInclude>
     <ClInclude Include="inc\neuronalNet.h">
@@ -43,7 +43,7 @@
     <ClInclude Include="inc\graphics\netModel.h">
       <Filter>inc\graphics</Filter>
     </ClInclude>
-    <ClInclude Include="inc\graphics\connection.h">
+    <ClInclude Include="inc\graphics\connectionPainter.h">
       <Filter>inc\graphics</Filter>
     </ClInclude>
     <ClInclude Include="inc\backend\neuronIndex.h">
@@ -53,6 +53,18 @@
       <Filter>inc\backend</Filter>
     </ClInclude>
     <ClInclude Include="inc\graphics\graphicsUtilities.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\displayInterface.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\drawableInterface.h">
+      <Filter>inc\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\utilities.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\graphics\pixelPainter.h">
       <Filter>inc\graphics</Filter>
     </ClInclude>
   </ItemGroup>
@@ -92,7 +104,7 @@
     <ClCompile Include="src\backend\signalVector.cpp">
       <Filter>src\backend</Filter>
     </ClCompile>
-    <ClCompile Include="src\graphics\neuron.cpp">
+    <ClCompile Include="src\graphics\neuronPainter.cpp">
       <Filter>src\graphics</Filter>
     </ClCompile>
     <ClCompile Include="src\graphics\display.cpp">
@@ -104,13 +116,19 @@
     <ClCompile Include="src\graphics\netModel.cpp">
       <Filter>src\graphics</Filter>
     </ClCompile>
-    <ClCompile Include="src\graphics\connection.cpp">
+    <ClCompile Include="src\graphics\connectionPainter.cpp">
       <Filter>src\graphics</Filter>
     </ClCompile>
     <ClCompile Include="src\backend\neuronIndex.cpp">
       <Filter>src\backend</Filter>
     </ClCompile>
     <ClCompile Include="src\graphics\graphicsUtilities.cpp">
+      <Filter>src\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\utilities.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\graphics\pixelPainter.cpp">
       <Filter>src\graphics</Filter>
     </ClCompile>
   </ItemGroup>

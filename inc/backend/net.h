@@ -11,6 +11,7 @@
 #include "GraphicsNeuronInterface.h"
 #include "GraphicsConnectionInterface.h"
 #include "neuronIndex.h"
+#include "utilities.h"
 
 
 
@@ -36,38 +37,42 @@ namespace NeuronalNet
 		Net();
 		~Net();
 
-		void setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
-		void setStreamSize(size_t size);
+		virtual void setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
+		virtual void setStreamSize(size_t size);
 		size_t getStreamSize() const;
 		size_t getInputCount() const;
 		size_t getHiddenXCount() const;
 		size_t getHiddenYCount() const;
 		size_t getOutputCount() const;
+		size_t getNeuronCount() const;
 
-		void setActivation(Activation act);
+		virtual void setActivation(Activation act);
 		Activation getActivation() const;
 
-		void setHardware(enum Hardware ware);
+		virtual void setHardware(enum Hardware ware);
 		Hardware getHardware() const;
+
+		virtual void enableBias(bool enable);
+		bool isBiasEnabled() const;
 
 		virtual bool build();
 		bool isBuilt() const;
 		void randomizeWeights();
-		bool randomizeWeights(size_t from, size_t to);
+		virtual bool randomizeWeights(size_t from, size_t to);
 		static float getRandomValue(float min, float max);
 		void randomizeBias();
 		void randomize(float* list, size_t size, float min, float max);
 
-		void setInputVector(float* signalList);
-		void setInputVector(size_t stream, float* signalList);
-		void setInputVector(const SignalVector& signalList);
-		void setInputVector(size_t stream, const SignalVector& signalList);
-		void setInputVector(const MultiSignalVector& streamVector);
+		virtual void setInputVector(float* signalList);
+		virtual void setInputVector(size_t stream, float* signalList);
+		virtual void setInputVector(const SignalVector& signalList);
+		virtual void setInputVector(size_t stream, const SignalVector& signalList);
+		virtual void setInputVector(const MultiSignalVector& streamVector);
 
-		void setInput(size_t input, float signal);
-		void setInput(size_t stream, size_t input, float signal);
-		float getInput(size_t input) const;
-		float getInput(size_t stream, size_t input) const;
+		virtual void setInput(size_t input, float signal);
+		virtual void setInput(size_t stream, size_t input, float signal);
+		virtual float getInput(size_t input) const;
+		virtual float getInput(size_t stream, size_t input) const;
 		const SignalVector& getInputVector(size_t stream = 0);
 		const MultiSignalVector& getInputStreamVector();
 		const SignalVector& getOutputVector(size_t stream = 0);
@@ -77,14 +82,15 @@ namespace NeuronalNet
 		MultiSignalVector getNeuronValueStreamVector() const;
 
 
-		void setWeight(size_t layer, size_t neuron, size_t input, float weight);
-		void setWeight(const std::vector<float>& list);
-		void setWeight(const float* list);
-		void setWeight(const float* list, size_t to);
-		void setWeight(const float* list, size_t insertOffset, size_t count);
+		virtual void setWeight(size_t layer, size_t neuron, size_t input, float weight);
+		virtual void setWeight(const std::vector<float>& list);
+		virtual void setWeight(const float* list);
+		virtual void setWeight(const float* list, size_t to);
+		virtual void setWeight(const float* list, size_t insertOffset, size_t count);
 		float getWeight(size_t layer, size_t neuron, size_t input) const;
 		const float* getWeight() const;
 		size_t getWeightSize() const;
+		const float* getBias() const;
 
 
 		void calculate();
@@ -104,9 +110,11 @@ namespace NeuronalNet
 		typedef float ActFp(float);
 
 		
-		void graphics_update(GraphicsNeuronInterface*obj, size_t streamIndex);
+		void graphics_update(GraphicsNeuronInterface*obj, size_t streamIndex,
+							 float minN, float maxN, float minO, float maxO);
 		void graphics_outOfRange(GraphicsNeuronInterface* obj);
-		void graphics_update(GraphicsConnectionInterface*obj, size_t streamIndex);
+		void graphics_update(GraphicsConnectionInterface*obj, size_t streamIndex,
+							 float minW, float maxW, float minS, float maxS);
 		void graphics_outOfRange(GraphicsConnectionInterface* obj);
 
 
@@ -126,8 +134,8 @@ namespace NeuronalNet
 		void transferBiasToDevice();
 		void transferBiasToHost();
 
-		void buildDevice();
-		void destroyDevice();
+		virtual void buildDevice();
+		virtual void destroyDevice();
 		void buildHostWeights();
 		void buildHostBias();
 		void destroyHostWeights();
@@ -137,6 +145,7 @@ namespace NeuronalNet
 		size_t m_hiddenX;
 		size_t m_hiddenY;
 		size_t m_outputs;
+		bool m_useBias;
 
 		size_t m_streamSize;
 
@@ -189,6 +198,8 @@ namespace NeuronalNet
 
 		const static SignalVector m_emptySignalVectorDummy;
 		const static MultiSignalVector m_emptyMultiSignalVectorDummy;
+
+		static size_t m_net_instanceCount;
 	};
 
 };

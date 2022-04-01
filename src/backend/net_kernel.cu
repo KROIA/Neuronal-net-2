@@ -14,7 +14,7 @@ namespace NeuronalNet
     {
         size_t w = 3;
         size_t h = 5;
-        float* matrix = new float[w * h];
+        float* matrix = DBG_NEW float[w * h];
         /*for (size_t y = 0; y < w * h; ++y)
         {
             matrix[y] = 0;
@@ -102,7 +102,7 @@ namespace NeuronalNet
         }
         if (_h_cudaInfo == nullptr)
         {
-            _h_cudaInfo = new CUDA_info;
+            _h_cudaInfo = DBG_NEW CUDA_info;
             _h_cudaInfo->maxThreadDim.x = h_deviceProp.maxThreadsDim[0];
             _h_cudaInfo->maxThreadDim.y = h_deviceProp.maxThreadsDim[1];
             _h_cudaInfo->maxThreadDim.z = h_deviceProp.maxThreadsDim[2];
@@ -110,6 +110,20 @@ namespace NeuronalNet
             _h_cudaInfo->totalGlobalMemory = h_deviceProp.totalGlobalMem;
         }
         return h_deviceProp;
+    }
+    __host__
+        void GPU_CUDA_deleteSpecs()
+    {
+        if (_d_cudaInfo)
+        {
+            cudaFree(_d_cudaInfo);
+            _d_cudaInfo = nullptr;
+        }
+        if (_h_cudaInfo)
+        {
+            delete _h_cudaInfo;
+            _h_cudaInfo = nullptr;
+        }
     }
     __host__ 
         void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec, 
@@ -166,20 +180,34 @@ namespace NeuronalNet
     template NET_API __host__ void GPU_CUDA_freeMem<float*>(float**& d_list);
 
     template <typename T>
+    __host__ void GPU_CUDA_memset(T*& d_list, int value, size_t byteCount)
+    {
+        cudaMemset(d_list, value, byteCount);
+    }
+    template NET_API __host__ void GPU_CUDA_memset<float>(float*& d_list, int value, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_memset<float*>(float**& d_list, int value, size_t byteCount);
+
+
+    template <typename T>
     __host__ void GPU_CUDA_transferToDevice(T* d_list, T* h_list, size_t byteCount)
     {
-        cuda_handleError(cudaMemcpy(d_list, h_list, byteCount, cudaMemcpyHostToDevice));
+        cuda_handleError(cudaMemcpy((void*)d_list, (void*)h_list, byteCount, cudaMemcpyHostToDevice));
     }
     template NET_API __host__ void GPU_CUDA_transferToDevice<float>(float* d_list, float* h_list, size_t byteCount);
     template NET_API __host__ void GPU_CUDA_transferToDevice<float*>(float** d_list, float** h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToDevice<const float>(const float* d_list, const float* h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToDevice<const float*>(const float** d_list, const float** h_list, size_t byteCount);
+
 
     template <typename T>
     __host__ void GPU_CUDA_transferToHost(T* d_list, T* h_list, size_t byteCount)
     {
-        cuda_handleError(cudaMemcpy(h_list, d_list, byteCount, cudaMemcpyDeviceToHost));
+        cuda_handleError(cudaMemcpy((void *)h_list, (void*)d_list, byteCount, cudaMemcpyDeviceToHost));
     }
     template NET_API __host__ void GPU_CUDA_transferToHost<float>(float* d_list, float* h_list, size_t byteCount);
     template NET_API __host__ void GPU_CUDA_transferToHost<float*>(float** d_list, float** h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToHost<const float>(const float* d_list, const float* h_list, size_t byteCount);
+    template NET_API __host__ void GPU_CUDA_transferToHost<const float*>(const float** d_list, const float** h_list, size_t byteCount);
 
     
 
@@ -223,7 +251,59 @@ namespace NeuronalNet
     }
 
     
-    
+    __host__ 
+        void GPU_CUDA_learnBackpropagation(float* d_weights, float* d_biasList, float* d_inputSignals, float* d_neuronOutputs, float* d_neuronNetinputs,
+                                           size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
+                                           float* d_outputErrorList, float* d_expectedOutput, float learnParam)
+    {
+        float** dummyList;
+        cudaMalloc(dummyList, 5 * sizeof(float*));
+        cudaMemcpy(dummyList[0], d_inputSignals, sizeof(float*), cudaMemcpyHostToDevice);
+        cudaMemcpy(dummyList[1], d_neuronOutputs, sizeof(float*), cudaMemcpyHostToDevice);
+        cudaMemcpy(dummyList[2], d_neuronNetinputs, sizeof(float*), cudaMemcpyHostToDevice);
+        cudaMemcpy(dummyList[3], d_outputErrorList, sizeof(float*), cudaMemcpyHostToDevice);
+        cudaMemcpy(dummyList[4], d_expectedOutput, sizeof(float*), cudaMemcpyHostToDevice);
+
+        kernel_learnBackpropagationStream << <1, 1 >> > (d_weights, d_biasList, dummyList, dummyList + 1, dummyList + 2,
+                                                     inputCount, hiddenX, hiddenY, outputCount, neuronCount, weightCount, act,
+                                                     dummyList + 3, dummyList + 4, learnParam,1);
+        cuda_handleError(cudaDeviceSynchronize());
+        cudaFree(dummyList);
+    }
+
+    __host__ 
+        void GPU_CUDA_learnBackpropagationStream(float* d_weights, float* d_biasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
+                                                 size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
+                                                 float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize)
+    {
+        kernel_learnBackpropagationStream << <1, 1 >> > (d_weights, d_biasList, d_inputSignals, d_neuronOutputs, d_neuronNetinputs,
+                                                     inputCount, hiddenX, hiddenY, outputCount, neuronCount, weightCount, act,
+                                                     d_outputErrorList, d_expectedOutput, learnParam, streamSize);
+        cuda_handleError(cudaDeviceSynchronize());
+    }
+
+    __host__ 
+        void GPU_CUDA_learnBackpropagation_getOutputError(float* d_outputSignals, float* h_expectedOutputSignals,
+                                                          float* h_outputErrors, size_t outputCount)
+    {
+        size_t maxThreadsPerBlock = 1024;
+
+        float* d_exp;
+        float* d_outErr;
+        cudaMalloc(&d_exp, outputCount * sizeof(float));
+        cudaMalloc(&d_outErr, outputCount * sizeof(float));
+        cudaMemcpy(d_exp, h_expectedOutputSignals, outputCount * sizeof(float), cudaMemcpyHostToDevice);
+
+        size_t blockSize = maxThreadsPerBlock;
+        size_t numBlocks = (outputCount - 1) / blockSize + 1;
+        kernel_learnBackpropagation_getOutputError << < numBlocks, blockSize >> >
+            (d_outputSignals, d_exp, d_outErr, outputCount);
+        cuda_handleError(cudaDeviceSynchronize());
+
+        cudaMemcpy(h_outputErrors, d_outErr, outputCount * sizeof(float), cudaMemcpyDeviceToHost);
+        cudaFree(d_exp);
+        cudaFree(d_outErr);
+    }
 
 
     // Kernel functions
@@ -291,6 +371,24 @@ namespace NeuronalNet
                 return &kernel_net_activation_binary;
             case Activation::gauss:
                 return &kernel_net_activation_gaussian;
+
+        }
+        return nullptr;
+    }
+    __device__ 
+    kernel_ActFp* kernel_net_getActivationDerivetiveFunction(Activation act)
+    {
+        switch (act)
+        {
+            default:
+            case Activation::sigmoid:
+                return &kernel_net_activation_sigmoid_derivetive;
+            case Activation::linear:
+                return &kernel_net_activation_linear_derivetive;
+            case Activation::finiteLinear:
+                return &kernel_net_activation_finiteLinear_derivetive;
+            case Activation::gauss:
+                return &kernel_net_activation_gaussian_derivetive;
 
         }
         return nullptr;
@@ -655,6 +753,292 @@ namespace NeuronalNet
     {
         return (size_t)floor((sqrt(8 * (double)sum + 1) - 1) / 2);
     }
+
+    __global__ 
+        void kernel_learnBackpropagationStream(float* d_weights, float* d_biasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
+                                               size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
+                                               float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize)
+    {
+        float* deltaW = new float[weightCount];
+        float* deltaB = new float[neuronCount];
+        kernel_ActFp* actDerivPtr = kernel_net_getActivationDerivetiveFunction(act);
+
+        memset(deltaW, 0, weightCount * sizeof(float));
+        memset(deltaB, 0, neuronCount * sizeof(float));
+
+        for (size_t i = 0; i < streamSize; ++i)
+        {
+            kernel_learnBackpropagation(d_weights, deltaW, d_biasList, deltaB, 
+                                        d_inputSignals[i], d_neuronOutputs[i], d_neuronNetinputs[i],
+                                        inputCount, hiddenX, hiddenY, outputCount, neuronCount, actDerivPtr,
+                                        d_outputErrorList[i], d_expectedOutput[i], learnParam);
+            //kernel_handleError(cudaDeviceSynchronize());
+        }
+
+        size_t blockSize = 1024;
+        size_t numBlocks = (weightCount - 1) / blockSize + 1;
+        kernel_learnBackpropagation_applyDeltaValue << < numBlocks, blockSize >> > (d_weights, deltaW, learnParam, weightCount);
+        kernel_handleError(cudaDeviceSynchronize());
+
+        numBlocks = (neuronCount - 1) / blockSize + 1;
+        kernel_learnBackpropagation_applyDeltaValue << < numBlocks, blockSize >> > (d_biasList, deltaB, learnParam, neuronCount);
+        kernel_handleError(cudaDeviceSynchronize());
+
+        delete[] deltaW;
+        delete[] deltaB;
+    }
+    __device__ 
+        void kernel_learnBackpropagation(float* d_weights, float* d_deltaWeights, float* d_biasList, float* d_deltaBiasList, 
+                                         float* d_inputSignals, float* d_neuronOutputs, float* d_neuronNetinputs,
+                                         size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, kernel_ActFp* actDerivPtr,
+                                         float* d_outputErrorList, float* d_expectedOutput, float learnParam)
+    {
+        //kernel_ActFp* actDerivPtr = kernel_net_getActivationDerivetiveFunction(act);
+        size_t outputNeuronBeginIndex = neuronCount - outputCount - 1;
+        float *outputError = new float[outputCount];
+        //float *outputDifference = new float[outputCount];
+
+        size_t maxThreadsPerBlock = 1024;
+
+        size_t blockSize = maxThreadsPerBlock;
+        size_t numBlocks = (outputCount - 1) / blockSize + 1;
+        kernel_learnBackpropagation_getOutputError<<< numBlocks, blockSize>>>
+            (d_neuronOutputs + neuronCount - outputCount, d_expectedOutput,
+             d_outputErrorList, outputCount);
+        kernel_handleError(cudaDeviceSynchronize());
+
+
+        for (size_t y = 0; y < outputCount; ++y)
+        {
+            float netinput = d_neuronNetinputs[outputNeuronBeginIndex + y];
+            float derivetive = (*actDerivPtr)(netinput);
+            outputError[y] = derivetive * d_outputErrorList[y];
+
+            float deltaBias = learnParam * outputError[y];
+            d_deltaBiasList[outputNeuronBeginIndex + y] += deltaBias;
+        }
+
+
+        // Calculate errors for each layer:
+        if (hiddenX > 0)
+        {
+            float* prevHiddenError = nullptr;
+
+
+            for (long long x = hiddenX - 1; x >= 0; --x)
+            {
+                size_t hiddenNeuronBeginIndex = x * hiddenY;
+                float* hiddenError = new float[hiddenY];
+
+                for (size_t y = 0; y < hiddenY; ++y)
+                {
+                    float sumNextLayerErrors = 0;
+                    size_t weightIndex = inputCount * hiddenY + x * hiddenY * hiddenY + y * outputCount;
+                    if (x == hiddenX - 1)
+                    {
+                        // Calculate the errorsum of the outputLayer			
+                        for (size_t i = 0; i < outputCount; ++i)
+                        {
+                            sumNextLayerErrors += outputError[i] * d_weights[weightIndex + i];
+
+                            // Change the weight
+                            float deltaW = learnParam * d_neuronOutputs[hiddenNeuronBeginIndex + y] * outputError[i];
+                            d_deltaWeights[weightIndex + i] += deltaW;
+                        }
+
+                    }
+                    else
+                    {
+                        // Calculate the errorsum of the hiddenLayer
+                        for (size_t i = 0; i < hiddenY; ++i)
+                        {
+                            sumNextLayerErrors += prevHiddenError[i] * d_weights[weightIndex + i];
+
+                            // Change the weight
+                            float deltaW = learnParam * d_neuronOutputs[hiddenNeuronBeginIndex + y] * prevHiddenError[i];
+                            d_deltaWeights[weightIndex + i] += deltaW;
+                        }
+                    }
+
+                    hiddenError[y] = (*actDerivPtr)(d_neuronNetinputs[hiddenNeuronBeginIndex + y]) *
+                        sumNextLayerErrors;
+
+                    float deltaBias = learnParam * hiddenError[y];
+                    d_deltaBiasList[x * hiddenY + y] += deltaBias;
+                }
+                if (prevHiddenError)
+                    delete prevHiddenError;
+                prevHiddenError = hiddenError;
+
+                if (x == 0)
+                {
+                    // Change the last weights: inputweights
+                    for (size_t y = 0; y < inputCount; ++y)
+                    {
+                        for (size_t i = 0; i < hiddenY; ++i)
+                        {
+                            // Change the weight
+                            float deltaW = learnParam * d_inputSignals[y] * hiddenError[i];
+                            d_deltaWeights[y * hiddenY + i] += deltaW;
+                        }
+                    }
+                }
+            }
+            delete prevHiddenError;
+        }
+        else
+        {
+            // Only one Layer: outputLayer
+
+            // Change the last waights: inputweights
+            for (size_t y = 0; y < inputCount; ++y)
+            {
+                for (size_t i = 0; i < outputCount; ++i)
+                {
+                    // Change the weight
+                    float deltaW = learnParam * d_inputSignals[y] * outputError[i];
+                    d_deltaWeights[y * outputCount + i] += deltaW;
+                }
+            }
+        }
+        delete[] outputError;
+       // delete[] outputDifference;
+    }
+
+    __global__
+        void  kernel_learnBackpropagation_applyDeltaValue(float* d_originalList, float* d_deltaList, float factor, size_t cout)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index >= cout)
+            return;
+
+        d_originalList[index] += d_deltaList[index] * factor;
+    }
+
+
+    // Calculates the Error of the output layer
+    __global__
+        void kernel_learnBackpropagation_getOutputError(float* d_outputSignals, float* d_expectedOutputSignals,
+                                                        float* d_outputErrors, size_t outputCount)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index >= outputCount)
+            return;
+
+ 
+        float expected = d_expectedOutputSignals[index];
+        float output = d_outputSignals[index];
+        float difference = (expected - output);
+        d_outputErrors[index] = difference;
+    }
+    /*
+    __device__ 
+        void kernel_calculateOutputError(float** d_netinpuitMultiSignals, float** d_outputMultiSignals, float** d_expectedOutputMultiSignal,
+                                         float** d_errorMultiList, kernel_ActFp* derivetiveFunc, 
+                                         size_t outputNeuronStartIndex, size_t  outputCount, size_t signalCount)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index > outputCount)
+            return;
+
+        size_t outputNeuronIndex = index + outputNeuronStartIndex;
+
+        // Error = f'(netinput) * (expected - output)
+        for (size_t i = 0; i < signalCount; ++i)
+        {
+            d_errorMultiList[i][outputNeuronIndex] = (*derivetiveFunc)(d_netinpuitMultiSignals[i][outputNeuronIndex]) *
+                                         (d_expectedOutputMultiSignal[i][index] - d_outputMultiSignals[i][index]);
+        }
+    }
+
+    #define CUDA_CALCULATE_HIDDEN_ERROR_SLICE_SIZE 32
+    __device__ 
+        void kernel_calculateHiddenError(float** d_netinpuitMultiSignals, float* d_weightList,
+                                         float** d_errorMultiList, kernel_ActFp* derivetiveFunc,
+                                         size_t hiddenNeuronStartIndex, size_t iNeuronYCount, 
+                                         size_t jNeuronYCount, size_t signalCount)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index > neuronYCount)
+            return;
+        size_t hiddenNeuronIndex = index + hiddenNeuronStartIndex;
+        size_t nextLayerNeuronStartIndex = hiddenNeuronStartIndex + iNeuronYCount;
+        
+       // __shared__ float jErrorList[CUDA_CALCULATE_HIDDEN_ERROR_SLICE_SIZE];
+
+        for (size_t i = 0; i < signalCount; ++i)
+        {
+            float sumWeightedError = 0;
+            for (size_t j = 0; j < jNeuronYCount; ++j)
+            {
+                sumWeightedError += d_errorMultiList[i][nextLayerNeuronStartIndex + j] * d_weightList[j];
+            }
+            d_errorMultiList[i][hiddenNeuronIndex] = (*derivetiveFunc)(d_netinpuitMultiSignals[i][hiddenNeuronIndex]) * sumWeightedError;
+        }
+
+    }
+
+    #define CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE 32
+  //  #define CUDA_CHANGE_LAYER_WEIGHTS_ITERATION_SIZE 
+    __device__ 
+        void kernel_changeLayerWeights(float* d_weightList, float** d_neuronMultiSignals, float** d_errorMultiList,
+                                       size_t neuronCountI, size_t neuronCountJ, size_t signalCount, float learnRate)
+    {
+        dim3 numBlocks = dim3(neuronCountI / CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE + 1, 
+                              neuronCountJ / CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE + 1);
+        dim3 numThreads = dim3(CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE,
+                               CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE);
+
+        size_t weightCount = neuronCountI * neuronCountJ;
+        float* deltaW = new float[weightCount];
+
+        kernel_changeLayerWeights_slice << < numBlocks, numThreads >> > (deltaW, d_neuronMultiSignals, d_errorMultiList,
+                                                                         neuronCountI, neuronCountJ, signalCount, 0, signalCount);
+
+        cudaDeviceSynchronize();
+        numBlocks.x = weightCount / 1024 + 1;
+        numBlocks.y = 0;
+        numThreads.x = 1024;
+        numThreads.y = 0;
+        kernel_applyDeltaWeight << < numBlocks, numThreads >> > (deltaW, d_weightList);
+    }
+    __device__ 
+        void kernel_changeLayerWeights_slice(float* d_deltaW, float** d_neuronMultiSignals, float** d_errorMultiList,
+                                             size_t neuronCountI, size_t neuronCountJ, size_t signalCount,
+                                             size_t iteration, size_t iterationSize)
+    {
+        size_t x = blockIdx.x * blockDim.x + threadIdx.x;
+        size_t y = blockIdx.y * blockDim.y + threadIdx.y;
+        if (x >= neuronCountJ || y >= neuronCountI)
+            return;
+        size_t iterationOffset = iteration * iterationSize;
+        __shared__ float outputSignals[CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE][CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE];
+        __shared__ float errorValues  [CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE][CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE];
+        __shared__ float result[CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE][CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE];
+
+        outputSignals[threadIdx.x][threadIdx.y] = d_neuronMultiSignals[iterationOffset + x][y];
+        errorValues  [threadIdx.x][threadIdx.y] = d_errorMultiList    [x][iterationOffset + y];
+
+        result[threadIdx.x][threadIdx.y] = 0;
+        __syncthreads();
+
+        for (size_t i = 0; i < CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE; ++i)
+        {
+            result[threadIdx.x][threadIdx.y] += outputSignals[i][threadIdx.y] * errorValues[threadIdx.x][i];
+        }
+        __syncthreads();
+
+        d_deltaW[threadIdx.x + threadIdx.y * CUDA_CHANGE_LAYER_WEIGHTS_SLICE_SIZE] += result[threadIdx.x][threadIdx.y];
+
+    }
+    __device__ 
+        void kernel_applyDeltaWeight(float* d_deltaW, float* d_weights, size_t size)
+    {
+        size_t index = blockIdx.x * blockDim.x + threadIdx.x;
+        if (index >= size)
+            return;
+        d_weights[index] += d_deltaW[index];
+    }*/
 
     __global__
         void kernel_offsetScale(float *d_list, float offset, float scale, size_t size, CUDA_info* d_info)

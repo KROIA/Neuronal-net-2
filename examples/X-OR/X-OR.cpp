@@ -5,6 +5,10 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <utility>
+#include <thread>
+#include <chrono>
+#include <mutex>
 
 
 #include "neuronalNet.h"
@@ -34,91 +38,37 @@ string getByteString(double bytes);
 const std::string path = "export";
 
 void xorLoop();
-void xorBenchmark(size_t maxIteration, bool displayEnable);
+
+struct BenchmarkData
+{
+	size_t net_xSize;
+	size_t net_ySize;
+
+	bool displayEnable;
+	bool enableDebugOutput;
+
+	double minLearnTime;
+	double maxLearnTime;
+	double averageLearnTime;
+};
+std::mutex mutex;
+int activeThreads = 0;
+void xorBenchmarkMain();
+void xorBenchmark(size_t maxIteration, BenchmarkData& data);
+void xorBenchmarkThreaded(size_t thredID, BenchmarkData* list, size_t size);
 void printWeights(const Net* net);
 
 int main()
 {
+	//vector<float> test1({ 0.1,0.2,-10.3,0.4,-0.1,-0.2,0.9 });
+
+	//std::cout << "min: " << test1[getMinIndex<float>(test1.data(), test1.size())];
+	//std::cout << "  max: " << test1[getMaxIndex<float>(test1.data(), test1.size())];
+
+	//getchar();
+	//xorBenchmarkMain();
 	xorLoop();
 	return 0;
-
-    Net net;
-
-	net.setDimensions(3, 10, 100, 5);
-	net.setStreamSize(1);
-	net.setActivation(Activation::sigmoid);
-	net.setHardware(Hardware::cpu);
-	net.build();
-
-
-
-	net.setInputVector(SignalVector({ 1.f,1.f,1.f }));
-	//net.setInputVector(MultiSignalVector({ { 0,0,0 },{ 0,1,1 },{ 0,2,0 },{ 0,2,1 },{ 1,2,0 } }));
-	//net.setInputVector(MultiSignalVector{ { 1,1,1 },{ 1,1,1 },{ 1,1,1 },{ 1,1,1 },{ 1,1,1 } });
-	SignalVector weightsA;
-	weightsA.fill(net.getWeight(), net.getWeightSize());
-	//saveWeightsToImage(weightsA, net.getInputCount(), net.getHiddenXCount(), net.getHiddenYCount(), net.getOutputCount(), "A");
-	net.calculate();
-	cout << "\n";
-	MultiSignalVector resultA = net.getOutputStreamVector();
-	MultiSignalVector netinputsA = net.getNetinputStreamVector();
-	cout << "Netinput:\n";
-	printSignal(netinputsA);
-	cout << "Signals:\n";
-	printSignal(resultA);
-	
-
-	net.setHardware(Hardware::gpu_cuda);
-	net.calculate();
-	
-	//SignalVector weightsB;
-	//weightsB.fill(net.getWeight(), net.getWeightSize());
-	//saveWeightsToImage(weightsB, net.getInputCount(), net.getHiddenXCount(), net.getHiddenYCount(), net.getOutputCount(), "B");
-	cout << "\n";
-	MultiSignalVector resultB = net.getOutputStreamVector();
-	MultiSignalVector netinputsB = net.getNetinputStreamVector();
-	cout << "Netinput:\n";
-	printSignal(netinputsB);
-	cout << "Signals:\n";
-	printSignal(resultB);
-	net.setHardware(Hardware::cpu);
-	net.calculate();
-	cout << "\n";
-	SignalVector weightsC;
-	weightsC.fill(net.getWeight(), net.getWeightSize());
-//	saveWeightsToImage(weightsC, net.getInputCount(), net.getHiddenXCount(), net.getHiddenYCount(), net.getOutputCount(), "C");
-	MultiSignalVector resultC = net.getOutputStreamVector();
-	MultiSignalVector netinputsC = net.getNetinputStreamVector();
-	cout << "Netinput:\n";
-	printSignal(netinputsC);
-	cout << "Signals:\n";
-	printSignal(resultC);
-
-
-	saveNetinputToImage(netinputsA[0].begin(), net.getHiddenXCount(), net.getHiddenYCount(), "A_netinput");
-	saveNetinputToImage(netinputsA[0].begin()+ net.getHiddenXCount()* net.getHiddenXCount(), 1, net.getOutputCount(), "A_netinput_out");
-
-	saveNetinputToImage(netinputsB[0].begin(), net.getHiddenXCount(), net.getHiddenYCount(), "B_netinput");
-	saveNetinputToImage(netinputsB[0].begin() + net.getHiddenXCount() * net.getHiddenXCount(), 1, net.getOutputCount(), "B_netinput_out");
-
-	saveDifference(netinputsA[0], netinputsB[0], net.getHiddenXCount(), net.getHiddenYCount(), "Difference");
-
-
-	cout << "Result:\n";
-	if (signalEqual(resultA, resultB) && signalEqual(resultA, resultC))
-		cout << "  result PASS\n";
-	else
-		cout << "  FAIL Output vectors are not equal\n";
-	
-	if (signalEqual(netinputsA, netinputsB) && signalEqual(netinputsA, netinputsC))
-		cout << "  netinput PASS\n";
-	else
-		cout << "  FAIL Netinput vectors are not equal\n";
-
-	if (signalEqual(weightsA, weightsC))
-		cout << "  Weights PASS\n";
-	else
-		cout << "  FAIL Weights vectors are not equal\n";
 }
 
 void saveVec(const string& filename, const float *begin, size_t size)
@@ -134,51 +84,51 @@ void saveVec(const string& filename, const float *begin, size_t size)
 }
 void xorLoop()
 {
-	Display display(sf::Vector2u(1000,800),"X-OR Example");
+	Display display(sf::Vector2u(1900,900),"X-OR Example");
 	
 	BackpropNet net;
 	
 	MultiSignalVector trainigsSet(4, 2);
 	MultiSignalVector resultSet(4, 1);
 
-	net.setDimensions(2, 2, 4, 1);
+	net.setDimensions(2, 2, 5, 1);
 	net.setStreamSize(trainigsSet.size());
 	net.setActivation(Activation::sigmoid);
 	net.setHardware(Hardware::cpu);
-	net.m_lernParameter = 0.1;
+	net.setLearnParameter(2.0);
+	net.enableBias(true);
 	net.build();
 
-	sf::Vector2f spacing(40, 40);
-	float neuronSize = 20;
+	sf::Vector2f spacing(80, 20);
+	float neuronSize = 15;
 
 	NetModel netModel1(&net);
-	netModel1.streamIndex(0);
-	netModel1.neuronSize(neuronSize);
-	netModel1.pos(sf::Vector2f(100, 100));
-	netModel1.neuronSpacing(spacing);
+	netModel1.setStreamIndex(0);
+	netModel1.setNeuronSize(neuronSize);
+	netModel1.setPos(sf::Vector2f(100, 100));
+	netModel1.setNeuronSpacing(spacing);
 	display.addDrawable(&netModel1);
 
 	NetModel netModel2(&net);
-	netModel2.streamIndex(1);
-	netModel2.neuronSize(neuronSize);
-	netModel2.pos(sf::Vector2f(100, 500));
-	netModel2.neuronSpacing(spacing);
+	netModel2.setStreamIndex(1);
+	netModel2.setNeuronSize(neuronSize);
+	netModel2.setPos(sf::Vector2f(100, 500));
+	netModel2.setNeuronSpacing(spacing);
 	display.addDrawable(&netModel2);
 
 	NetModel netModel3(&net);
-	netModel3.streamIndex(2);
-	netModel3.neuronSize(neuronSize);
-	netModel3.pos(sf::Vector2f(700, 100));
-	netModel3.neuronSpacing(spacing);
+	netModel3.setStreamIndex(2);
+	netModel3.setNeuronSize(neuronSize);
+	netModel3.setPos(sf::Vector2f(1100, 100));
+	netModel3.setNeuronSpacing(spacing);
 	display.addDrawable(&netModel3);
 
 	NetModel netModel4(&net);
-	netModel4.streamIndex(3);
-	netModel4.neuronSize(neuronSize);
-	netModel4.pos(sf::Vector2f(700, 500));
-	netModel4.neuronSpacing(spacing);
+	netModel4.setStreamIndex(3);
+	netModel4.setNeuronSize(neuronSize);
+	netModel4.setPos(sf::Vector2f(1100, 500));
+	netModel4.setNeuronSpacing(spacing);
 	display.addDrawable(&netModel4);
-
 	
 	display.frameRateTarget(60);
 
@@ -192,138 +142,290 @@ void xorLoop()
 	resultSet[2] = SignalVector(vector<float>{ 1 });
 	resultSet[3] = SignalVector(vector<float>{ 0 });
 
-	float averageError = 0;
 	float currentError = 0;
 	size_t iteration = 0;
 
-	
+	Debug::Timer trainigTimer;
+	trainigTimer.start();
+	MultiSignalVector err;
 	while (display.isOpen())
 	{
-		++iteration;
-		currentError = 0;
-
-		std::vector<float> deltaW;
-		std::vector<float> deltaB;
-		//for (size_t i = 0; i < trainigsSet.size(); ++i)
+		
+		if (display.needsFrameUpdate())
 		{
-			/*while (!display.needsFrameUpdate())
-			{
-				sf::sleep(sf::milliseconds(2));
-				display.processEvents();
-			}*/
-			/*for (size_t i = 0; i < trainigsSet.size(); ++i)
-			{
-				//net.setInputVector(trainigsSet);
-				net.setInputVector(i,trainigsSet[i]);
-				net.calculate(i);
-				//net.learn(resultSet);
-				net.learn(i,resultSet[i]);
-			}*/
+			++iteration;
 
+			trainigTimer.unpause();
 			net.setInputVector(trainigsSet);
 			net.calculate();
 			net.learn(resultSet);
-			
+			trainigTimer.pause();
 
-			if (display.needsFrameUpdate())
-			{
-				display.processEvents();
-				display.draw();
-			}
-
-			//SignalVector out = net.getOutputVector();
-			//for(size_t i=0; i< out)
-
-			
-			/*if (iteration % 100 == 0 || iteration == 1)
-			{
-				if (i == 0)
-				{
-					deltaW = net.deltaWeight;
-					deltaB = net.deltaBias;
-				}
-				else
-				{
-					for (size_t j = 0; j < deltaW.size(); ++j)
-						deltaW[j] += net.deltaWeight[j];
-					for (size_t j = 0; j < deltaB.size(); ++j)
-						deltaB[j] += net.deltaBias[j];
-
-					if (i == trainigsSet.size() - 1)
-					{
-						for (size_t j = 0; j < deltaW.size(); ++j)
-							deltaW[j] /= (float)deltaW.size();
-						for (size_t j = 0; j < deltaB.size(); ++j)
-							deltaB[j] /= (float)deltaB.size();
-
-						saveVec("dW.csv", deltaW.data(), deltaW.size());
-						saveVec("dB.csv", deltaB.data(), deltaB.size());
-						saveVec("w.csv", net.getWeight(), net.getWeightSize());
-					}
-				}
-			}*/
-
-			MultiSignalVector err = net.getError();
+			err = net.getError();
 			currentError = err.getRootMeanSquare();
-			//std::cout << "Error [" << i << "]\t";
-			/*for (size_t j = 0; j < err.size(); ++j)
-			{
-				//std::cout << err[j] << "\t";
-				for (size_t k = 0; k < err[j].size(); ++k)
-				{
-					currentError += abs(err[j][k]);
-				}
-			}*/
-			
-			//std::cout << "\n";
-
 		}
-		//currentError /= (trainigsSet.size() * net.getOutputCount());
-		//averageError = (averageError * 0.8) + (0.2 * currentError);
-		averageError = currentError;
-		
-		if (averageError < 0.1)
+
+		if (display.needsFrameUpdate())
 		{
-			std::cout << "iteration [" << iteration << "]\t Error: " << averageError<<"\n";
+			
+			Hardware h = net.getHardware();
+			if (h != Hardware::cpu)
+			{
+				net.setHardware(Hardware::cpu);
+			}
+			display.processEvents();
+			display.draw();
+			net.setHardware(h);
+			
+		}
+
+		
+
+		static Debug::Timer timer(true);
+		if (timer.getMillis() > 1000)
+		{
+			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: " << trainigTimer.getMillis() << "ms\n";
+			timer.reset();
+			timer.start();
+		}
+		/*Hardware h = net.getHardware();
+		if (h != Hardware::cpu)
+		{
+			net.setHardware(Hardware::cpu);
+		}
+		printWeights(&net);
+		net.setHardware(h);
+		getchar();*/
+		if (currentError < 0.05)
+		{
+			std::cout << "iteration [" << iteration << "]\t Error: " << currentError <<"\tTrainigtime: "<< trainigTimer.getMillis() << "ms\n";
+			//net.setHardware(Hardware::gpu_cuda);
 			net.setInputVector(trainigsSet);
 			net.calculate();
-			//display.processEvents();
-			//display.draw();
 			for (size_t i = 0; i < trainigsSet.size(); ++i)
 			{
-				
-				
 				SignalVector output = net.getOutputVector(i);
-				std::cout << "Set [" << i << "]\t";
+				std::cout << "CPU Set [" << i << "]\t";
 				for (size_t j = 0; j < output.size(); ++j)
 				{
 					std::cout << output[j] << "\t";
 					
 				}
 				std::cout << "\n";
-				
 			}
+			std::cout << "\n";
+			/*net.setHardware(Hardware::gpu_cuda);
+			net.setInputVector(trainigsSet);
+			net.calculate();
+			for (size_t i = 0; i < trainigsSet.size(); ++i)
+			{
+				SignalVector output = net.getOutputVector(i);
+				std::cout << "GPU Set [" << i << "]\t";
+				for (size_t j = 0; j < output.size(); ++j)
+				{
+					std::cout << output[j] << "\t";
+
+				}
+				std::cout << "\n";
+			}
+			net.setHardware(Hardware::cpu);
+			printWeights(&net);*/
 			getchar();
-			printWeights(&net);
 			
 		}
 	}
 }
-void xorBenchmark(size_t maxIteration, bool displayEnable)
+
+void xorBenchmarkMain()
+{
+	size_t minX = 1;
+	size_t minY = 2;
+	size_t maxX = 20;
+	size_t maxY = 20;
+
+	size_t arraySizeX = maxX - minX;
+	size_t arraySizeY = maxY - minY;
+	size_t arraySize = arraySizeX * arraySizeY;
+
+	BenchmarkData* benchDataList = new BenchmarkData[arraySize];
+
+
+	for (size_t x = 0; x < arraySizeX; ++x)
+	{
+		for (size_t y = 0; y < arraySizeY; ++y)
+		{
+			benchDataList[x * arraySizeX + y].net_xSize = x + minX;
+			benchDataList[x * arraySizeX + y].net_ySize = y + minY;
+			benchDataList[x * arraySizeX + y].displayEnable = false;
+			benchDataList[x * arraySizeX + y].enableDebugOutput = false;
+		}
+	}
+
+	size_t jobSize = 1;
+	size_t nextJobStart = 0;
+
+	bool jobDone = false;
+	using namespace std::chrono_literals;
+	while (!jobDone)
+	{
+		int currentRunningThreads = 0;
+		{
+			std::lock_guard<std::mutex> lockGuard(mutex);
+			currentRunningThreads = activeThreads;
+		}
+		if (nextJobStart >= arraySize)
+			jobDone = true;
+		if (currentRunningThreads < std::thread::hardware_concurrency())
+		{
+			if (nextJobStart + jobSize > arraySize)
+				jobSize = arraySize - nextJobStart;
+			std::cout << "Starte Job: " << nextJobStart << " - " << nextJobStart + jobSize << "  " << (float)(nextJobStart + jobSize) * 100.f / (float)arraySize << "\n";
+			std::thread thread(xorBenchmarkThreaded, 0, &benchDataList[nextJobStart], jobSize);
+			thread.detach();
+			nextJobStart += jobSize;
+		}
+		std::this_thread::sleep_for(10ms);
+		
+	}
+	int currentRunningThreads = 0;
+	int currentRunningThreads1 = 0;
+	Debug::Timer timer;
+	timer.start();
+	do {
+		{
+			std::lock_guard<std::mutex> lockGuard(mutex);
+			currentRunningThreads = activeThreads;
+		}
+		std::this_thread::sleep_for(100ms);
+		if (currentRunningThreads1 != currentRunningThreads || timer.getMillis() > 1000)
+		{
+			std::cout << "Current running threads: " << currentRunningThreads << "\n";
+			currentRunningThreads1 = currentRunningThreads;
+			timer.reset();
+			timer.start();
+		}
+	} while (currentRunningThreads > 0);
+	std::cout << "Jobs done\n";
+
+	{
+		std::ofstream myfile;
+
+		std::cout << "Open file\n";
+		myfile.open("averageLearnTime.csv");
+
+		std::cout << "Write file\n";
+		myfile << ";";
+
+
+		for (size_t x = minX; x < maxX; ++x)
+		{
+			myfile << x << ";";
+		}
+		myfile << "\n";
+
+		for (size_t y = 0; y < arraySizeY; ++y)
+		{
+			myfile << y + minY << ";";
+			std::cout << "store line: " << y << "\n";
+			for (size_t x = 0; x < arraySizeX; ++x)
+			{
+				myfile << benchDataList[x * arraySizeX + y].averageLearnTime << ";";
+			}
+			myfile << "\n";
+		}
+		myfile << "\n";
+		std::cout << "closeFile\n";
+		myfile.close();
+	}
+	{
+		std::ofstream myfile;
+
+		std::cout << "Open file\n";
+		myfile.open("minLearnTime.csv");
+
+		std::cout << "Write file\n";
+		myfile << ";";
+
+
+		for (size_t x = minX; x < maxX; ++x)
+		{
+			myfile << x << ";";
+		}
+		myfile << "\n";
+
+		for (size_t y = 0; y < arraySizeY; ++y)
+		{
+			myfile << y + minY << ";";
+			std::cout << "store line: " << y << "\n";
+			for (size_t x = 0; x < arraySizeX; ++x)
+			{
+				myfile << benchDataList[x * arraySizeX + y].minLearnTime << ";";
+			}
+			myfile << "\n";
+		}
+		myfile << "\n";
+		std::cout << "closeFile\n";
+		myfile.close();
+	}
+	{
+		std::ofstream myfile;
+
+		std::cout << "Open file\n";
+		myfile.open("maxLearnTime.csv");
+
+		std::cout << "Write file\n";
+		myfile << ";";
+
+
+		for (size_t x = minX; x < maxX; ++x)
+		{
+			myfile << x << ";";
+		}
+		myfile << "\n";
+
+		for (size_t y = 0; y < arraySizeY; ++y)
+		{
+			myfile << y + minY << ";";
+			std::cout << "store line: " << y << "\n";
+			for (size_t x = 0; x < arraySizeX; ++x)
+			{
+				myfile << benchDataList[x * arraySizeX + y].maxLearnTime << ";";
+			}
+			myfile << "\n";
+		}
+		myfile << "\n";
+		std::cout << "closeFile\n";
+		myfile.close();
+	}
+	std::cout << "exit\n";
+}
+void xorBenchmarkThreaded(size_t thredID, BenchmarkData* list, size_t size)
+{
+	{
+		std::lock_guard<std::mutex> lockGuard(mutex);
+		++activeThreads;
+	}
+	for (size_t y = 0; y < size; ++y)
+	{
+		//std::cout << "Thread: " << thredID << " " << (float)y*100.f / (float)size << "%\n";
+		xorBenchmark(10, list[y]);
+	}
+	{
+		std::lock_guard<std::mutex> lockGuard(mutex);
+		--activeThreads;
+	}
+	//std::cout << "Thread: " << thredID << " " << 100 << "%\n";
+}
+void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 {
 	
 	
 
-	BackpropNet net;
+	
 	MultiSignalVector trainigsSet(4, 2);
 	MultiSignalVector resultSet(4, 1);
 
-	net.setDimensions(2, 2, 4, 1);
-	net.setStreamSize(trainigsSet.size());
-	net.setActivation(Activation::sigmoid);
-	net.setHardware(Hardware::cpu);
-	net.m_lernParameter = 0.1;
-	net.build();
+	
 
 	trainigsSet[0] = SignalVector(vector<float>{ 0, 0 });
 	trainigsSet[1] = SignalVector(vector<float>{ 0, 1 });
@@ -341,147 +443,176 @@ void xorBenchmark(size_t maxIteration, bool displayEnable)
 	NetModel* netModel2 = nullptr;
 	NetModel* netModel3 = nullptr;
 	NetModel* netModel4 = nullptr;
-	if (displayEnable)
+	if (data.displayEnable)
 	{
-		display = new Display(sf::Vector2u(1000, 800), "X-OR Example");
-
-		sf::Vector2f spacing(40, 40);
-		float neuronSize = 20;
-
-		netModel1 = new NetModel(&net);
-		netModel1->streamIndex(0);
-		netModel1->neuronSize(neuronSize);
-		netModel1->pos(sf::Vector2f(100, 100));
-		netModel1->neuronSpacing(spacing);
-		display->addDrawable(netModel1);
-
-		netModel2 = new NetModel(&net);
-		netModel2->streamIndex(1);
-		netModel2->neuronSize(neuronSize);
-		netModel2->pos(sf::Vector2f(100, 500));
-		netModel2->neuronSpacing(spacing);
-		display->addDrawable(netModel2);
-
-		netModel3  = new NetModel(&net);
-		netModel3->streamIndex(2);
-		netModel3->neuronSize(neuronSize);
-		netModel3->pos(sf::Vector2f(700, 100));
-		netModel3->neuronSpacing(spacing);
-		display->addDrawable(netModel3);
-
-		netModel4 = new NetModel(&net);
-		netModel4->streamIndex(3);
-		netModel4->neuronSize(neuronSize);
-		netModel4->pos(sf::Vector2f(700, 500));
-		netModel4->neuronSpacing(spacing);
-		display->addDrawable(netModel4);
-
-
+		display = new Display(sf::Vector2u(1900, 900), "X-OR Example");
 		display->frameRateTarget(30);
 	}
 
 	
+	double learnTime = 0;
+	double minLearnTime = 9999;
+	double maxLearnTime = 0;
+	double averageLearnTime = 0;
+	double timeout = 5000;
 
 	for(size_t benchIt = 0; benchIt < maxIteration; ++benchIt)
 	{
+		
+		if (data.enableDebugOutput)
+			cout << "Start Benchmark Test [" << benchIt << "] ";
 		float averageError = 0;
 		float currentError = 0;
 		size_t iteration = 0;
 
-		if (displayEnable)
+		Debug::Timer timer;
+
+		BackpropNet net;
+		net.setDimensions(2, data.net_xSize, data.net_ySize, 1);
+		net.setStreamSize(trainigsSet.size());
+		net.setActivation(Activation::sigmoid);
+		net.setHardware(Hardware::cpu);
+		net.setLearnParameter(0.1);
+		net.build();
+
+		if (data.displayEnable)
 		{
-			sf::Vector2f spacing(40, 40);
-			float neuronSize = 20;
+			sf::Vector2f displaySize(display->getSize());
+
+			sf::Vector2f spacing(60, 6);
+
+			sf::Vector2f gridStartPos(100,100);
+			sf::Vector2f gridSpacing(900, 400);
+			float neuronSize = 5;
 
 			netModel1 = new NetModel(&net);
-			netModel1->streamIndex(0);
-			netModel1->neuronSize(neuronSize);
-			netModel1->pos(sf::Vector2f(100, 100));
-			netModel1->neuronSpacing(spacing);
+			netModel1->setStreamIndex(0);
+			netModel1->setNeuronSize(neuronSize);
+			netModel1->setPos(gridStartPos);
+			netModel1->setNeuronSpacing(spacing);
 			display->addDrawable(netModel1);
 
 			netModel2 = new NetModel(&net);
-			netModel2->streamIndex(1);
-			netModel2->neuronSize(neuronSize);
-			netModel2->pos(sf::Vector2f(100, 500));
-			netModel2->neuronSpacing(spacing);
+			netModel2->setStreamIndex(1);
+			netModel2->setNeuronSize(neuronSize);
+			netModel2->setPos(sf::Vector2f(gridStartPos.x, gridStartPos.y + gridSpacing.y));
+			netModel2->setNeuronSpacing(spacing);
 			display->addDrawable(netModel2);
 
 			netModel3 = new NetModel(&net);
-			netModel3->streamIndex(2);
-			netModel3->neuronSize(neuronSize);
-			netModel3->pos(sf::Vector2f(700, 100));
-			netModel3->neuronSpacing(spacing);
+			netModel3->setStreamIndex(2);
+			netModel3->setNeuronSize(neuronSize);
+			netModel3->setPos(sf::Vector2f(gridStartPos.x + gridSpacing.x, gridStartPos.y));
+			netModel3->setNeuronSpacing(spacing);
 			display->addDrawable(netModel3);
 
 			netModel4 = new NetModel(&net);
-			netModel4->streamIndex(3);
-			netModel4->neuronSize(neuronSize);
-			netModel4->pos(sf::Vector2f(700, 500));
-			netModel4->neuronSpacing(spacing);
+			netModel4->setStreamIndex(3);
+			netModel4->setNeuronSize(neuronSize);
+			netModel4->setPos(gridStartPos + gridSpacing);
+			netModel4->setNeuronSpacing(spacing);
 			display->addDrawable(netModel4);
-
-
-			display->frameRateTarget(30);
 		}
 
+		
+		learnTime = 0;
+		timer.start();
+		do{
+			++iteration;
 
-		++iteration;
-		currentError = 0;
-
-		std::vector<float> deltaW;
-		std::vector<float> deltaB;
-
-
+			timer.unpause();
 			net.setInputVector(trainigsSet);
 			net.calculate();
 			net.learn(resultSet);
+			timer.pause();
 
-
-			if (display.needsFrameUpdate())
+			if (data.displayEnable)
+			if (display->needsFrameUpdate())
 			{
-				display.processEvents();
-				display.draw();
+				display->processEvents();
+				display->draw();
 			}
 
 			MultiSignalVector err = net.getError();
 			currentError = err.getRootMeanSquare();
 
-		averageError = currentError;
 
-		if (averageError < 0.1)
-		{
-			std::cout << "iteration [" << iteration << "]\t Error: " << averageError << "\n";
-			net.setInputVector(trainigsSet);
-			net.calculate();
-
-			for (size_t i = 0; i < trainigsSet.size(); ++i)
+			/*if (averageError < 0.1)
 			{
+				std::cout << "iteration [" << iteration << "]\t Error: " << averageError << "\n";
+				net.setInputVector(trainigsSet);
+				net.calculate();
 
-				SignalVector output = net.getOutputVector(i);
-				std::cout << "Set [" << i << "]\t";
-				for (size_t j = 0; j < output.size(); ++j)
+				for (size_t i = 0; i < trainigsSet.size(); ++i)
 				{
-					std::cout << output[j] << "\t";
+
+					SignalVector output = net.getOutputVector(i);
+					std::cout << "Set [" << i << "]\t";
+					for (size_t j = 0; j < output.size(); ++j)
+					{
+						std::cout << output[j] << "\t";
+
+					}
+					std::cout << "\n";
 
 				}
-				std::cout << "\n";
+				getchar();
+				printWeights(&net);
 
-			}
-			getchar();
-			printWeights(&net);
+			}*/
+		} while (currentError > 0.1 && 
+				 timeout > timer.getMillis());
+		timer.stop();
+		learnTime = timer.getMillis();
+		if (minLearnTime > learnTime)
+			minLearnTime = learnTime;
+		else if (maxLearnTime < learnTime)
+			maxLearnTime = learnTime;
 
-		}
-		if (displayEnable)
+		averageLearnTime += learnTime;
+
+		if (data.displayEnable)
 		{
-			//display->
-		}
+			display->clearDrawable();
+			delete netModel1;
+			delete netModel2;
+			delete netModel3;
+			delete netModel4;
 
+			netModel1 = nullptr;
+			netModel2 = nullptr;
+			netModel3 = nullptr;
+			netModel4 = nullptr;
+		}
+		
+		if(data.enableDebugOutput)
+			cout << "End, Learn time: "<< learnTime << "ms\n";
+
+		if (data.displayEnable)
+		if (!display->isOpen())
+			break;
 	}
+	averageLearnTime /= (float)maxIteration;
+	if (data.enableDebugOutput)
+	{
+		cout << "Bench Finished\n";
+		cout << "  Min learn Time:        " << minLearnTime << "ms\n";
+		cout << "  Max learn Time:        " << maxLearnTime << "ms\n";
+		cout << "  Average learn Time:    " << averageLearnTime << "ms\n";
+	}
+	
+
+	data.averageLearnTime = averageLearnTime;
+	data.minLearnTime = minLearnTime;
+	data.maxLearnTime = maxLearnTime;
+
+	if(display)
+	delete display;
 }
 
 void printWeights(const Net* net)
 {
+	
 	size_t iterator = 0;
 	const float* weights = net->getWeight();
 	std::cout << "WeightCount = " << net->getWeightSize()<<"\n";

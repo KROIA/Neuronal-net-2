@@ -5,9 +5,13 @@ namespace NeuronalNet
 const SignalVector Net::m_emptySignalVectorDummy(0);
 const MultiSignalVector Net::m_emptyMultiSignalVectorDummy(0,0);
 
+size_t Net::m_net_instanceCount = 0;
+
 Net::Net()
 {
-	NeuronalNet::GPU_CUDA_getSpecs();
+	++m_net_instanceCount;
+	if(m_net_instanceCount == 1)
+		NeuronalNet::GPU_CUDA_getSpecs();
 
 	//m_inputSignalList	= nullptr;
 	m_weightsList		= nullptr;
@@ -31,6 +35,7 @@ Net::Net()
 	m_hiddenY = 0;
 	m_outputs = 0;
 	m_built   = false;
+	m_useBias = true;
 	m_neuronCount = 0;
 	m_weightsCount = 0;
 	m_streamSize = 1;
@@ -62,6 +67,19 @@ Net::~Net()
 	m_outputSingalList = nullptr;*/
 	destroyHostWeights();
 	destroyHostBias();
+
+	if(m_net_instanceCount == 0)
+		PRINT_ERROR("Impossible situation: net instance count can't be zero on this point because this incance does exist")
+	else if (m_net_instanceCount == 1)
+	{
+		m_net_instanceCount = 0;
+		NeuronalNet::GPU_CUDA_deleteSpecs();
+	}
+	else
+	{
+		--m_net_instanceCount;
+	}
+	
 }
 
 void Net::setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs)
@@ -100,6 +118,10 @@ size_t Net::getHiddenYCount() const
 size_t Net::getOutputCount() const
 {
 	return m_outputs;
+}
+size_t Net::getNeuronCount() const
+{
+	return m_neuronCount;
 }
 
 void Net::setActivation(Activation act)
@@ -199,6 +221,34 @@ Hardware Net::getHardware() const
 {
 	return m_hardware;
 }
+void Net::enableBias(bool enable)
+{
+	if (m_useBias == enable)
+		return;
+	m_useBias = enable;
+
+	if (!m_built)
+		return;
+	if (!m_biasList)
+		buildHostBias();
+	if (m_useBias)
+	{
+		randomizeBias();
+	}
+	else
+	{
+		memset(m_biasList, 0, m_neuronCount * sizeof(float));
+	}
+	if (m_hardware != Hardware::cpu)
+	{
+		transferBiasToDevice();
+		destroyHostBias();
+	}
+}
+bool Net::isBiasEnabled() const
+{
+	return m_useBias;
+}
 
 bool Net::build()
 {
@@ -211,7 +261,7 @@ bool Net::build()
 	bool success = true;
 
 	success &= m_inputs > 0 && m_outputs > 0;
-
+	
 	if (success)
 	{
 		m_neuronCount = m_hiddenX * m_hiddenY + m_outputs;
@@ -237,16 +287,6 @@ bool Net::build()
 		CONSOLE("Storage      : " << Debug::bytesToString(m_weightsCount * sizeof(float) + m_inputs * sizeof(float) + m_outputs * sizeof(float)))
 		CONSOLE("Streams      : " << m_streamSize)
 
-		/*m_inputSignalList = new float* [m_streamSize];
-		m_outputSingalList = new float* [m_streamSize];
-		for (size_t i = 0; i < m_streamSize; ++i)
-		{
-			m_inputSignalList[i] = new float[m_inputs];
-			m_outputSingalList[i] = new float[m_outputs];
-
-			memset(m_inputSignalList[i], 0, m_inputs * sizeof(float));
-			memset(m_outputSingalList[i], 0, m_outputs * sizeof(float));
-		}*/
 		m_inputStream = MultiSignalVector(m_streamSize, m_inputs);
 		m_outputStream = MultiSignalVector(m_streamSize, m_outputs);
 		if (m_hardware == Hardware::cpu)
@@ -256,12 +296,22 @@ bool Net::build()
 		}
 		
 		
+		
 		buildHostWeights();
 		buildHostBias();
 		m_built = true;
+		
 		randomizeWeights();
-		randomizeBias();
-
+		
+		if (m_useBias)
+		{
+			randomizeBias();
+		}
+		else
+		{
+			memset(m_biasList, 0, m_neuronCount * sizeof(float));
+		}
+		
 		buildDevice();
 		transferWeightsToDevice();
 		transferBiasToDevice();
@@ -347,7 +397,7 @@ void Net::randomize(float* list, size_t size, float min, float max)
 	}
 	else
 	{
-		for (size_t i = 0; i <= size; ++i)
+		for (size_t i = 0; i < size; ++i)
 		{
 			list[i] = getRandomValue(min, max);
 		}
@@ -638,6 +688,10 @@ size_t Net::getWeightSize() const
 {
 	return m_weightsCount;
 }
+const float* Net::getBias() const
+{
+	return m_biasList;
+}
 
 
 void Net::calculate()
@@ -731,6 +785,11 @@ void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuron
 						  const vector<GraphicsConnectionInterface*>& graphicsConnectionInterfaceList,
 						  size_t streamIndex)
 {
+	if (m_hardware != Hardware::cpu)
+	{
+		PRINT_ERROR("Wrong hardware configured for using graphical feedback.\nUse Hardware::cpu to enable get access to the memory of the net")
+			return;
+	}
 	if (streamIndex >= m_streamSize)
 	{
 		PRINT_ERROR("streamIndex is out of range")
@@ -738,16 +797,31 @@ void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuron
 	}
 	//if (!m_useGraphics)
 	//	return;
+	float minW = m_weightsList[getMinIndex(m_weightsList, m_weightsCount)];
+	float maxW = m_weightsList[getMaxIndex(m_weightsList, m_weightsCount)];
+
+	float minS = -1.f;
+	float maxS =  1.f;
+
+	float minO = -1.f;//m_neuronValueList[streamIndex][getMinIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
+	float maxO =  1.f;//m_neuronValueList[streamIndex][getMaxIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
+
+	float minN = m_neuronValueList[streamIndex][getMinIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
+	float maxN = m_neuronValueList[streamIndex][getMaxIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
+
 	for (size_t i = 0; i < graphicsNeuronInterfaceList.size(); ++i)
 	{
-		graphics_update(graphicsNeuronInterfaceList[i], streamIndex);
+		graphics_update(graphicsNeuronInterfaceList[i], streamIndex,
+						minN, maxN, minO, maxO);
 	}
 	for (size_t i = 0; i < graphicsConnectionInterfaceList.size(); ++i)
 	{
-		graphics_update(graphicsConnectionInterfaceList[i], streamIndex);
+		graphics_update(graphicsConnectionInterfaceList[i], streamIndex,
+						minW, maxW, minS, maxS);
 	}
 }
-void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex)
+void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex,
+						  float minN, float maxN, float minO, float maxO)
 {
 	NeuronIndex index = obj->index();
 	size_t neuronIndex;
@@ -799,7 +873,7 @@ void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex)
 		}
 	}
 
-	obj->update(netinput, neuronOutput);
+	obj->update(netinput, neuronOutput,minN,maxN,minO,maxO);
 }
 void Net::graphics_outOfRange(GraphicsNeuronInterface* obj)
 {
@@ -807,7 +881,8 @@ void Net::graphics_outOfRange(GraphicsNeuronInterface* obj)
 	PRINT_ERROR("NeuronIndex is out of range : type: " << typeToString(index.type) <<
 			" x = " << index.x << " y = " << index.y);
 }
-void Net::graphics_update(GraphicsConnectionInterface* obj, size_t streamIndex)
+void Net::graphics_update(GraphicsConnectionInterface* obj, size_t streamIndex,
+						  float minW, float maxW, float minS, float maxS)
 {
 	ConnectionIndex index = obj->index();
 	size_t weightIndex = 0;
@@ -920,7 +995,7 @@ void Net::graphics_update(GraphicsConnectionInterface* obj, size_t streamIndex)
 
 	
 
-	obj->update(weight, signal);
+	obj->update(weight, signal,minW,maxW,minS,minS);
 }
 void Net::graphics_outOfRange(GraphicsConnectionInterface* obj)
 {
@@ -955,11 +1030,11 @@ void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, floa
 					       size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation)
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
-	VERIFY_VALID_PTR(weights, "", return)
-	VERIFY_VALID_PTR(biasList, "", return)
-	VERIFY_VALID_PTR(signals, "", return)
-	VERIFY_VALID_PTR(outpuSignals, "", return)
-	VERIFY_VALID_PTR(activation, "",return)
+	PTR_CHECK_NULLPTR(weights, return)
+	PTR_CHECK_NULLPTR(biasList, return)
+	PTR_CHECK_NULLPTR(signals, return)
+	PTR_CHECK_NULLPTR(outpuSignals, return)
+	PTR_CHECK_NULLPTR(activation,return)
 
 
 	/*std::cout << "signals: ";
@@ -1173,10 +1248,10 @@ void Net::buildDevice()
 	{
 		case Hardware::gpu_cuda:
 		{
-			h_d_inputSignalList = new float* [m_streamSize];
-			h_d_outputStream = new float* [m_streamSize];
-			h_d_netinputList = new float* [m_streamSize];
-			h_d_neuronValueList = new float* [m_streamSize];
+			h_d_inputSignalList = DBG_NEW float* [m_streamSize];
+			h_d_outputStream = DBG_NEW float* [m_streamSize];
+			h_d_netinputList = DBG_NEW float* [m_streamSize];
+			h_d_neuronValueList = DBG_NEW float* [m_streamSize];
 			for (size_t i = 0; i < m_streamSize; ++i)
 			{
 				float* inpVec;
@@ -1243,6 +1318,11 @@ void Net::destroyDevice()
 			delete[] h_d_outputStream;
 			delete[] h_d_netinputList;
 			delete[] h_d_neuronValueList;
+
+			h_d_inputSignalList = nullptr;
+			h_d_outputStream = nullptr;
+			h_d_netinputList = nullptr;
+			h_d_neuronValueList = nullptr;
 			break;
 		}
 		default: {}
@@ -1252,28 +1332,17 @@ void Net::destroyDevice()
 void Net::buildHostWeights()
 {	
 	DEBUG_FUNCTION_TIME_INTERVAL
-	//CONSOLE("begin")
-	//auto t1 = now();
-	m_weightsList	= new float[m_weightsCount];
-	
-	//auto t2 = now();
-	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
+	m_weightsList	= DBG_NEW float[m_weightsCount];
 }
 void Net::buildHostBias()
 {
-	m_biasList = new float[m_neuronCount];
+	m_biasList = DBG_NEW float[m_neuronCount];
 }
 void Net::destroyHostWeights()
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
-	//CONSOLE("begin")
-	//	auto t1 = now();
 	if (m_weightsList) delete[] m_weightsList;
 	m_weightsList = nullptr;
-
-	
-	//auto t2 = now();
-	//CONSOLE("end. time: " << milliseconds(t2 - t1) << "ms")
 }
 void Net::destroyHostBias()
 {

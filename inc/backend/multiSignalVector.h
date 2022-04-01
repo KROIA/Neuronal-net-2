@@ -34,6 +34,8 @@ namespace NeuronalNet
 		const SignalVector** begin() const;
 		const SignalVector** end() const;
 
+		const float ** beginGrid() const;
+
 		void clear();
 
 
@@ -47,6 +49,7 @@ namespace NeuronalNet
 
 		private:
 
+		float** m_grid;
 		SignalVector** m_list;
 		size_t m_vecCount;
 		size_t m_signalCount;
