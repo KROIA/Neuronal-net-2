@@ -46,6 +46,8 @@ namespace NeuronalNet
 			void pause();
 			void unpause();
 			double getMillis() const;
+			double getMicros() const;
+			double getNanos() const;
 			void reset();
 			bool isRunning() const;
 			bool isPaused() const;
@@ -53,6 +55,10 @@ namespace NeuronalNet
 			static inline std::chrono::time_point<std::chrono::high_resolution_clock> getCurrentTimePoint();
 			template <typename T>
 			static inline double getMillis(T t);
+			template <typename T>
+			static inline double getMicros(T t);
+			template <typename T>
+			static inline double getNanos(T t);
 
 			protected:
 			std::chrono::time_point<std::chrono::high_resolution_clock> t1;
@@ -60,9 +66,10 @@ namespace NeuronalNet
 
 			std::chrono::time_point<std::chrono::high_resolution_clock> pause_t1;
 			std::chrono::time_point<std::chrono::high_resolution_clock> pause_t2;
+			std::chrono::nanoseconds m_pauseOffset;
 			bool m_running;
 			bool m_paused;
-			double m_pauseOffset;
+			//double m_pauseOffset;
 		};
 
 		class NET_API DebugFunctionTime : public Timer

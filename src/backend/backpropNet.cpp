@@ -328,7 +328,7 @@ namespace NeuronalNet
 		// Calculate errors for each layer:
 		if (m_hiddenX > 0)
 		{
-			SignalVector* prevHiddenError = nullptr;
+			SignalVector* nextHiddenError = nullptr;
 
 
 			for (long long x = m_hiddenX - 1; x >= 0; --x)
@@ -358,10 +358,10 @@ namespace NeuronalNet
 						// Calculate the errorsum of the hiddenLayer
 						for (size_t i = 0; i < m_hiddenY; ++i)
 						{
-							sumNextLayerErrors += (*prevHiddenError)[i] * m_weightsList[weightIndex + i * m_hiddenY];
+							sumNextLayerErrors += (*nextHiddenError)[i] * m_weightsList[weightIndex + i * m_hiddenY];
 
 							// Change the weight
-							float deltaW = m_learnParameter * m_neuronValueList[streamIndex][hiddenNeuronBeginIndex + y] * (*prevHiddenError)[i];
+							float deltaW = m_learnParameter * m_neuronValueList[streamIndex][hiddenNeuronBeginIndex + y] * (*nextHiddenError)[i];
 							deltaWeights[weightIndex + i * m_hiddenY] += deltaW;
 						}
 					}
@@ -372,9 +372,9 @@ namespace NeuronalNet
 					float deltaBias = m_learnParameter * (*hiddenError)[y];
 					deltaBiasList[x * m_hiddenY + y] += deltaBias;
 				}
-				if (prevHiddenError)
-					delete prevHiddenError;
-				prevHiddenError = hiddenError;
+				if (nextHiddenError)
+					delete nextHiddenError;
+				nextHiddenError = hiddenError;
 
 				if (x == 0)
 				{
@@ -390,7 +390,7 @@ namespace NeuronalNet
 					}
 				}
 			}
-			delete prevHiddenError;
+			delete nextHiddenError;
 		}
 		else
 		{

@@ -66,6 +66,7 @@ int main()
 	//std::cout << "  max: " << test1[getMaxIndex<float>(test1.data(), test1.size())];
 
 	//getchar();
+	
 	//xorBenchmarkMain();
 	xorLoop();
 	return 0;
@@ -94,7 +95,7 @@ void xorLoop()
 	net.setDimensions(2, 2, 5, 1);
 	net.setStreamSize(trainigsSet.size());
 	net.setActivation(Activation::sigmoid);
-	net.setHardware(Hardware::cpu);
+	net.setHardware(Hardware::gpu_cuda);
 	net.setLearnParameter(2.0);
 	net.enableBias(true);
 	net.build();
@@ -146,19 +147,25 @@ void xorLoop()
 	size_t iteration = 0;
 
 	Debug::Timer trainigTimer;
+	Debug::Timer learnTimer;
 	trainigTimer.start();
 	MultiSignalVector err;
 	while (display.isOpen())
 	{
 		
-		if (display.needsFrameUpdate())
+		
+		//if (display.needsFrameUpdate())
 		{
 			++iteration;
 
 			trainigTimer.unpause();
 			net.setInputVector(trainigsSet);
 			net.calculate();
+			if(iteration == 1)
+				learnTimer.start();
+			learnTimer.unpause();
 			net.learn(resultSet);
+			learnTimer.pause();
 			trainigTimer.pause();
 
 			err = net.getError();
@@ -182,9 +189,11 @@ void xorLoop()
 		
 
 		static Debug::Timer timer(true);
-		if (timer.getMillis() > 1000)
+		//if (timer.getMillis() > 1000)
+		if (iteration%100 == 0)
 		{
-			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: " << trainigTimer.getMillis() << "ms\n";
+			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: " 
+				      << trainigTimer.getMillis() << " ms\tlearnTime: "<< learnTimer.getMicros()/(double)iteration<< " us/training " <<"\n";
 			timer.reset();
 			timer.start();
 		}
@@ -198,7 +207,8 @@ void xorLoop()
 		getchar();*/
 		if (currentError < 0.05)
 		{
-			std::cout << "iteration [" << iteration << "]\t Error: " << currentError <<"\tTrainigtime: "<< trainigTimer.getMillis() << "ms\n";
+			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: "
+				      << trainigTimer.getMillis() << "ms learnTime: " << learnTimer.getMicros() / (double)iteration << "us/training\n";
 			//net.setHardware(Hardware::gpu_cuda);
 			net.setInputVector(trainigsSet);
 			net.calculate();
@@ -239,7 +249,7 @@ void xorLoop()
 void xorBenchmarkMain()
 {
 	size_t minX = 1;
-	size_t minY = 2;
+	size_t minY = 1;
 	size_t maxX = 20;
 	size_t maxY = 20;
 
@@ -254,10 +264,10 @@ void xorBenchmarkMain()
 	{
 		for (size_t y = 0; y < arraySizeY; ++y)
 		{
-			benchDataList[x * arraySizeX + y].net_xSize = x + minX;
-			benchDataList[x * arraySizeX + y].net_ySize = y + minY;
-			benchDataList[x * arraySizeX + y].displayEnable = false;
-			benchDataList[x * arraySizeX + y].enableDebugOutput = false;
+			benchDataList[x * arraySizeY + y].net_xSize = x + minX;
+			benchDataList[x * arraySizeY + y].net_ySize = y + minY;
+			benchDataList[x * arraySizeY + y].displayEnable = false;
+			benchDataList[x * arraySizeY + y].enableDebugOutput = false;
 		}
 	}
 
@@ -266,6 +276,7 @@ void xorBenchmarkMain()
 
 	bool jobDone = false;
 	using namespace std::chrono_literals;
+	std::cout << "Start\n";
 	while (!jobDone)
 	{
 		int currentRunningThreads = 0;
@@ -401,6 +412,7 @@ void xorBenchmarkMain()
 }
 void xorBenchmarkThreaded(size_t thredID, BenchmarkData* list, size_t size)
 {
+	
 	{
 		std::lock_guard<std::mutex> lockGuard(mutex);
 		++activeThreads;
@@ -471,7 +483,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 		net.setDimensions(2, data.net_xSize, data.net_ySize, 1);
 		net.setStreamSize(trainigsSet.size());
 		net.setActivation(Activation::sigmoid);
-		net.setHardware(Hardware::cpu);
+		net.setHardware(Hardware::gpu_cuda);
 		net.setLearnParameter(0.1);
 		net.build();
 
@@ -560,7 +572,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 				printWeights(&net);
 
 			}*/
-		} while (currentError > 0.1 && 
+		} while (currentError > 0.05 && 
 				 timeout > timer.getMillis());
 		timer.stop();
 		learnTime = timer.getMillis();

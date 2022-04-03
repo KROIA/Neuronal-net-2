@@ -82,6 +82,7 @@ namespace NeuronalNet
 	NET_API __host__ void GPU_CUDA_learnBackpropagation_getOutputError(float* d_outputSignals, float* h_expectedOutputSignals,
 																	   float* h_outputErrors, size_t outputCount);
 
+
 	NET_API __host__ size_t gaussSum(size_t val);
 	NET_API __host__ size_t invGaussSum(size_t sum);
 
@@ -132,16 +133,23 @@ namespace NeuronalNet
 														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
 														float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize);
 
-	NET_API __device__ void kernel_learnBackpropagation(float* d_weights, float *d_deltaWeights, float *d_biasList, float*d_deltaBiasList,
-														float *d_inputSignals, float* d_neuronOutputs, float* d_neuronNetinputs,
+	NET_API __global__ void kernel_learnBackpropagation(float* d_weights, float **d_deltaWeights, float *d_biasList, float**d_deltaBiasList,
+														float **d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
 														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, kernel_ActFp* actDerivPtr,
-														float* d_outputErrorList, float* d_expectedOutput, float learnParam);
+														float** d_outputErrorList, float** d_expectedOutput, size_t streamSize);
 
-	NET_API __global__ void kernel_learnBackpropagation_applyDeltaValue(float* d_originalList, float* d_deltaList, float factor, size_t cout);
+	NET_API __global__ void kernel_learnBackpropagation_applyDeltaValue(float* d_originalList, float** d_deltaList, float factor, size_t listSize, size_t cout);
 
 	// Calculates the Error of the output layer
 	NET_API __global__ void kernel_learnBackpropagation_getOutputError(float* d_outputSignals, float* d_expectedOutputSignals,
 																	   float* d_outputErrors, size_t outputCount);
+
+	// layerIY = y size of layer I,
+	// layerJY = y size of layer I+1
+	NET_API __global__ void kernel_learnBackpropagation_calculateLayerDeltaW(float* d_weights, float* d_deltaW, float *d_deltaB,
+																			 float *d_neuronOutputs, float *d_netinputs,
+																			 float *d_layerIErrorList, float* d_LayerJErrorList, 
+																			 kernel_ActFp* actDerivPtr, size_t layerIY, size_t layerJY);
 
 	//NET_API __device__ void kernel_learnBackpropagation_
 	/*

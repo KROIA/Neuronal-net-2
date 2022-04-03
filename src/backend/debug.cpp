@@ -97,7 +97,7 @@ namespace NeuronalNet
 
 		void Timer::start()
 		{
-			m_pauseOffset = 0;
+			m_pauseOffset = std::chrono::nanoseconds(0);
 			m_running = true;
 			m_paused = false;
 			t1 = std::chrono::high_resolution_clock::now();
@@ -107,8 +107,8 @@ namespace NeuronalNet
 			t2 = std::chrono::high_resolution_clock::now();
 			if (m_paused)
 			{
-				pause_t2 = std::chrono::high_resolution_clock::now();
-				m_pauseOffset += getMillis(pause_t2 - pause_t1);
+				pause_t2 = t2;
+				m_pauseOffset += pause_t2 - pause_t1;
 			}
 			m_running = false;
 			m_paused = false;
@@ -118,6 +118,7 @@ namespace NeuronalNet
 			if (!m_paused && m_running)
 			{
 				pause_t1 = std::chrono::high_resolution_clock::now();
+				t2 = pause_t1;
 				m_paused = true;
 			}
 		}
@@ -126,26 +127,45 @@ namespace NeuronalNet
 			if (m_paused && m_running)
 			{
 				pause_t2 = std::chrono::high_resolution_clock::now();
-				m_pauseOffset += getMillis(pause_t2 - pause_t1);
+				m_pauseOffset += (pause_t2 - pause_t1);
 				m_paused = false;
 			}
 		}
 		double Timer::getMillis() const
 		{
-			if (m_running)
+			if (!m_paused && m_running)
 			{
-				auto current = std::chrono::high_resolution_clock::now();
-				return getMillis(current - t1) - m_pauseOffset;
+				std::chrono::time_point<std::chrono::high_resolution_clock> current = std::chrono::high_resolution_clock::now();
+				return getMillis(current - t1 - m_pauseOffset);
 			}
-			return getMillis(t2 - t1) - m_pauseOffset;
+			return getMillis(t2 - t1 - m_pauseOffset);
 		}
+		double Timer::getMicros() const
+		{
+			if (!m_paused && m_running)
+			{
+				std::chrono::time_point<std::chrono::high_resolution_clock> current = std::chrono::high_resolution_clock::now();
+				return getMicros(current - t1 - m_pauseOffset);
+			}
+			return getMicros(t2 - t1 - m_pauseOffset);
+		}
+		double Timer::getNanos() const
+		{
+			if (!m_paused && m_running)
+			{
+				std::chrono::time_point<std::chrono::high_resolution_clock> current = std::chrono::high_resolution_clock::now();
+				return getNanos(current - t1 - m_pauseOffset);
+			}
+			return getNanos(t2 - t1 - m_pauseOffset);
+		}
+
 		void Timer::reset()
 		{
 			m_running = false;
 			m_paused  = false;
 			t1 = t2;
 			pause_t2 = pause_t1;
-			m_pauseOffset = 0;
+			m_pauseOffset = std::chrono::nanoseconds(0);
 		}
 		bool Timer::isRunning() const
 		{
@@ -164,6 +184,16 @@ namespace NeuronalNet
 		inline double Timer::getMillis(T t)
 		{
 			return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(t).count() / 1000000;
+		}
+		template <typename T>
+		inline double Timer::getMicros(T t)
+		{
+			return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(t).count() / 1000;
+		}
+		template <typename T>
+		inline double Timer::getNanos(T t)
+		{
+			return (double)std::chrono::duration_cast<std::chrono::nanoseconds>(t).count();
 		}
 
 
