@@ -785,9 +785,12 @@ void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuron
 						  const vector<GraphicsConnectionInterface*>& graphicsConnectionInterfaceList,
 						  size_t streamIndex)
 {
+	static vector<double> timeBench(1000, 0);
+	static size_t indx = 0;
+	Debug::Timer dbgTimer(true);
 	if (m_hardware != Hardware::cpu)
 	{
-		PRINT_ERROR("Wrong hardware configured for using graphical feedback.\nUse Hardware::cpu to enable get access to the memory of the net")
+		PRINT_ERROR("Wrong hardware configured for using graphical feedback.\nUse Hardware::cpu to get access to the memory of the net")
 			return;
 	}
 	if (streamIndex >= m_streamSize)
@@ -795,11 +798,11 @@ void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuron
 		PRINT_ERROR("streamIndex is out of range")
 			return;
 	}
-	//if (!m_useGraphics)
-	//	return;
+
+	
 	float minW = m_weightsList[getMinIndex(m_weightsList, m_weightsCount)];
 	float maxW = m_weightsList[getMaxIndex(m_weightsList, m_weightsCount)];
-
+	
 	float minS = -1.f;
 	float maxS =  1.f;
 
@@ -808,16 +811,31 @@ void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuron
 
 	float minN = m_neuronValueList[streamIndex][getMinIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
 	float maxN = m_neuronValueList[streamIndex][getMaxIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
-
+	
 	for (size_t i = 0; i < graphicsNeuronInterfaceList.size(); ++i)
 	{
 		graphics_update(graphicsNeuronInterfaceList[i], streamIndex,
 						minN, maxN, minO, maxO);
 	}
+
+	
 	for (size_t i = 0; i < graphicsConnectionInterfaceList.size(); ++i)
 	{
 		graphics_update(graphicsConnectionInterfaceList[i], streamIndex,
 						minW, maxW, minS, maxS);
+	}
+	
+	dbgTimer.stop();
+	if (indx < timeBench.size())
+		timeBench[indx++] = dbgTimer.getNanos();
+	else
+	{
+		std::cout << "Timebench: \n";
+		for (size_t i = 0; i < timeBench.size(); ++i)
+		{
+			std::cout << timeBench[i] << "\n";
+		}
+		getchar();
 	}
 }
 void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex,
@@ -832,23 +850,27 @@ void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex,
 	{
 		case NeuronType::input:
 		{
+#ifdef NET_GRAPHICS_ERRORCHECK
 			if (index.y >= m_inputs)
 			{
 				graphics_outOfRange(obj);
 				return;
 			}
+#endif
 			neuronOutput = m_inputStream[streamIndex][index.y];
 			netinput = neuronOutput;
 			break;
 		}
 		case NeuronType::hidden:
 		{
+#ifdef NET_GRAPHICS_ERRORCHECK
 			if (index.y >= m_hiddenY || 
 				index.x >= m_hiddenX)
 			{
 				graphics_outOfRange(obj);
 				return;
 			}
+#endif
 			neuronIndex = index.x * m_hiddenY + index.y;
 			neuronOutput = m_neuronValueList[streamIndex][neuronIndex];
 			netinput = m_netinputList[streamIndex][neuronIndex];
@@ -856,11 +878,13 @@ void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex,
 		}
 		case NeuronType::output:
 		{
+#ifdef NET_GRAPHICS_ERRORCHECK
 			if (index.y >= m_outputs)
 			{
 				graphics_outOfRange(obj);
 				return;
 			}
+#endif
 			neuronIndex = m_hiddenX * m_hiddenY + index.y;
 			neuronOutput = m_neuronValueList[streamIndex][neuronIndex];
 			netinput = m_netinputList[streamIndex][neuronIndex];
@@ -868,7 +892,9 @@ void Net::graphics_update(GraphicsNeuronInterface* obj, size_t streamIndex,
 		}
 		default:
 		{
+#ifdef NET_GRAPHICS_ERRORCHECK
 			graphics_outOfRange(obj);
+#endif
 			return;
 		}
 	}
@@ -897,36 +923,46 @@ void Net::graphics_update(GraphicsConnectionInterface* obj, size_t streamIndex,
 		case NeuronType::input:
 		{
 			// Connections not possible on a input neuron
+#ifdef NET_GRAPHICS_ERRORCHECK
 				graphics_outOfRange(obj);
+#endif
 				return;
 			break;
 		}
 		case NeuronType::hidden:
 		{
+#ifdef NET_GRAPHICS_ERRORCHECK
 			if (index.neuron.y >= m_hiddenY ||
 				index.neuron.x >= m_hiddenX)
 			{
 				graphics_outOfRange(obj);
 				return;
 			}
+#endif
 			if (index.neuron.x == 0)
 			{
+#ifdef NET_GRAPHICS_ERRORCHECK
 				if (index.inputConnection >= m_inputs)
 				{
 					graphics_outOfRange(obj);
 					return;
 				}
+#endif
 				weightIndex = m_inputs * index.neuron.y + 
 							  index.inputConnection;
 				neuronOutput = m_inputStream[streamIndex][index.inputConnection];
+
 			}
+
 			else
 			{
+#ifdef NET_GRAPHICS_ERRORCHECK
 				if (index.inputConnection >= m_hiddenY)
 				{
 					graphics_outOfRange(obj);
 					return;
 				}
+#endif
 				
 				weightIndex = m_inputs * m_hiddenY + 
 							  (index.neuron.x -1) * m_hiddenY * m_hiddenY +
@@ -945,38 +981,38 @@ void Net::graphics_update(GraphicsConnectionInterface* obj, size_t streamIndex,
 		case NeuronType::output:
 		{
 			
-				
+#ifdef NET_GRAPHICS_ERRORCHECK
 			if (index.neuron.y >= m_outputs)
 			{
 				graphics_outOfRange(obj);
 				return;
 			}
+#endif
 			if (m_hiddenX == 0)
 			{
+#ifdef NET_GRAPHICS_ERRORCHECK
 				if (index.inputConnection >= m_inputs)
 				{
 					graphics_outOfRange(obj);
 					return;
 				}
+#endif
 				weightIndex = m_inputs * index.neuron.y +
 					          index.inputConnection;
 				neuronOutput = m_inputStream[streamIndex][index.inputConnection];
 
-				/*weightIndex = m_inputs * m_hiddenY +
-					(m_hiddenX - 1) * m_hiddenY * m_hiddenY +
-					m_hiddenY * index.neuron.y + index.inputConnection;
-				neuronOutput = m_inputStream[stramIndex][(m_hiddenX - 1) * m_hiddenY + index.inputConnection];
-				*/
 				weight = m_weightsList[weightIndex];
 				signal = weight * neuronOutput;
 			}
 			else
 			{
+#ifdef NET_GRAPHICS_ERRORCHECK
 				if (index.inputConnection >= m_hiddenY)
 				{
 					graphics_outOfRange(obj);
 					return;
 				}
+#endif
 				weightIndex = m_inputs * m_hiddenY +
 					(m_hiddenX - 1) * m_hiddenY * m_hiddenY +
 					m_hiddenY * index.neuron.y + index.inputConnection;
@@ -988,7 +1024,9 @@ void Net::graphics_update(GraphicsConnectionInterface* obj, size_t streamIndex,
 		}
 		default:
 		{
+#ifdef NET_GRAPHICS_ERRORCHECK
 			graphics_outOfRange(obj);
+#endif
 			return;
 		}
 	}

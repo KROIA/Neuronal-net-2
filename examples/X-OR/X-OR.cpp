@@ -96,7 +96,7 @@ void xorLoop()
 	net.setDimensions(2, 2, 5, 1);
 	net.setStreamSize(trainigsSet.size());
 	net.setActivation(Activation::sigmoid);
-	net.setHardware(Hardware::gpu_cuda);
+	net.setHardware(Hardware::cpu);
 	net.setLearnParameter(2.0);
 	net.enableBias(true);
 	net.build();
@@ -104,11 +104,14 @@ void xorLoop()
 	sf::Vector2f spacing(80, 20);
 	float neuronSize = 15;
 
+
+	size_t visualConfig = NetModel::getStandardVisualConfiguration();
 	NetModel netModel1(&net);
 	netModel1.setStreamIndex(0);
 	netModel1.setNeuronSize(neuronSize);
 	netModel1.setPos(sf::Vector2f(100, 100));
 	netModel1.setNeuronSpacing(spacing);
+	netModel1.setVisualConfiguration(visualConfig);
 	display.addDrawable(&netModel1);
 
 	NetModel netModel2(&net);
@@ -116,6 +119,7 @@ void xorLoop()
 	netModel2.setNeuronSize(neuronSize);
 	netModel2.setPos(sf::Vector2f(100, 500));
 	netModel2.setNeuronSpacing(spacing);
+	netModel2.setVisualConfiguration(visualConfig);
 	display.addDrawable(&netModel2);
 
 	NetModel netModel3(&net);
@@ -123,6 +127,7 @@ void xorLoop()
 	netModel3.setNeuronSize(neuronSize);
 	netModel3.setPos(sf::Vector2f(1100, 100));
 	netModel3.setNeuronSpacing(spacing);
+	netModel3.setVisualConfiguration(visualConfig);
 	display.addDrawable(&netModel3);
 
 	NetModel netModel4(&net);
@@ -130,6 +135,7 @@ void xorLoop()
 	netModel4.setNeuronSize(neuronSize);
 	netModel4.setPos(sf::Vector2f(1100, 500));
 	netModel4.setNeuronSpacing(spacing);
+	netModel4.setVisualConfiguration(visualConfig);
 	display.addDrawable(&netModel4);
 	
 	display.frameRateTarget(60);
@@ -155,7 +161,7 @@ void xorLoop()
 	{
 		
 		
-		//if (display.needsFrameUpdate())
+		if (display.needsFrameUpdate())
 		{
 			++iteration;
 

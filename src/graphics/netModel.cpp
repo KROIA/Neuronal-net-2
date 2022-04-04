@@ -5,6 +5,7 @@ namespace NeuronalNet
 	namespace Graphics
 	{
 		NetModel::NetModel(Net* net)
+			: Drawable()
 		{
 			m_net				= net;
 			m_connectionWidth	= ConnectionPainter::getStandardConnectionWidth();
@@ -12,11 +13,29 @@ namespace NeuronalNet
 			m_neuronSize		= NeuronPainter::standardSize;
 			m_neuronSpacing		= sf::Vector2f(50, 50);
 			m_streamIndex = 0;
+			setVisualConfiguration(getStandardVisualConfiguration());
 			build();
 		}
 		NetModel::~NetModel()
 		{
 			clear();
+		}
+
+		void NetModel::setVisualConfiguration(size_t conf)
+		{
+			Drawable::setVisualConfiguration(conf);
+			for (Drawable* p : m_drawableList)
+			{
+				p->setVisualConfiguration(m_visualConfiguration);
+			}
+		}
+
+		inline size_t NetModel::getStandardVisualConfiguration()
+		{
+			return 
+				NeuronPainter::getStandardVisualConfiguration() |
+				ConnectionPainter::getStandardVisualConfiguration() |
+				VisualConfiguration::weightMap;
 		}
 
 		void NetModel::setStreamIndex(size_t index)
@@ -73,6 +92,7 @@ namespace NeuronalNet
 				index.y = y;
 				NeuronPainter* neuron = DBG_NEW NeuronPainter();
 				neuron->index(index);
+				//neuron->setVisualConfiguration(m_visualConfiguration);
 				m_neuronList.push_back(neuron);
 				m_inputNeurons.push_back(neuron);
 			}
@@ -88,6 +108,7 @@ namespace NeuronalNet
 					index.y = y;
 					NeuronPainter* neuron = DBG_NEW NeuronPainter();
 					neuron->index(index);
+					//neuron->setVisualConfiguration(m_visualConfiguration);
 					m_neuronList.push_back(neuron);
 					m_hiddenNeurons[x].push_back(neuron);
 
@@ -103,6 +124,7 @@ namespace NeuronalNet
 																	neuron);
 
 							connection->index(conIndex);
+							//connection->setVisualConfiguration(m_visualConfiguration);
 							m_connectionList.push_back(connection);
 						}
 						
@@ -118,6 +140,7 @@ namespace NeuronalNet
 																	neuron);
 
 							connection->index(conIndex);
+							//connection->setVisualConfiguration(m_visualConfiguration);
 							m_connectionList.push_back(connection);
 						}
 						//PixelPainter* pixPainter = DBG_NEW PixelPainter;
@@ -132,6 +155,7 @@ namespace NeuronalNet
 					PixelPainter* pixPainter = DBG_NEW PixelPainter;
 					pixPainter->setDimenstions(m_net->getInputCount()+1,
 											   m_net->getHiddenYCount());
+					//pixPainter->setVisualConfiguration(m_visualConfiguration);
 					m_pixelPainterList.push_back(pixPainter);
 				}
 				else
@@ -139,6 +163,7 @@ namespace NeuronalNet
 					PixelPainter* pixPainter = DBG_NEW PixelPainter;
 					pixPainter->setDimenstions(m_net->getHiddenYCount()+1,
 											   m_net->getHiddenYCount());
+					//pixPainter->setVisualConfiguration(m_visualConfiguration);
 					m_pixelPainterList.push_back(pixPainter);
 				}
 			}
@@ -164,7 +189,7 @@ namespace NeuronalNet
 						conIndex.inputConnection = j;
 						ConnectionPainter* connection = DBG_NEW ConnectionPainter(m_inputNeurons[j],
 																neuron);
-
+						//connection->setVisualConfiguration(m_visualConfiguration);
 						connection->index(conIndex);
 						m_connectionList.push_back(connection);
 					}
@@ -179,7 +204,7 @@ namespace NeuronalNet
 						conIndex.inputConnection = j;
 						ConnectionPainter* connection = DBG_NEW ConnectionPainter(m_hiddenNeurons[m_net->getHiddenXCount() - 1][j],
 																neuron);
-
+						//connection->setVisualConfiguration(m_visualConfiguration);
 						connection->index(conIndex);
 						m_connectionList.push_back(connection);
 					}
@@ -211,6 +236,25 @@ namespace NeuronalNet
 
 			for (size_t i = 0; i < m_connectionList.size(); ++i)
 				m_net->addGraphics(m_connectionList[i]);*/
+
+
+			m_drawableList.reserve(m_neuronList.size() +
+								   m_connectionList.size() +
+								   m_pixelPainterList.size());
+			for (NeuronPainter* p : m_neuronList)
+			{
+				m_drawableList.push_back(p);
+			}
+			for (ConnectionPainter* p : m_connectionList)
+			{
+				m_drawableList.push_back(p);
+			}
+			for (PixelPainter* p : m_pixelPainterList)
+			{
+				m_drawableList.push_back(p);
+			}
+			setVisualConfiguration(m_visualConfiguration);
+
 
 			setConnectionWidth(m_connectionWidth);
 			setSignalWidth(m_signalWidth);
@@ -255,6 +299,38 @@ namespace NeuronalNet
 			return m_neuronSize;
 		}
 
+		/*void NetModel::setOptimization(Optimization opt)
+		{
+			switch (m_optimization)
+			{
+				case Optimization::quality:
+				case Optimization::speed:
+					break;
+
+				default:
+				{
+					PRINT_ERROR("Unknown optimization: " + std::to_string(opt))
+						return;
+				}
+			}
+			Drawable::setOptimization(opt);
+			for (size_t i = 0; i < m_connectionList.size(); ++i)
+				m_connectionList[i]->setOptimization(opt);
+			for (size_t i = 0; i < m_neuronList.size(); ++i)
+				m_neuronList[i]->setOptimization(opt);
+			for (size_t i = 0; i < m_pixelPainterList.size(); ++i)
+				m_pixelPainterList[i]->setOptimization(opt);
+		}*/
+		/*void NetModel::setVisualConfiguration(size_t conf)
+		{
+			for (size_t i = 0; i < m_connectionList.size(); ++i)
+				m_connectionList[i]->setOptimization(opt);
+			for (size_t i = 0; i < m_neuronList.size(); ++i)
+				m_neuronList[i]->setOptimization(opt);
+			for (size_t i = 0; i < m_pixelPainterList.size(); ++i)
+				m_pixelPainterList[i]->setOptimization(opt);
+		}*/
+
 		void NetModel::draw(sf::RenderWindow* window,
 							const sf::Vector2f &offset)
 		{
@@ -276,8 +352,9 @@ namespace NeuronalNet
 				m_connectionList[i]->draw(window, offset);
 			for (size_t i = 0; i < m_neuronList.size(); ++i)
 				m_neuronList[i]->draw(window, offset);
-			for (size_t i = 0; i < m_pixelPainterList.size(); ++i)
-				m_pixelPainterList[i]->draw(window, offset);
+			if(m_visualConfiguration & VisualConfiguration::weightMap)
+				for (size_t i = 0; i < m_pixelPainterList.size(); ++i)
+					m_pixelPainterList[i]->draw(window, offset);
 		}
 		void NetModel::drawDebug(sf::RenderWindow* window,
 								 const sf::Vector2f& offset)
@@ -287,22 +364,12 @@ namespace NeuronalNet
 
 		void NetModel::clear()
 		{
-			for (size_t i = 0; i < m_neuronList.size(); ++i)
+			for (size_t i = 0; i < m_drawableList.size(); ++i)
 			{
-				//m_net->removeGraphics(m_neuronList[i]);
-				delete m_neuronList[i];
+				delete m_drawableList[i];
 			}
+			m_drawableList.clear();
 			m_neuronList.clear();
-
-			for (size_t i = 0; i < m_connectionList.size(); ++i)
-			{
-				//m_net->removeGraphics(m_connectionList[i]);
-				delete m_connectionList[i];
-			}
-			for (size_t i = 0; i < m_pixelPainterList.size(); ++i)
-			{
-				delete m_pixelPainterList[i];
-			}
 			m_pixelPainterList.clear();
 			m_neuronInterface.clear();
 			m_connectionInterface.clear();
@@ -387,126 +454,129 @@ namespace NeuronalNet
 		{
 			m_net->graphics_update(m_neuronInterface, m_connectionInterface, m_streamIndex);
 
-			const float* weight = m_net->getWeight();
-			const float* bias   = m_net->getBias();
-			size_t minElementW = getMinIndex<float>(weight, m_net->getWeightSize());
-			size_t maxElementW = getMaxIndex<float>(weight, m_net->getWeightSize());
-
-			size_t minElementB = getMinIndex<float>(bias, m_net->getNeuronCount());
-			size_t maxElementB = getMaxIndex<float>(bias, m_net->getNeuronCount());
-
-			float minW = weight[minElementW];
-			float maxW = weight[maxElementW];
-			float minB = bias[minElementB];
-			float maxB = bias[maxElementB];
-
-			float min = minW;
-			float max = maxW;
-
-			if (min > minB)
-				min = minB;
-			if (max > maxB)
-				max = maxB;
-
-			size_t wOffset = 0;
-			size_t bOffset = 0;
-			if (m_net->getHiddenXCount() == 0)
+			if (m_visualConfiguration & VisualConfiguration::weightMap)
 			{
-				for (size_t inp = 0; inp < m_net->getInputCount()+1; ++inp)
+				const float* weight = m_net->getWeight();
+				const float* bias = m_net->getBias();
+				size_t minElementW = getMinIndex<float>(weight, m_net->getWeightSize());
+				size_t maxElementW = getMaxIndex<float>(weight, m_net->getWeightSize());
+
+				size_t minElementB = getMinIndex<float>(bias, m_net->getNeuronCount());
+				size_t maxElementB = getMaxIndex<float>(bias, m_net->getNeuronCount());
+
+				float minW = weight[minElementW];
+				float maxW = weight[maxElementW];
+				float minB = bias[minElementB];
+				float maxB = bias[maxElementB];
+
+				float min = minW;
+				float max = maxW;
+
+				if (min > minB)
+					min = minB;
+				if (max > maxB)
+					max = maxB;
+
+				size_t wOffset = 0;
+				size_t bOffset = 0;
+				if (m_net->getHiddenXCount() == 0)
 				{
-					if (inp == m_net->getInputCount())
+					for (size_t inp = 0; inp < m_net->getInputCount() + 1; ++inp)
 					{
-						// Bias
-						for (size_t out = 0; out < m_net->getOutputCount(); ++out)
-						{
-							m_pixelPainterList[0]->setPixel(inp, out, getColor(bias[bOffset], min, max));
-							++bOffset;
-						}
-					}
-					else
-					{
-						// Weights
-						for (size_t out = 0; out < m_net->getOutputCount(); ++out)
-						{
-							m_pixelPainterList[0]->setPixel(inp, out, getColor(weight[wOffset], min, max));
-							++wOffset;
-						}
-					}
-					
-				}
-			}
-			else
-			{
-				for (size_t inp = 0; inp < m_net->getInputCount()+1; ++inp)
-				{
-					if (inp == m_net->getInputCount())
-					{
-						// Bias
-						for (size_t hid = 0; hid < m_net->getHiddenYCount(); ++hid)
-						{
-							m_pixelPainterList[0]->setPixel(inp, hid, getColor(bias[bOffset], min, max));
-							++bOffset;
-						}
-					}
-					else
-					{
-						// Weights
-						for (size_t hid = 0; hid < m_net->getHiddenYCount(); ++hid)
-						{
-							m_pixelPainterList[0]->setPixel(inp, hid, getColor(weight[wOffset], min, max));
-							++wOffset;
-						}
-					}
-					
-				}
-				for (size_t x = 1; x < m_net->getHiddenXCount(); ++x)
-				{
-					for (size_t hidI = 0; hidI < m_net->getHiddenYCount()+1; ++hidI)
-					{
-						if (hidI == m_net->getHiddenYCount())
+						if (inp == m_net->getInputCount())
 						{
 							// Bias
-							for (size_t hidJ = 0; hidJ < m_net->getHiddenYCount(); ++hidJ)
+							for (size_t out = 0; out < m_net->getOutputCount(); ++out)
 							{
-								m_pixelPainterList[x]->setPixel(hidI, hidJ, getColor(bias[bOffset], min, max));
+								m_pixelPainterList[0]->setPixel(inp, out, getColor(bias[bOffset], min, max));
 								++bOffset;
 							}
 						}
 						else
 						{
 							// Weights
-							for (size_t hidJ = 0; hidJ < m_net->getHiddenYCount(); ++hidJ)
+							for (size_t out = 0; out < m_net->getOutputCount(); ++out)
 							{
-								m_pixelPainterList[x]->setPixel(hidI, hidJ, getColor(weight[wOffset], min, max));
+								m_pixelPainterList[0]->setPixel(inp, out, getColor(weight[wOffset], min, max));
 								++wOffset;
 							}
 						}
-						
+
 					}
 				}
-				for (size_t hidI = 0; hidI < m_net->getHiddenYCount()+1; ++hidI)
+				else
 				{
-					if (hidI == m_net->getHiddenYCount())
+					for (size_t inp = 0; inp < m_net->getInputCount() + 1; ++inp)
 					{
-						// Bias
-						for (size_t out = 0; out < m_net->getOutputCount(); ++out)
+						if (inp == m_net->getInputCount())
 						{
-							m_pixelPainterList[m_pixelPainterList.size() - 1]->setPixel(hidI, out, getColor(bias[bOffset], min, max));
-							++bOffset;
+							// Bias
+							for (size_t hid = 0; hid < m_net->getHiddenYCount(); ++hid)
+							{
+								m_pixelPainterList[0]->setPixel(inp, hid, getColor(bias[bOffset], min, max));
+								++bOffset;
+							}
+						}
+						else
+						{
+							// Weights
+							for (size_t hid = 0; hid < m_net->getHiddenYCount(); ++hid)
+							{
+								m_pixelPainterList[0]->setPixel(inp, hid, getColor(weight[wOffset], min, max));
+								++wOffset;
+							}
+						}
+
+					}
+					for (size_t x = 1; x < m_net->getHiddenXCount(); ++x)
+					{
+						for (size_t hidI = 0; hidI < m_net->getHiddenYCount() + 1; ++hidI)
+						{
+							if (hidI == m_net->getHiddenYCount())
+							{
+								// Bias
+								for (size_t hidJ = 0; hidJ < m_net->getHiddenYCount(); ++hidJ)
+								{
+									m_pixelPainterList[x]->setPixel(hidI, hidJ, getColor(bias[bOffset], min, max));
+									++bOffset;
+								}
+							}
+							else
+							{
+								// Weights
+								for (size_t hidJ = 0; hidJ < m_net->getHiddenYCount(); ++hidJ)
+								{
+									m_pixelPainterList[x]->setPixel(hidI, hidJ, getColor(weight[wOffset], min, max));
+									++wOffset;
+								}
+							}
+
 						}
 					}
-					else
+					for (size_t hidI = 0; hidI < m_net->getHiddenYCount() + 1; ++hidI)
 					{
-						// Weights
-						for (size_t out = 0; out < m_net->getOutputCount(); ++out)
+						if (hidI == m_net->getHiddenYCount())
 						{
-							m_pixelPainterList[m_pixelPainterList.size() - 1]->setPixel(hidI, out, getColor(weight[wOffset], min, max));
-							++wOffset;
+							// Bias
+							for (size_t out = 0; out < m_net->getOutputCount(); ++out)
+							{
+								m_pixelPainterList[m_pixelPainterList.size() - 1]->setPixel(hidI, out, getColor(bias[bOffset], min, max));
+								++bOffset;
+							}
 						}
+						else
+						{
+							// Weights
+							for (size_t out = 0; out < m_net->getOutputCount(); ++out)
+							{
+								m_pixelPainterList[m_pixelPainterList.size() - 1]->setPixel(hidI, out, getColor(weight[wOffset], min, max));
+								++wOffset;
+							}
+						}
+
 					}
-					
+
 				}
-				
 			}
 		}
 		

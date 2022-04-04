@@ -10,12 +10,16 @@ namespace NeuronalNet
 			: m_pos(0, 0)
 			, m_visible(true)
 			, m_drawDebug(false)
+			//, m_optimization(Optimization::quality)
+			, m_visualConfiguration(0)
 		{
 		}
 		Drawable::Drawable(const Drawable& other)
 			: m_pos(other.m_pos)
 			, m_visible(other.m_visible)
 			, m_drawDebug(other.m_drawDebug)
+			//, m_optimization(Optimization::quality)
+			, m_visualConfiguration(0)
 		{
 
 		}
@@ -31,22 +35,43 @@ namespace NeuronalNet
 			return *this;
 		}
 
-		void Drawable::setVisible(bool enable)
+		inline void Drawable::setVisible(bool enable)
 		{
 			m_visible = enable;
 		}
-		bool Drawable::isVisible() const
+		inline bool Drawable::isVisible() const
 		{
 			return m_visible;
 		}
-		void Drawable::setDrawDebug(bool enable)
+		inline void Drawable::setDrawDebug(bool enable)
 		{
 			m_drawDebug = enable;
 		}
-		bool Drawable::doesDrawDebug() const
+		inline bool Drawable::doesDrawDebug() const
 		{
 			return m_drawDebug;
 		}
+
+		/*void Drawable::setOptimization(Optimization opt)
+		{
+			m_optimization = opt;
+		}
+		Optimization Drawable::getOptimization() const
+		{
+			return m_optimization;
+		}*/
+		void Drawable::setVisualConfiguration(size_t conf)
+		{
+			m_visualConfiguration = conf;
+		}
+		inline size_t Drawable::getVisualConfiguration() const
+		{
+			return m_visualConfiguration;
+		}
+		/*inline size_t Drawable::getStandardVisualConfiguration() const
+		{
+			return 0;
+		}*/
 
 		void Drawable::setPos(const sf::Vector2f& pos)
 		{

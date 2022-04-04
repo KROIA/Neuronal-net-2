@@ -16,11 +16,17 @@ namespace NeuronalNet
 			ConnectionPainter(NeuronPainter* a,
 					   NeuronPainter* b);
 			~ConnectionPainter();
+
+
+			static inline size_t getStandardVisualConfiguration();
 			
 			void setConnectionWidth(float w);
 			void setSignalWidth(float w);
 			float getConnectionWidth() const;
 			float getSignalWidth() const;
+
+			//void setOptimization(Optimization opt);
+			
 
 
 			// Interface implementation
@@ -58,6 +64,10 @@ namespace NeuronalNet
 
 			static const float m_standardConnectionWidth;
 			static const float m_standardSignalWidth;
+
+			// Performance settings
+			// bool m_useWeightAsConnection;
+
 		};
 	};
 };

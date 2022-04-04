@@ -8,7 +8,11 @@ namespace NeuronalNet
 {
 	namespace Graphics
 	{
-
+		/*enum Optimization
+		{
+			quality,
+			speed
+		};*/
 		class NET_API Drawable : public DrawableInterface
 		{
 			public:
@@ -18,10 +22,17 @@ namespace NeuronalNet
 
 			const Drawable& operator=(const Drawable& other);
 
-			void setVisible(bool enable);
-			bool isVisible() const;
-			void setDrawDebug(bool enable);
-			bool doesDrawDebug() const;
+			inline void setVisible(bool enable);
+			inline bool isVisible() const;
+			inline void setDrawDebug(bool enable);
+			inline bool doesDrawDebug() const;
+
+			//virtual void setOptimization(Optimization opt);
+			//Optimization getOptimization() const;
+			inline void setVisualConfiguration(size_t conf);
+			inline size_t getVisualConfiguration() const;
+			//inline virtual size_t getStandardVisualConfiguration() const;
+
 
 			void setPos(const sf::Vector2f& pos);
 			void setPos(float x, float y);
@@ -41,6 +52,10 @@ namespace NeuronalNet
 			sf::Vector2f m_pos;
 			bool m_visible;
 			bool m_drawDebug;
+			//Optimization m_optimization;
+
+			// What will be showed, enable/disable specific functions
+			size_t m_visualConfiguration;
 			private:
 
 		};

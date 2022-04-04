@@ -16,16 +16,28 @@ namespace NeuronalNet
 			m_startNeuron = a;
 			m_endNeuron = b;
 
+			m_weightColor.a = 100;
+			m_signalColor.a = 100;
+
 			setConnectionWidth(m_standardConnectionWidth);
 			setSignalWidth(m_standardSignalWidth);
 
 			m_connectionLine.setPointCount(4);
 			m_singalLine.setPointCount(4);
+
+			//setOptimization(Optimization::quality);
+			setVisualConfiguration(getStandardVisualConfiguration());
 			
 		}
 		ConnectionPainter::~ConnectionPainter()
 		{
 
+		}
+
+		inline size_t ConnectionPainter::getStandardVisualConfiguration()
+		{
+			return	VisualConfiguration::connectionSignals |
+					VisualConfiguration::connectionWeights;
 		}
 
 		void ConnectionPainter::setConnectionWidth(float w)
@@ -45,28 +57,49 @@ namespace NeuronalNet
 			return m_signalWidth;
 		}
 
+		/*void ConnectionPainter::setOptimization(Optimization opt)
+		{
+			Drawable::setOptimization(opt);
+			switch (m_optimization)
+			{
+				case Optimization::quality:
+				{
+					m_useWeightAsConnection = true;
+					break;
+				}
+				case Optimization::speed:
+				{
+					m_useWeightAsConnection = false;
+					break;
+				}
+				default:
+				{
+					PRINT_ERROR("Unknown optimization: " + std::to_string(opt))
+				}
+			}
+		}*/
+
 		// Interface implementation
 		void ConnectionPainter::draw(sf::RenderWindow* window,
 							  const sf::Vector2f& offset)
 		{
-			
 
-			m_weightColor.a = 100;
-			m_signalColor.a = 100;
+			if (m_visualConfiguration & VisualConfiguration::connectionWeights)
+			{
+				m_connectionLine.setOrigin(-offset);
+				setLinePos(m_connectionLine, m_connectionWidth);
+				m_connectionLine.setFillColor(m_weightColor);
+				window->draw(m_connectionLine);
+			}
 
-			m_connectionLine.setOrigin(-offset);
-			m_singalLine.setOrigin(-offset);
-
-			setLinePos(m_connectionLine, m_connectionWidth);
-			setLinePos(m_singalLine, m_signalWidth);
-
-			m_connectionLine.setFillColor(m_weightColor);
-			m_singalLine.setFillColor(m_signalColor);
-
-			m_signalColor = getColor(m_signal, m_globalMinSignal, m_globalMaxSignal);
-
-			window->draw(m_connectionLine);
-			window->draw(m_singalLine);
+			if (m_visualConfiguration & VisualConfiguration::connectionSignals)
+			{
+				m_singalLine.setOrigin(-offset);
+				setLinePos(m_singalLine, m_signalWidth);
+				m_signalColor = getColor(m_signal, m_globalMinSignal, m_globalMaxSignal);
+				m_singalLine.setFillColor(m_signalColor);
+				window->draw(m_singalLine);
+			}
 
 			/*sf::Vector2f startPos = m_startNeuron->pos() + sf::Vector2f(m_startNeuron->size() - 2, 0);
 			sf::Vector2f endPos = m_endNeuron->pos() + sf::Vector2f(-m_endNeuron->size() + 5, 0);
@@ -88,11 +121,13 @@ namespace NeuronalNet
 									   float minW, float maxW,
 									   float minS, float maxS)
 		{
+
 			m_weight = weight;
 			m_signal = signal;
 
-			m_weightColor = getColor(m_weight, minW, maxW);
-			
+			if (m_visualConfiguration & VisualConfiguration::connectionWeights)
+				m_weightColor = getColor(m_weight, minW, maxW);
+
 
 			// Update min/max Weight values
 			if (m_weight < m_globalMinSignal)

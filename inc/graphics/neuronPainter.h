@@ -21,12 +21,14 @@ namespace NeuronalNet
 
 			const NeuronPainter& operator=(const NeuronPainter& other);
 
-			
+			static inline size_t getStandardVisualConfiguration();
+
 			void setPos(const sf::Vector2f& pos);
 			const sf::Vector2f& getPos() const;
 			void setSize(float size);
 			float getSize() const;
 
+			//virtual void setOptimization(Optimization opt);
 			
 
 
@@ -46,12 +48,17 @@ namespace NeuronalNet
 			sf::Vector2f m_pos;
 			float m_size;
 
+			sf::CircleShape m_circleShape;
+
 			static const string m_fontPath;
 			static sf::Font m_font;
 
 			// Data from Net
 			float m_netinput;
 			float m_output;
+
+			// Performance settings
+			//bool m_useTextLabel; 
 			
 		};
 	};

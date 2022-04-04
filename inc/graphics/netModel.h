@@ -17,10 +17,15 @@ namespace NeuronalNet
 		class NET_API NetModel	: public Drawable
 		{
 			public:
+
+			
+
 			NetModel(Net* net);
 			~NetModel();
 
 			void build();
+			void setVisualConfiguration(size_t conf);
+			static inline size_t getStandardVisualConfiguration();
 
 			void setStreamIndex(size_t index);
 			size_t getStreamIndex() const;
@@ -39,6 +44,9 @@ namespace NeuronalNet
 			float getSignalWidth() const;
 			float getNeuronSize() const;
 
+			//void setOptimization(Optimization opt);
+			//void setVisualConfiguration(size_t conf);
+
 			void draw(sf::RenderWindow* window,
 					  const sf::Vector2f &offset = sf::Vector2f(0, 0));
 			void drawDebug(sf::RenderWindow* window,
@@ -50,15 +58,17 @@ namespace NeuronalNet
 			void updateGraphics();
 			//void internal_neuronSize(float size);
 
-			vector<GraphicsNeuronInterface*> m_neuronInterface;
-			vector<NeuronPainter*> m_neuronList;
-			vector<NeuronPainter*> m_inputNeurons;
+			vector<GraphicsNeuronInterface*> m_neuronInterface;	
+			vector<NeuronPainter*> m_neuronList;					// All Neurons
+			vector<NeuronPainter*> m_inputNeurons;					
 			vector<vector<NeuronPainter*> > m_hiddenNeurons;
 			vector<NeuronPainter*> m_outputNeurons;
 
 			vector<GraphicsConnectionInterface*> m_connectionInterface;
 			vector<ConnectionPainter*> m_connectionList;
 			vector<PixelPainter*> m_pixelPainterList;
+
+			vector<Drawable*> m_drawableList; // All drawable Objects
 
 			Net* m_net;
 
@@ -69,6 +79,9 @@ namespace NeuronalNet
 
 			//sf::Vector2f m_pos;
 			sf::Vector2f m_neuronSpacing;
+
+			
+
 		};
 	};
 };
