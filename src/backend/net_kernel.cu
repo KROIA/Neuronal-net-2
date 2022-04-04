@@ -796,7 +796,7 @@ namespace NeuronalNet
        // memset(deltaB, 0, neuronCount * sizeof(float));
 
 
-        size_t blockSize = 1024;
+        size_t blockSize = 1;
         size_t numBlocks = (streamSize - 1) / blockSize + 1;
 
        // for (size_t i = 0; i < streamSize; ++i)
@@ -810,12 +810,15 @@ namespace NeuronalNet
         //}
 
             //__syncthreads(); 
+        kernel_handleError(cudaGetLastError());
+
         kernel_handleError(cudaDeviceSynchronize());
 
         //blockSize = 1024;
         numBlocks = (weightCount - 1) / blockSize + 1;
         kernel_learnBackpropagation_applyDeltaValue << < numBlocks, blockSize >> > (d_weights, deltaW, learnParam, streamSize, weightCount);
-        kernel_handleError(cudaDeviceSynchronize());
+        kernel_handleError(cudaGetLastError());
+        //kernel_handleError(cudaDeviceSynchronize());
 
         numBlocks = (neuronCount - 1) / blockSize + 1;
         kernel_learnBackpropagation_applyDeltaValue << < numBlocks, blockSize >> > (d_biasList, deltaB, learnParam, streamSize, neuronCount);

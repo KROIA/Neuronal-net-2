@@ -86,6 +86,7 @@ void saveVec(const string& filename, const float *begin, size_t size)
 void xorLoop()
 {
 	Display display(sf::Vector2u(1900,900),"X-OR Example");
+
 	
 	BackpropNet net;
 	
@@ -132,7 +133,7 @@ void xorLoop()
 	display.addDrawable(&netModel4);
 	
 	display.frameRateTarget(60);
-
+	
 	trainigsSet[0] = SignalVector(vector<float>{ 0,0 });
 	trainigsSet[1] = SignalVector(vector<float>{ 0,1 });
 	trainigsSet[2] = SignalVector(vector<float>{ 1,0 });
