@@ -26,7 +26,10 @@ namespace NeuronalNet
 			float getSignalWidth() const;
 
 			//void setOptimization(Optimization opt);
-			
+			void setWeightAlpha(uint8_t alpha);
+			uint8_t getWeightAlpha() const;
+			void setSignalAlpha(uint8_t alpha);
+			uint8_t getSignalAlpha() const;
 
 
 			// Interface implementation

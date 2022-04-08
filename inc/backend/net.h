@@ -86,11 +86,11 @@ namespace NeuronalNet
 		virtual void setWeight(const std::vector<float>& list);
 		virtual void setWeight(const float* list);
 		virtual void setWeight(const float* list, size_t to);
-		virtual void setWeight(const float* list, size_t insertOffset, size_t count);
-		float getWeight(size_t layer, size_t neuron, size_t input) const;
-		const float* getWeight() const;
+		virtual void setWeight(const float* list, size_t count, size_t insertOffset);
+		float getWeight(size_t layer, size_t neuron, size_t input);
+		const float* getWeight();
 		size_t getWeightSize() const;
-		const float* getBias() const;
+		const float* getBias();
 
 
 		void calculate();
@@ -110,21 +110,29 @@ namespace NeuronalNet
 		typedef float ActFp(float);
 
 		
-		void graphics_update(GraphicsNeuronInterface*obj, size_t streamIndex,
-							 float minN, float maxN, float minO, float maxO);
-		void graphics_outOfRange(GraphicsNeuronInterface* obj);
-		void graphics_update(GraphicsConnectionInterface*obj, size_t streamIndex,
-							 float minW, float maxW, float minS, float maxS);
-		void graphics_outOfRange(GraphicsConnectionInterface* obj);
+		void graphics_update_CPU(const vector<GraphicsNeuronInterface*>& objList, size_t streamIndex);
+		void graphics_update_GPU_CUDA(const vector<GraphicsNeuronInterface*>& objList, size_t streamIndex);
+		inline void graphics_update(GraphicsNeuronInterface *obj,
+							 float minN, float maxN, float minO, float maxO,
+							 float *inputSignals, float *neuronOutputData, float *netinputData);
+
+
+		inline void graphics_outOfRange(GraphicsNeuronInterface* obj);
+		void graphics_update_CPU(const vector<GraphicsConnectionInterface*>& objList, size_t streamIndex);
+		void graphics_update_GPU_CUDA(const vector<GraphicsConnectionInterface*> &objList, size_t streamIndex);
+		inline void graphics_update(GraphicsConnectionInterface* obj,
+							 float minW, float maxW, float minS, float maxS,
+							 float* weightList, float* connectionSignalList);
+		inline void graphics_outOfRange(GraphicsConnectionInterface* obj);
 
 
 		void CPU_calculate(size_t streamBegin, size_t streamEnd); // including begin, excluding end
 		void GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd);
 		static void CPU_calculateNet(float* weights, float* biasList, float* signals, float* outpuSignals,
-									 float* netinputList, float* neuronSignalList,
+									 float* connectionSignals, float* netinputList, float* neuronSignalList,
 									 size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation);
 		static void CPU_calculateLayer(float* weights, float* biasList, float* inputSignals,
-									   float* netinputList, float* neuronSignalList,
+									   float* connectionSignals, float* netinputList, float* neuronSignalList,
 									   size_t neuronCount, size_t inputSignalCount, ActFp* activation);
 
 		void transferWeightsToDevice();
@@ -159,10 +167,12 @@ namespace NeuronalNet
 		MultiSignalVector m_inputStream;
 		MultiSignalVector m_outputStream;
 		MultiSignalVector m_netinputList;
+		MultiSignalVector m_weightSignalProduct;
 		MultiSignalVector m_neuronValueList;
 
 		//float** m_inputSignalList;
 		float* m_weightsList;
+		//float** m_weightSignalProduct;
 		float* m_biasList;
 		//float** m_outputSingalList;
 		bool   m_built;
@@ -176,10 +186,15 @@ namespace NeuronalNet
 		float** d_neuronValueList;
 		float** h_d_neuronValueList;
 		float* d_weightsList;
+		float** d_weightSignalProduct; // weight * signal for each connection of each signalStream
+		float** h_d_weightSignalProduct;
 		float* d_biasList;
 		float** d_outputSingalList;
 		float** h_d_outputStream;
 
+
+		bool m_weightsChangedFromDeviceTraining;
+		bool m_biasChangedFromDeviceTraining;
 		private:
 		//vector<GraphicsNeuronInterface*> m_graphicsNeuronInterfaceList;
 		//vector<GraphicsConnectionInterface*> m_graphicsConnectionInterfaceList;

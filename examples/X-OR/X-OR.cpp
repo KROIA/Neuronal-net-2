@@ -56,7 +56,7 @@ int activeThreads = 0;
 void xorBenchmarkMain();
 void xorBenchmark(size_t maxIteration, BenchmarkData& data);
 void xorBenchmarkThreaded(size_t thredID, BenchmarkData* list, size_t size);
-void printWeights(const Net* net);
+void printWeights(Net* net);
 
 int main()
 {
@@ -69,6 +69,46 @@ int main()
 	
 	//xorBenchmarkMain();
 	xorLoop();
+
+	/*
+	{
+		using namespace std::chrono_literals;
+		Debug::DebugFuncStackTimeTrace trace("init");
+		
+		//std::this_thread::sleep_for(100ms);
+		
+		{
+			Debug::DebugFuncStackTimeTrace trace1("t1");
+			//std::this_thread::sleep_for(100ms);
+			{
+				Debug::DebugFuncStackTimeTrace trace1("t2");
+				//std::this_thread::sleep_for(100ms);
+				{
+					Debug::DebugFuncStackTimeTrace trace1("t3");
+					//std::this_thread::sleep_for(100ms);
+					{
+						Debug::DebugFuncStackTimeTrace trace1("t4");
+						//std::this_thread::sleep_for(10ms);
+
+					}
+				}
+				{
+					Debug::DebugFuncStackTimeTrace trace1("t5");
+					std::this_thread::sleep_for(100ms);
+
+				}
+				{
+					Debug::DebugFuncStackTimeTrace trace1("t6");
+					std::this_thread::sleep_for(100ms);
+					{
+						Debug::DebugFuncStackTimeTrace trace1("t7");
+						std::this_thread::sleep_for(100ms);
+
+					}
+				}
+			}
+		}
+	}*/
 	return 0;
 }
 
@@ -96,8 +136,8 @@ void xorLoop()
 	net.setDimensions(2, 2, 5, 1);
 	net.setStreamSize(trainigsSet.size());
 	net.setActivation(Activation::sigmoid);
-	net.setHardware(Hardware::cpu);
-	net.setLearnParameter(2.0);
+	net.setHardware(Hardware::gpu_cuda);
+	net.setLearnParameter(1.0);
 	net.enableBias(true);
 	net.build();
 
@@ -159,9 +199,9 @@ void xorLoop()
 	MultiSignalVector err;
 	while (display.isOpen())
 	{
+		bool frameUpdate = display.needsFrameUpdate();
 		
-		
-		if (display.needsFrameUpdate())
+		if (frameUpdate)
 		{
 			++iteration;
 
@@ -179,17 +219,17 @@ void xorLoop()
 			currentError = err.getRootMeanSquare();
 		}
 
-		if (display.needsFrameUpdate())
+		if (frameUpdate)
 		{
 			
-			Hardware h = net.getHardware();
+			/*Hardware h = net.getHardware();
 			if (h != Hardware::cpu)
 			{
 				net.setHardware(Hardware::cpu);
-			}
+			}*/
 			display.processEvents();
 			display.draw();
-			net.setHardware(h);
+			//net.setHardware(h);
 			
 		}
 
@@ -197,7 +237,7 @@ void xorLoop()
 
 		static Debug::Timer timer(true);
 		//if (timer.getMillis() > 1000)
-		if (iteration%100 == 0)
+		if (iteration%100 == 0 && frameUpdate)
 		{
 			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: " 
 				      << trainigTimer.getMillis() << " ms\tlearnTime: "<< learnTimer.getMicros()/(double)iteration<< " us/training " <<"\n";
@@ -212,7 +252,7 @@ void xorLoop()
 		printWeights(&net);
 		net.setHardware(h);
 		getchar();*/
-		if (currentError < 0.05)
+		if (currentError < 0.05 && frameUpdate)
 		{
 			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: "
 				      << trainigTimer.getMillis() << "ms learnTime: " << learnTimer.getMicros() / (double)iteration << "us/training\n";
@@ -629,7 +669,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 	delete display;
 }
 
-void printWeights(const Net* net)
+void printWeights(Net* net)
 {
 	
 	size_t iterator = 0;

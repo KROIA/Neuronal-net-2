@@ -9,9 +9,10 @@
 #include <chrono>
 
 #include "config.h"
+#include <vector>
 
 #ifdef UNIT_TEST
-#include <vector>
+
 #include <sstream>
 #endif
 
@@ -52,6 +53,10 @@ namespace NeuronalNet
 			bool isRunning() const;
 			bool isPaused() const;
 
+			void setPauseTime(const std::chrono::nanoseconds& offset);
+			void addPauseTime(const std::chrono::nanoseconds& delta);
+			const std::chrono::nanoseconds& getPauseTime() const;
+
 			static inline std::chrono::time_point<std::chrono::high_resolution_clock> getCurrentTimePoint();
 			template <typename T>
 			static inline double getMillis(T t);
@@ -82,6 +87,76 @@ namespace NeuronalNet
 			std::string m_stackSpace;
 			std::string m_functionName;
 			
+		};
+		class NET_API StackElement
+		{
+			public:
+			StackElement(const std::string& context, int stackIndex) {
+				m_stackIndex = stackIndex;
+				m_time = 0;
+				m_childs.reserve(20);
+				m_context = context;
+			}
+			~StackElement() {
+				for (StackElement* el : m_childs)
+					delete el;
+				m_childs.clear();
+			}
+
+			inline StackElement* addChild(const std::string& context){
+				StackElement* el = new StackElement(context,m_stackIndex + 1);
+				m_childs.push_back(el);
+				return el;
+			}
+
+			inline void setTime(const Timer &t) {
+				m_time = t.getMicros();
+				m_pause = t.getPauseTime();
+			}
+			inline double getTime() const {
+				return m_time;
+			}
+			inline int getStackIndex() const {
+				return m_stackIndex;
+			}
+			
+			void updatePauseTime();
+			void printResult(double timeSum);
+
+			private:
+
+			double m_time;
+			int m_stackIndex;
+			std::string m_context;
+			std::chrono::nanoseconds m_pause;
+			std::vector<StackElement*> m_childs;
+
+		};
+		class NET_API DebugFuncStackTimeTrace
+		{
+			public:
+			DebugFuncStackTimeTrace(const std::string &context, size_t channel = 0);
+			~DebugFuncStackTimeTrace();
+
+			void printResults();
+
+			protected:
+			Timer m_timer;
+			size_t m_timeIndex;
+			size_t m_channel;
+			//std::vector<DebugFuncStackTimeTrace*>* m_thisStack;
+			//std::vector<double>* m_thisTimeStack;
+			std::vector<StackElement*>* m_thisStack;
+			StackElement* m_thisStackelement;
+
+
+
+			static size_t m_standardStackSize;
+			static size_t m_standardChannelSize;
+			static std::vector<std::vector<double> > m_timeStack;
+			static std::vector<int > m_stackDepth;
+			static std::vector< std::vector<StackElement*> > m_stack;
+			//static std::vector<std::vector<DebugFuncStackTimeTrace*> > m_stack;
 		};
 
 		

@@ -334,7 +334,7 @@ namespace NeuronalNet
 		void NetModel::draw(sf::RenderWindow* window,
 							const sf::Vector2f &offset)
 		{
-			if (m_net->getHardware() != Hardware::cpu)
+			/*if (m_net->getHardware() != Hardware::cpu)
 			{
 				static Debug::Timer timer(true);
 
@@ -345,7 +345,7 @@ namespace NeuronalNet
 					timer.start();
 				}
 				return;
-			}
+			}*/
 			updateGraphics();
 
 			for (size_t i = 0; i < m_connectionList.size(); ++i)

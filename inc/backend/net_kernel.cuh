@@ -50,7 +50,7 @@ namespace NeuronalNet
 	NET_API __host__ cudaDeviceProp GPU_CUDA_getSpecs();
 	NET_API __host__ void GPU_CUDA_deleteSpecs();
 	NET_API __host__ void GPU_CUDA_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec,
-												float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
+												float** multiConnectionSignalList, float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
 												size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation activation,
 												CUDA_info* d_info = nullptr);
 
@@ -64,6 +64,8 @@ namespace NeuronalNet
 
 	template <typename T>
 	NET_API __host__ extern void GPU_CUDA_memset(T*& d_list, int value, size_t byteCount);
+	template <typename T>
+	NET_API __host__  extern void GPU_CUDA_memcpy(T*& d_source, T*& d_destination, size_t byteCount);
 
 	template <typename T>
 	NET_API __host__ extern void GPU_CUDA_transferToDevice(T* d_list, T* h_list, size_t byteCount);
@@ -72,11 +74,11 @@ namespace NeuronalNet
 	NET_API __host__ void GPU_CUDA_convertWeightMatrix(float* d_list, size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Direction dir);
 
 
-	NET_API __host__ void GPU_CUDA_learnBackpropagation(float* d_weights, float* d_biasList, float* d_inputSignals, float* d_neuronOutputs, float* d_neuronNetinputs,
+	NET_API __host__ void GPU_CUDA_learnBackpropagation(float* d_weights, float* d_deltaWeights, float* d_biasList, float* d_deltaBiasList, float* d_inputSignals, float* d_neuronOutputs, float* d_neuronNetinputs,
 														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
 														float* d_outputErrorList, float* d_expectedOutput, float learnParam);
 
-	NET_API __host__ void GPU_CUDA_learnBackpropagationStream(float* d_weights, float* d_biasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
+	NET_API __host__ void GPU_CUDA_learnBackpropagationStream(float* d_weights, float** d_deltaWeights, float* d_biasList, float** d_deltaBiasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
 															  size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
 															  float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize);
 	NET_API __host__ void GPU_CUDA_learnBackpropagation_getOutputError(float* d_outputSignals, float* h_expectedOutputSignals,
@@ -111,10 +113,10 @@ namespace NeuronalNet
 
 
 	NET_API __global__ void kernel_net_calculateLayer(float* weights, float* biasList, float* inputSignals,
-													  float* netinputList, float* neuronSignalList,
+													  float* connectionSignalList, float* netinputList, float* neuronSignalList,
 													  size_t neuronCount, size_t inputSignalCount, kernel_ActFp* act);
 	NET_API __global__ void kernel_calculateNet(float* weights, float* biasList, float** multiSignalVec, float** multiOutputVec,
-												float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
+												float** multiConnectionSignalList, float** multiNetinputList, float** multiNeuronSignalList, size_t multiSignalSize,
 												size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, Activation act,
 												CUDA_info* d_info = nullptr);
 
@@ -129,13 +131,13 @@ namespace NeuronalNet
 
 	// Training algorithm
 
-	NET_API __global__ void kernel_learnBackpropagationStream(float* d_weights, float* d_biasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
+	NET_API __host__ void kernel_learnBackpropagationStream(float* d_weights, float** d_deltaWeights, float* d_biasList, float** d_deltaBiasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
 														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
 														float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize);
 
 	NET_API __global__ void kernel_learnBackpropagation(float* d_weights, float **d_deltaWeights, float *d_biasList, float**d_deltaBiasList,
 														float **d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
-														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, kernel_ActFp* actDerivPtr,
+														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,//kernel_ActFp* actDerivPtr,
 														float** d_outputErrorList, float** d_expectedOutput, size_t streamSize);
 
 	NET_API __global__ void kernel_learnBackpropagation_applyDeltaValue(float* d_originalList, float** d_deltaList, float factor, size_t listSize, size_t cout);

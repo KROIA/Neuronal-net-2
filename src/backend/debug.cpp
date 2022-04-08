@@ -176,6 +176,19 @@ namespace NeuronalNet
 			return m_paused;
 		}
 
+		void Timer::setPauseTime(const std::chrono::nanoseconds& offset)
+		{
+			m_pauseOffset = offset;
+		}
+		void Timer::addPauseTime(const std::chrono::nanoseconds& delta)
+		{
+			m_pauseOffset += delta;
+		}
+		const std::chrono::nanoseconds& Timer::getPauseTime() const
+		{
+			return m_pauseOffset;
+		}
+
 		inline std::chrono::time_point<std::chrono::high_resolution_clock> Timer::getCurrentTimePoint()
 		{
 			return std::chrono::high_resolution_clock::now();
@@ -207,18 +220,155 @@ namespace NeuronalNet
 			m_functionName = funcName;
 			++__DBG_stackDepth;
 
-			CONSOLE_RAW(m_stackSpace)
-				CONSOLE_RAW(m_functionName << " begin\n")
+			STANDARD_CONSOLE_OUTPUT(m_stackSpace)
+				STANDARD_CONSOLE_OUTPUT(m_functionName << " begin\n")
 				t1 = getCurrentTimePoint();
 
 		}
 		DebugFunctionTime::~DebugFunctionTime()
 		{
 			auto t2 = getCurrentTimePoint();
-			CONSOLE_RAW(m_stackSpace)
-				CONSOLE_RAW(m_functionName << " end time: " << timeToString(getMillis(t2 - t1)) << "\n")
+			STANDARD_CONSOLE_OUTPUT(m_stackSpace)
+				STANDARD_CONSOLE_OUTPUT(m_functionName << " end time: " << timeToString(getMillis(t2 - t1)) << "\n")
 				if (__DBG_stackDepth != 0)
 					--__DBG_stackDepth;
+		}
+
+
+
+
+		void StackElement::updatePauseTime()
+		{
+			std::chrono::nanoseconds pause(0);
+			for (size_t i = 0; i < m_childs.size(); ++i)
+			{
+				m_childs[i]->updatePauseTime();
+				pause += m_childs[i]->m_pause;
+			}
+			m_pause += pause;
+			m_time -= Timer::getMicros(pause);
+		}
+		void StackElement::printResult(double timeSum)
+		{
+			double effectiveTime = m_time;
+			for (size_t i = 0; i < m_childs.size(); ++i)
+			{
+				effectiveTime -= m_childs[i]->m_time;
+			}
+			std::string space(m_stackIndex, ' ');
+			char indxBuf[10];
+			char timeBuf[20];
+			char timeEffBuf[20];
+			char timePercentBuf[20];
+			sprintf_s(indxBuf, "%5i", m_stackIndex);
+			sprintf_s(timeBuf, "%10.3lf", m_time);
+			sprintf_s(timeEffBuf, "%10.3lf", effectiveTime);
+			sprintf_s(timePercentBuf, "%10.3lf", effectiveTime * 100.f / timeSum);
+			STANDARD_CONSOLE_OUTPUT("StackIdx = " << indxBuf << " AbsTime = " << timeBuf << " us ")
+			STANDARD_CONSOLE_OUTPUT("EffectiveTime = " << timeEffBuf << " us " << timePercentBuf << "% "<< space << m_context << "\n")
+			for (size_t i = 0; i < m_childs.size(); ++i)
+			{
+				m_childs[i]->printResult(timeSum);
+			}
+		}
+
+
+		size_t DebugFuncStackTimeTrace::m_standardStackSize = 50;
+		size_t DebugFuncStackTimeTrace::m_standardChannelSize = 50;
+		//std::vector<std::vector<DebugFuncStackTimeTrace*> > DebugFuncStackTimeTrace::m_stack(m_standardChanalSize);
+		std::vector<std::vector<double> > DebugFuncStackTimeTrace::m_timeStack(m_standardChannelSize);
+		std::vector<int > DebugFuncStackTimeTrace::m_stackDepth(m_standardChannelSize, 0);
+		std::vector< std::vector<StackElement* > > DebugFuncStackTimeTrace::m_stack(m_standardChannelSize);
+		DebugFuncStackTimeTrace::DebugFuncStackTimeTrace(const std::string& context, size_t channel)
+		{
+			//m_thisStack = nullptr;
+			m_timer.start();
+			m_timer.pause();
+			m_channel = 0;
+			m_timeIndex = 0;
+			//m_thisTimeStack = nullptr;
+			m_thisStack		= nullptr;
+			if (channel >= m_standardChannelSize)
+			{
+				STANDARD_CONSOLE_OUTPUT(__PRETTY_FUNCTION__ << " chanal out of range. Max is: " << m_standardChannelSize)
+				return;
+			}
+			
+			m_channel = channel;
+			//m_thisStack		= &m_stack[m_channel];
+			//m_thisTimeStack = &m_timeStack[m_channel];
+			m_thisStack     = &m_stack[m_channel];
+			//if (m_thisStack->capacity() < m_standardStackSize)
+			//	m_thisStack->reserve(m_standardStackSize);
+			//if (m_thisTimeStack->capacity() < m_standardStackSize)
+			//	m_thisTimeStack->reserve(m_standardStackSize);
+			if (m_thisStack->capacity() < m_standardStackSize)
+				m_thisStack->reserve(m_standardStackSize);
+			//m_timeIndex = m_thisTimeStack->size();
+			//m_thisStack->push_back(this);
+			//m_thisTimeStack->push_back(0);
+
+			if (m_thisStack->size() == 0)
+				m_thisStackelement = new StackElement(context,0);
+			else
+			{
+				m_thisStackelement = (*m_thisStack)[m_thisStack->size() - 1]->addChild(context);
+			}
+			m_thisStack->push_back(m_thisStackelement);
+			m_timer.unpause();
+			
+		}
+		DebugFuncStackTimeTrace::~DebugFuncStackTimeTrace()
+		{
+			//if (!m_thisTimeStack)
+			//	return;
+			m_timer.stop();
+			m_thisStackelement->setTime(m_timer);
+			
+			//(*m_thisTimeStack)[m_timeIndex] = m_timer.getMicros();
+			if (m_thisStack->size() == 1)
+			{
+				printResults();
+				//m_thisStack->clear();
+				//m_thisTimeStack->clear();
+				delete m_thisStackelement;
+				STANDARD_CONSOLE_OUTPUT("pause")
+				getchar();
+			}
+			m_thisStack->pop_back();
+		}
+
+		void DebugFuncStackTimeTrace::printResults()
+		{
+			STANDARD_CONSOLE_OUTPUT(__PRETTY_FUNCTION__ << " Channel: " << m_channel << "\n")
+			m_thisStackelement->updatePauseTime();
+			m_thisStackelement->printResult(m_thisStackelement->getTime());
+
+			//STANDARD_CONSOLE_OUTPUT("Individual times:\n")
+			/*std::vector<double> individualTime(m_thisTimeStack->size(), 0);
+			double timeSume = (*m_thisTimeStack)[0];
+			for (size_t i = m_thisTimeStack->size(); i > 0; --i)
+			{
+				if (i == m_thisTimeStack->size())
+				{
+					individualTime[i - 1] = (*m_thisTimeStack)[i - 1];
+				}
+				else
+				{
+					individualTime[i - 1] = (*m_thisTimeStack)[i - 1] - individualTime[i];
+				}
+			}
+			for (size_t i = 0; i < m_thisTimeStack->size(); ++i)
+			{
+				float gesTime = (*m_thisTimeStack)[i];
+				float effectiveTime = individualTime[i];
+				std::string space(i, ' ');
+				char buff[10];
+				sprintf_s(buff, "%5i", i);
+				STANDARD_CONSOLE_OUTPUT("StackIdx = " << buff << space << " AbsTime = " << gesTime << " us ")
+				STANDARD_CONSOLE_OUTPUT(" EffectiveTime = " << effectiveTime << " us " << effectiveTime *100.f / timeSume << "%\n")
+
+			}*/
 		}
 
 	}

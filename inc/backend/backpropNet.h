@@ -34,8 +34,7 @@ namespace NeuronalNet
 
 		private:
 		
-
-		float m_learnParameter;
+		
 
 		void CPU_learn(const MultiSignalVector& expectedOutputVec);
 		void CPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec, float*deltaWeights, float * deltaBiasList);
@@ -50,9 +49,22 @@ namespace NeuronalNet
 		inline const SignalVector& internal_getError(size_t streamIndex, const SignalVector& expectedOutputVec);
 
 		MultiSignalVector m_outputDifference;
-
+		float m_learnParameter;
 
 		float** h_d_outputDifference;
 		float** d_outputDifference;
+
+		MultiSignalVector m_deltaWeight;
+		MultiSignalVector m_deltaBias;
+
+		float** d_deltaWeight;
+		float** h_d_deltaWeight;
+		float** d_deltaBias;
+		float** h_d_deltaBias;
+
+		float** d_expected;
+		float** h_d_expected;
 	};
+	#define DEBUG_BENCHMARK_STACK
+	//#define DEBUG_BENCHMARK_STACK Debug::DebugFuncStackTimeTrace trace(__PRETTY_FUNCTION__);
 };

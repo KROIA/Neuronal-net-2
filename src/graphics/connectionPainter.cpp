@@ -16,8 +16,8 @@ namespace NeuronalNet
 			m_startNeuron = a;
 			m_endNeuron = b;
 
-			m_weightColor.a = 100;
-			m_signalColor.a = 100;
+			setWeightAlpha(100);
+			setSignalAlpha(100);
 
 			setConnectionWidth(m_standardConnectionWidth);
 			setSignalWidth(m_standardSignalWidth);
@@ -55,6 +55,22 @@ namespace NeuronalNet
 		float ConnectionPainter::getSignalWidth() const
 		{
 			return m_signalWidth;
+		}
+		void ConnectionPainter::setWeightAlpha(uint8_t alpha)
+		{
+			m_weightColor.a = alpha;
+		}
+		uint8_t ConnectionPainter::getWeightAlpha() const
+		{
+			return m_weightColor.a;
+		}
+		void ConnectionPainter::setSignalAlpha(uint8_t alpha)
+		{
+			m_signalColor.a = alpha;
+		}
+		uint8_t ConnectionPainter::getSignalAlpha() const
+		{
+			return m_signalColor.a;
 		}
 
 		/*void ConnectionPainter::setOptimization(Optimization opt)
@@ -96,7 +112,10 @@ namespace NeuronalNet
 			{
 				m_singalLine.setOrigin(-offset);
 				setLinePos(m_singalLine, m_signalWidth);
+				uint8_t alpha = m_signalColor.a;
 				m_signalColor = getColor(m_signal, m_globalMinSignal, m_globalMaxSignal);
+				m_signalColor.a = alpha;
+
 				m_singalLine.setFillColor(m_signalColor);
 				window->draw(m_singalLine);
 			}
@@ -125,9 +144,10 @@ namespace NeuronalNet
 			m_weight = weight;
 			m_signal = signal;
 
+			uint8_t alpha = m_weightColor.a;
 			if (m_visualConfiguration & VisualConfiguration::connectionWeights)
 				m_weightColor = getColor(m_weight, minW, maxW);
-
+			m_weightColor.a = alpha;
 
 			// Update min/max Weight values
 			if (m_weight < m_globalMinSignal)
