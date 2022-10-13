@@ -1,0 +1,13 @@
+﻿  pch.cpp
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\inc\net.h(123,1): warning C4005: "VERIFY_RANGE": Makro-Neudefinition
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\inc\net.h(122): message : Siehe vorherige Definition von "VERIFY_RANGE"
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\inc\net.h(127,1): warning C4005: "VERIFY_BOOL": Makro-Neudefinition
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\inc\net.h(126): message : Siehe vorherige Definition von "VERIFY_BOOL"
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\inc\net.h(131,1): warning C4005: "VERIFY_VALID_PTR": Makro-Neudefinition
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\inc\net.h(130): message : Siehe vorherige Definition von "VERIFY_VALID_PTR"
+  NeuronalNet_UnitTest.cpp
+     Bibliothek "E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\NeuronalNet_UnitTest\Debug\NeuronalNet_UnitTest.lib" und Objekt "E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\NeuronalNet_UnitTest\Debug\NeuronalNet_UnitTest.exp" werden erstellt.
+NeuronalNet_UnitTest.obj : error LNK2019: Verweis auf nicht aufgelöstes externes Symbol ""public: __thiscall Net::Net(void)" (??0Net@@QAE@XZ)" in Funktion ""public: void __thiscall NeuronalNetUnitTest::NeuronalNetUnitTest::TestMethod1(void)" (?TestMethod1@NeuronalNetUnitTest@1@QAEXXZ)".
+NeuronalNet_UnitTest.obj : error LNK2019: Verweis auf nicht aufgelöstes externes Symbol ""public: __thiscall Net::~Net(void)" (??1Net@@QAE@XZ)" in Funktion ""public: void __thiscall NeuronalNetUnitTest::NeuronalNetUnitTest::TestMethod1(void)" (?TestMethod1@NeuronalNetUnitTest@1@QAEXXZ)".
+NeuronalNet_UnitTest.obj : error LNK2019: Verweis auf nicht aufgelöstes externes Symbol ""public: bool __thiscall Net::build(void)" (?build@Net@@QAE_NXZ)" in Funktion ""public: void __thiscall NeuronalNetUnitTest::NeuronalNetUnitTest::TestMethod1(void)" (?TestMethod1@NeuronalNetUnitTest@1@QAEXXZ)".
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\NeuronalNet_UnitTest\Debug\NeuronalNet_UnitTest.dll : fatal error LNK1120: 3 nicht aufgelöste Externe

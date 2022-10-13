@@ -1,0 +1,42 @@
+Implement this Library to a project:
+
+VS Builddependencies:
+[X] CUDA 11.6
+
+VS Project settings:
+--> Configuration: All Configurations
+
+->	C/C++ -> General -> Additional Include Directories: E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\inc
+->	C/C++ -> Preprocessor -> Preprocessordefinitions: UNIT_TEST (only for unit testing)
+->	Linker -> General -> Additional Library Directories: E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\$(IntDir)
+-> 	Linker -> Input -> Additional Dependencies: Neural-net-2.lib
+->	Build Events -> Post-Build Event -> Command Line: xcopy /y /d "E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\$(IntDir)Neural-net-2.dll" "$(OutDir)"
+
+
+To Build this Library:
+VS Builddependencies:
+[X] CUDA 11.6
+
+VS Project settings:
+--> Configuration: All Configurations
+
+->	General -> Configuragions Type: "dll"
+-> 	VC++-Directories -> Include Paths "inc"
+			 -> Source Paths "src"
+->	C/C++ -> Preprocessor -> Preprocessordefinitions: DLL_EXPORT
+->	Linker -> Input -> Additional Dependencies: 
+cudart_static.lib
+kernel32.lib
+user32.lib
+gdi32.lib
+winspool.lib
+comdlg32.lib
+advapi32.lib
+shell32.lib
+ole32.lib
+oleaut32.lib
+uuid.lib
+odbc32.lib
+odbccp32.lib
+curand.lib
+cudadevrt.lib

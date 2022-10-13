@@ -30,3 +30,15 @@
 *.exe
 *.out
 *.app
+
+.vs/
+
+x64/
+
+*.user
+
+Profile/
+
+examples/X-OR/export/
+
+examples/X-OR/floatDouble.png
