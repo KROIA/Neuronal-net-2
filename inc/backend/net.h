@@ -86,7 +86,7 @@ namespace NeuronalNet
 		virtual void setWeight(const std::vector<float>& list);
 		virtual void setWeight(const float* list);
 		virtual void setWeight(const float* list, size_t to);
-		virtual void setWeight(const float* list, size_t count, size_t insertOffset);
+		virtual void setWeight(const float* list, size_t insertOffset, size_t count);
 		float getWeight(size_t layer, size_t neuron, size_t input);
 		const float* getWeight();
 		size_t getWeightSize() const;

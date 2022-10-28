@@ -649,7 +649,7 @@ void Net::setWeight(const float* list, size_t to)
 {
 	setWeight(list, 0, to);
 }
-void Net::setWeight(const float* list, size_t count, size_t insertOffset)
+void Net::setWeight(const float* list, size_t insertOffset, size_t count)
 {
 	memcpy(m_weightsList + insertOffset, list, count * sizeof(float));
 	switch (m_hardware)
