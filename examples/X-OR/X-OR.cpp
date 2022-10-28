@@ -136,7 +136,7 @@ void xorLoop()
 	net.setDimensions(2, 2, 5, 1);
 	net.setStreamSize(trainigsSet.size());
 	net.setActivation(Activation::sigmoid);
-	net.setHardware(Hardware::gpu_cuda);
+	net.setHardware(Hardware::cpu);
 	net.setLearnParameter(1.0);
 	net.enableBias(true);
 	net.build();
@@ -218,6 +218,7 @@ void xorLoop()
 			err = net.getError();
 			currentError = err.getRootMeanSquare();
 		}
+		net.setLearnParameter(currentError);
 
 		if (frameUpdate)
 		{
@@ -531,7 +532,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 		net.setStreamSize(trainigsSet.size());
 		net.setActivation(Activation::sigmoid);
 		net.setHardware(Hardware::gpu_cuda);
-		net.setLearnParameter(0.1);
+		net.setLearnParameter(1);
 		net.build();
 
 		if (data.displayEnable)

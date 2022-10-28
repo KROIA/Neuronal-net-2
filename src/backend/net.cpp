@@ -54,6 +54,7 @@ Net::Net()
 
 Net::~Net()
 {
+	DEBUG_FUNCTION_TIME_INTERVAL
 	destroyDevice();
 	m_built = false;
 	/*if (m_inputSignalList)
@@ -195,6 +196,9 @@ void Net::setHardware(enum Hardware ware)
 			transferWeightsToHost();
 			transferBiasToHost();
 			transferSignalsToHost();
+			transferNetinputToHost();
+			transferNeuronValuesToHost();
+			transferWeightSignalProductToHost();
 			destroyDevice();
 			
 
@@ -212,6 +216,9 @@ void Net::setHardware(enum Hardware ware)
 			transferWeightsToDevice();
 			transferBiasToDevice();
 			transferSignalsToDevice();
+			transferNetinputToDevice();
+			transferNeuronValuesToDevice();
+			transferWeightSignalProductToDevice();
 			m_netinputList.clear();
 			m_neuronValueList.clear();
 			//destroyHostWeights();
@@ -295,6 +302,7 @@ bool Net::build()
 		CONSOLE("Streams      : " << m_streamSize)
 
 		m_inputStream = MultiSignalVector(m_streamSize, m_inputs);
+		m_inputVectorChanged = vector<bool>(m_streamSize, true);
 		m_outputStream = MultiSignalVector(m_streamSize, m_outputs);
 		if (m_hardware == Hardware::cpu)
 		{
@@ -422,6 +430,7 @@ void Net::setInputVector(float* signalList)
 	DEBUG_FUNCTION_TIME_INTERVAL
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	//memcpy(m_inputSignalList[0], signalList, m_inputs * sizeof(float));
+	m_inputVectorChanged[0] = true;
 	m_inputStream[0].fill(signalList, m_inputs);// std::vector<float>(signalList, signalList + m_inputs);
 }
 void Net::setInputVector(size_t stream, float* signalList)
@@ -430,6 +439,7 @@ void Net::setInputVector(size_t stream, float* signalList)
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
 	//memcpy(m_inputSignalList[stream], signalList, m_inputs * sizeof(float));
+	m_inputVectorChanged[stream] = true;
 	m_inputStream[stream].fill(signalList, m_inputs);// = std::vector<float>(signalList, signalList + m_inputs);
 }
 
@@ -440,6 +450,7 @@ void Net::setInputVector(const SignalVector& signalList)
 	VERIFY_BOOL(m_built, true, "build the net first", return)
 	size_t max = signalList.size();
 	if (m_inputs < max) max = m_inputs;
+	m_inputVectorChanged[0] = true;
 	m_inputStream[0].fill(signalList.begin(), max);
 	//memcpy(m_inputSignalList[0], signalList.begin(), max * sizeof(float));
 }
@@ -451,6 +462,7 @@ void Net::setInputVector(size_t stream, const SignalVector& signalList)
 	size_t max = signalList.size();
 	if (m_inputs < max) max = m_inputs;
 	//memcpy(m_inputSignalList[stream], signalList.begin(), max * sizeof(float));
+	m_inputVectorChanged[stream] = true;
 	m_inputStream[stream].fill(signalList.begin(), max);
 }
 void Net::setInputVector(const MultiSignalVector& streamVector)
@@ -467,6 +479,7 @@ void Net::setInputVector(const MultiSignalVector& streamVector)
 	size_t max = streamVector.signalSize();
 	if (m_inputs < max) max = m_inputs;
 	
+	m_inputVectorChanged = vector<bool>(m_streamSize, true);
 	m_inputStream.fill(streamVector.begin(), streams);
 	/*for (size_t s = 0; s < streams; ++s)
 	{
@@ -479,8 +492,9 @@ void Net::setInputVector(const MultiSignalVector& streamVector)
 void Net::setInput(size_t input, float signal)
 {
 	VERIFY_BOOL(m_built, true, "build the net first", return)
-	VERIFY_RANGE(0, input, m_inputs-1, return)
+	VERIFY_RANGE(0, input, m_inputs - 1, return)
 	//m_inputSignalList[0][input] = signal;
+	m_inputVectorChanged[0] = true;
 	m_inputStream[0][input] = signal;
 }
 void Net::setInput(size_t stream, size_t input, float signal)
@@ -489,6 +503,7 @@ void Net::setInput(size_t stream, size_t input, float signal)
 	VERIFY_RANGE(0, input,m_inputs-1,return)
 	VERIFY_RANGE(0, stream, m_streamSize - 1, return)
 	//m_inputSignalList[stream][input] = signal;
+	m_inputVectorChanged[stream] = true;
 	m_inputStream[stream][input] = signal;
 }
 
@@ -1503,15 +1518,10 @@ void Net::transferSignalsToDevice()
 			for (size_t i = 0; i < m_streamSize; ++i)
 			{
 				//NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputSignalList[i], m_inputs * sizeof(float));
-				NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputStream[i].begin(), m_inputs * sizeof(float));
-				if (m_netinputList.size() > 0)
-					NeuronalNet::GPU_CUDA_transferToDevice(h_d_netinputList[i], m_netinputList[i].begin(), m_neuronCount * sizeof(float));
-				if(m_neuronValueList.size() >0)
-					NeuronalNet::GPU_CUDA_transferToDevice(h_d_neuronValueList[i], m_neuronValueList[i].begin(), m_neuronCount * sizeof(float));
-				if (m_weightSignalProduct.size() > 0)
+				if (m_inputVectorChanged[i])
 				{
-					NeuronalNet::GPU_CUDA_transferToDevice(h_d_weightSignalProduct[i], m_weightSignalProduct[i].begin(), m_weightsCount * sizeof(float));
-					NeuronalNet::GPU_CUDA_convertWeightMatrix(h_d_weightSignalProduct[i], m_inputs, m_hiddenX, m_hiddenY, m_outputs, NeuronalNet::Direction::toDevice);
+					NeuronalNet::GPU_CUDA_transferToDevice(h_d_inputSignalList[i], m_inputStream[i].begin(), m_inputs * sizeof(float));
+					m_inputVectorChanged[i] = false;
 				}
 			}
 			break;
@@ -1531,18 +1541,7 @@ void Net::transferSignalsToHost()
 			{
 				//NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputSingalList[i], m_outputs * sizeof(float));
 				NeuronalNet::GPU_CUDA_transferToHost(h_d_outputStream[i], m_outputStream[i].begin(), m_outputs * sizeof(float));
-				if (m_netinputList.size() > 0)
-					NeuronalNet::GPU_CUDA_transferToHost(h_d_netinputList[i], m_netinputList[i].begin(), m_neuronCount * sizeof(float));
-				if(m_neuronValueList.size() > 0)
-					NeuronalNet::GPU_CUDA_transferToHost(h_d_neuronValueList[i], m_neuronValueList[i].begin(), m_neuronCount * sizeof(float));
-				if (m_weightSignalProduct.size() > 0)
-				{
-					NeuronalNet::GPU_CUDA_convertWeightMatrix(h_d_weightSignalProduct[i], m_inputs, m_hiddenX, m_hiddenY, m_outputs, NeuronalNet::Direction::toHost);
-					NeuronalNet::GPU_CUDA_transferToHost(h_d_weightSignalProduct[i], m_weightSignalProduct[i].begin(), m_weightsCount * sizeof(float));
-				}
 			}
-			
-			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
 		default:
@@ -1578,6 +1577,127 @@ void Net::transferBiasToHost()
 	}
 	m_biasChangedFromDeviceTraining = false;
 }
+void Net::transferNetinputToDevice()
+{
+	DEBUG_FUNCTION_TIME_INTERVAL
+	switch (m_hardware)
+	{
+		case Hardware::gpu_cuda:
+		{
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				if (m_netinputList.size() > 0)
+					NeuronalNet::GPU_CUDA_transferToDevice(h_d_netinputList[i], m_netinputList[i].begin(), m_neuronCount * sizeof(float));
+			}
+			break;
+		}
+		default:
+			CONSOLE("Nothing to transfer")
+	}
+}
+void Net::transferNetinputToHost()
+{
+	DEBUG_FUNCTION_TIME_INTERVAL
+	switch (m_hardware)
+	{
+		case Hardware::gpu_cuda:
+		{
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				if (m_netinputList.size() > 0)
+					NeuronalNet::GPU_CUDA_transferToHost(h_d_netinputList[i], m_netinputList[i].begin(), m_neuronCount * sizeof(float));
+			}
+
+			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
+			break;
+		}
+		default:
+			CONSOLE("Nothing to transfer")
+	}
+}
+void Net::transferNeuronValuesToDevice()
+{
+	DEBUG_FUNCTION_TIME_INTERVAL
+	switch (m_hardware)
+	{
+		case Hardware::gpu_cuda:
+		{
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				if (m_neuronValueList.size() > 0)
+					NeuronalNet::GPU_CUDA_transferToDevice(h_d_neuronValueList[i], m_neuronValueList[i].begin(), m_neuronCount * sizeof(float));
+			}
+			break;
+		}
+		default:
+			CONSOLE("Nothing to transfer")
+	}
+}
+void Net::transferNeuronValuesToHost()
+{
+	DEBUG_FUNCTION_TIME_INTERVAL
+	switch (m_hardware)
+	{
+		case Hardware::gpu_cuda:
+		{
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				if (m_neuronValueList.size() > 0)
+					NeuronalNet::GPU_CUDA_transferToHost(h_d_neuronValueList[i], m_neuronValueList[i].begin(), m_neuronCount * sizeof(float));
+			}
+
+			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
+			break;
+		}
+		default:
+			CONSOLE("Nothing to transfer")
+	}
+}
+void Net::transferWeightSignalProductToDevice()
+{
+	DEBUG_FUNCTION_TIME_INTERVAL
+	switch (m_hardware)
+	{
+		case Hardware::gpu_cuda:
+		{
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				if (m_weightSignalProduct.size() > 0)
+				{
+					NeuronalNet::GPU_CUDA_transferToDevice(h_d_weightSignalProduct[i], m_weightSignalProduct[i].begin(), m_weightsCount * sizeof(float));
+					NeuronalNet::GPU_CUDA_convertWeightMatrix(h_d_weightSignalProduct[i], m_inputs, m_hiddenX, m_hiddenY, m_outputs, NeuronalNet::Direction::toDevice);
+				}
+			}
+			break;
+		}
+		default:
+			CONSOLE("Nothing to transfer")
+	}
+}
+void Net::transferWeightSignalProductToHost()
+{
+	DEBUG_FUNCTION_TIME_INTERVAL
+	switch (m_hardware)
+	{
+		case Hardware::gpu_cuda:
+		{
+			for (size_t i = 0; i < m_streamSize; ++i)
+			{
+				if (m_weightSignalProduct.size() > 0)
+				{
+					NeuronalNet::GPU_CUDA_convertWeightMatrix(h_d_weightSignalProduct[i], m_inputs, m_hiddenX, m_hiddenY, m_outputs, NeuronalNet::Direction::toHost);
+					NeuronalNet::GPU_CUDA_transferToHost(h_d_weightSignalProduct[i], m_weightSignalProduct[i].begin(), m_weightsCount * sizeof(float));
+				}
+			}
+
+			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
+			break;
+		}
+		default:
+			CONSOLE("Nothing to transfer")
+	}
+}
+
 
 void Net::buildDevice()
 {

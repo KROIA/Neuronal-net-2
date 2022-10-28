@@ -196,7 +196,7 @@ namespace NeuronalNet
 	STANDARD_CONSOLE_OUTPUT("Error: " <<__PRETTY_FUNCTION__<<" : "<<x<<"\n")
 
 
-#define __VERIFY_RANGE_COMP1(min,var,max) if(min>var || var>max){ PRINT_ERROR(std::string(#var)<<" out of range: "<<min<<" > "<<#var<<" = "<<var<<" > "<<max)
+#define __VERIFY_RANGE_COMP1(min,var,max) if(min>var || var>max){ PRINT_ERROR(std::string(#var)<<" out of range. Min="<<min<<" Max="<<max<<" Value: "<<#var<<"="<<var)
 	//#define VERIFY_RANGE(min,var,max) __VERIFY_RANGE_COMP1(min,var,max)}
 #define VERIFY_RANGE(min,var,max,ret)__VERIFY_RANGE_COMP1(min,var,max) ret;}
 

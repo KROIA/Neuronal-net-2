@@ -141,6 +141,13 @@ namespace NeuronalNet
 		void transferSignalsToHost();
 		void transferBiasToDevice();
 		void transferBiasToHost();
+		void transferNetinputToDevice();
+		void transferNetinputToHost();
+		void transferNeuronValuesToDevice();
+		void transferNeuronValuesToHost();
+		void transferWeightSignalProductToDevice();
+		void transferWeightSignalProductToHost();
+
 
 		virtual void buildDevice();
 		virtual void destroyDevice();
@@ -165,6 +172,7 @@ namespace NeuronalNet
 		ActFp* m_activationDerivetiveFunc;
 
 		MultiSignalVector m_inputStream;
+		vector<bool>      m_inputVectorChanged;
 		MultiSignalVector m_outputStream;
 		MultiSignalVector m_netinputList;
 		MultiSignalVector m_weightSignalProduct;

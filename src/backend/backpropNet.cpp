@@ -72,31 +72,9 @@ namespace NeuronalNet
 	bool BackpropNet::build()
 	{
 		bool ret = Net::build();
+		m_expected.resize(m_streamSize, m_outputs);
+		m_expectedChanged.resize(m_streamSize, true);
 		m_outputDifference.resize(m_streamSize,m_outputs);
-		/*if (ret)
-		{
-			m_deltaWeight.resize(m_streamSize, m_weightsCount);
-			m_deltaBias.resize(m_streamSize, m_neuronCount);
-			switch (m_hardware)
-			{
-				case Hardware::cpu:
-				{
-					break;
-				}
-				case Hardware::gpu_cuda:
-				{
-					if (!d_deltaWeight)
-					{
-
-					}
-					break;
-				}
-				default:
-				{
-					PRINT_ERROR("Error: hardware undefined")
-				}
-			}
-		}*/
 		return ret;
 	}
 
@@ -109,65 +87,107 @@ namespace NeuronalNet
 		return m_learnParameter;
 	}
 
+	void BackpropNet::setExpectedOutput(const MultiSignalVector& expectedOutputVec)
+	{
+		DEBUG_BENCHMARK_STACK
+		DEBUG_FUNCTION_TIME_INTERVAL
+		VERIFY_RANGE(0, expectedOutputVec.size(), m_streamSize, return)
+		VERIFY_BOOL(expectedOutputVec[0].size(), m_outputs, "expectedOutputVec[0].size() != m_outputs", return)
+		m_expected = expectedOutputVec;
+		m_expectedChanged = vector<bool>(m_expected.size(), true);
+	}
+	void BackpropNet::setExpectedOutput(const SignalVector& expectedOutputVec)
+	{
+		DEBUG_BENCHMARK_STACK
+		DEBUG_FUNCTION_TIME_INTERVAL
+		VERIFY_BOOL(expectedOutputVec.size(), m_outputs, "expectedOutputVec.size() != m_outputs", return)
+		m_expected[0] = expectedOutputVec;
+		m_expectedChanged[0] = true;
+	}
+	void BackpropNet::setExpectedOutput(size_t streamIndex, const SignalVector& expectedOutputVec)
+	{
+		DEBUG_BENCHMARK_STACK
+		DEBUG_FUNCTION_TIME_INTERVAL
+		VERIFY_RANGE(0, streamIndex, m_streamSize, return)
+		VERIFY_BOOL(expectedOutputVec.size(), m_outputs, "expectedOutputVec.size() != m_outputs", return)
+		m_expected[streamIndex] = expectedOutputVec;
+		m_expectedChanged[streamIndex] = true;
+	}
+	void BackpropNet::learn()
+	{
+		switch (m_hardware)
+		{
+			case Hardware::cpu:
+			{
+				CPU_learn();
+				break;
+			}
+			case Hardware::gpu_cuda:
+			{
+				GPU_learn();
+				break;
+			}
+		}
+	}
+	void BackpropNet::learn(size_t streamIndex)
+	{
+		switch (m_hardware)
+		{
+			case Hardware::cpu:
+			{
+				//float* deltaW = new float[m_weightsCount];
+				//float* deltaB = new float[m_neuronCount];
+				//
+				//memset(deltaW, 0, m_weightsCount * sizeof(float));
+				//memset(deltaB, 0, m_neuronCount * sizeof(float));
+				memset(m_deltaWeight[streamIndex].begin(), 0, m_weightsCount * sizeof(float));
+				memset(m_deltaBias[streamIndex].begin(), 0, m_neuronCount * sizeof(float));
+				CPU_learn(streamIndex, m_deltaWeight[streamIndex].begin(), m_deltaBias[streamIndex].begin());
+
+				for (size_t w = 0; w < m_weightsCount; ++w)
+				{
+					m_weightsList[w] += m_deltaWeight[streamIndex][w] * m_learnParameter;
+				}
+				for (size_t b = 0; b < m_neuronCount; ++b)
+				{
+					m_biasList[b] += m_deltaBias[streamIndex][b] * m_learnParameter;
+				}
+				//delete[] deltaW;
+				//delete[] deltaB;
+				break;
+			}
+			case Hardware::gpu_cuda:
+			{
+				GPU_learn(streamIndex);
+				break;
+			}
+		}
+	}
 	void BackpropNet::learn(const MultiSignalVector& expectedOutputVec)
 	{
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
 		VERIFY_RANGE(0, expectedOutputVec.size(), m_streamSize, return)
 		VERIFY_BOOL(expectedOutputVec[0].size(), m_outputs, "expectedOutputVec[0].size() != m_outputs", return)
-		switch (m_hardware)
-		{
-			case Hardware::cpu:
-			{
-				CPU_learn(expectedOutputVec);
-				break;
-			}
-			case Hardware::gpu_cuda:
-			{
-				GPU_learn(expectedOutputVec);
-				break;
-			}
-		}
+		setExpectedOutput(expectedOutputVec);
+		learn();
 	}
 	void BackpropNet::learn(const SignalVector& expectedOutputVec)
 	{
-		learn(0, expectedOutputVec);
+		DEBUG_BENCHMARK_STACK
+		DEBUG_FUNCTION_TIME_INTERVAL
+		VERIFY_BOOL(expectedOutputVec.size(), m_outputs, "expectedOutputVec.size() != m_outputs", return)
+		setExpectedOutput(expectedOutputVec);
+		learn(0);
 	}
 	void BackpropNet::learn(size_t streamIndex,  const SignalVector& expectedOutputVec)
 	{
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
 		VERIFY_RANGE(0, streamIndex, m_streamSize, return)
-		VERIFY_BOOL(expectedOutputVec.size(), m_outputs,"expectedOutputVec.size() != m_outputs", return)
-		switch (m_hardware)
-		{
-			case Hardware::cpu:
-			{
-				float* deltaW = new float[m_weightsCount];
-				float* deltaB = new float[m_neuronCount];
-
-				memset(deltaW, 0, m_weightsCount * sizeof(float));
-				memset(deltaB, 0, m_neuronCount * sizeof(float));
-				CPU_learn(streamIndex,expectedOutputVec, deltaW, deltaB);
-
-				for (size_t w = 0; w < m_weightsCount; ++w)
-				{
-					m_weightsList[w] += deltaW[w] * m_learnParameter;
-				}
-				for (size_t b = 0; b < m_neuronCount; ++b)
-				{
-					m_biasList[b] += deltaB[b] * m_learnParameter;
-				}
-				delete[] deltaW;
-				delete[] deltaB;
-				break;
-			}
-			case Hardware::gpu_cuda:
-			{
-				GPU_learn(streamIndex, expectedOutputVec);
-				break;
-			}
-		}
+		VERIFY_BOOL(expectedOutputVec.size(), m_outputs, "expectedOutputVec.size() != m_outputs", return)
+		setExpectedOutput(streamIndex, expectedOutputVec);
+		learn(streamIndex);
 	}
 	const SignalVector& BackpropNet::getError(size_t streamIndex)
 	{
@@ -186,19 +206,23 @@ namespace NeuronalNet
 			{
 				maxStreamSize = expectedOutputVec.size();
 			}
+			
 			for (size_t i = 0; i < maxStreamSize; ++i)
-				internal_getError(i, expectedOutputVec[i]);
+				getError(i, expectedOutputVec[i]);
 			return m_outputDifference;
 		}
 
-		return internal_getError(expectedOutputVec);
+		m_expected = expectedOutputVec;
+		m_expectedChanged = vector<bool>(m_expected.size(), true);
+		return internal_getError();
 	}
 	const SignalVector& BackpropNet::getError(size_t streamIndex, const SignalVector& expectedOutputVec)
 	{
 		DEBUG_BENCHMARK_STACK
 		VERIFY_RANGE(0, streamIndex, m_streamSize - 1, return m_outputDifference[0])
-		
-		return internal_getError(streamIndex, expectedOutputVec);
+		m_expected[streamIndex] = expectedOutputVec;
+		m_expectedChanged[streamIndex] = true;
+		return internal_getError(streamIndex);
 	}
 	const MultiSignalVector& BackpropNet::getError() const
 	{
@@ -322,7 +346,7 @@ namespace NeuronalNet
 	}
 
 
-	inline const SignalVector& BackpropNet::internal_getError(size_t streamIndex)
+	/*inline const SignalVector& BackpropNet::internal_getError(size_t streamIndex)
 	{
 		switch (m_hardware)
 		{
@@ -338,23 +362,24 @@ namespace NeuronalNet
 			case Hardware::cpu: {}
 		}
 		return m_outputDifference[streamIndex];
-	}
-	inline const MultiSignalVector& BackpropNet::internal_getError(const MultiSignalVector& expectedOutputVec)
+	}*/
+	inline const MultiSignalVector& BackpropNet::internal_getError()
 	{
 		size_t outputNeuronBeginIndex = m_neuronCount - m_outputs - 1;
-		for (size_t i = 0; i < expectedOutputVec.size(); ++i)
+		for (size_t i = 0; i < m_expected.size(); ++i)
 		{
-			internal_getError(i, expectedOutputVec[i]);
+			internal_getError(i);
 		}
 		return m_outputDifference;
 	}
-	inline const SignalVector& BackpropNet::internal_getError(size_t streamIndex, const SignalVector& expectedOutputVec)
+	inline const SignalVector& BackpropNet::internal_getError(size_t streamIndex)
 	{
 		switch (m_hardware)
 		{
 			case Hardware::gpu_cuda:
 			{
-				GPU_CUDA_learnBackpropagation_getOutputError(h_d_outputStream[streamIndex], expectedOutputVec.begin(), m_outputDifference[streamIndex].begin(), m_outputs);
+				//GPU_CUDA_learnBackpropagation_getOutputError(h_d_outputStream[streamIndex], m_expected[streamIndex].begin(), m_outputDifference[streamIndex].begin(), m_outputs);
+				GPU_CUDA_transferToHost(m_outputDifference[streamIndex].begin(), h_d_outputDifference[streamIndex], m_outputs * sizeof(float));
 				break;
 			}
 			case Hardware::cpu:
@@ -364,7 +389,7 @@ namespace NeuronalNet
 				{
 					//float netinput = m_netinputList[streamIndex][outputNeuronBeginIndex + y];
 
-					float expected = expectedOutputVec[y];
+					float expected = m_expected[streamIndex][y];
 					float output = m_outputStream[streamIndex][y];
 					float difference = (expected - output);
 					m_outputDifference[streamIndex][y] = difference;
@@ -379,7 +404,7 @@ namespace NeuronalNet
 		return m_outputDifference[streamIndex];
 	}
 
-	void BackpropNet::CPU_learn(const MultiSignalVector& expectedOutputVec)
+	void BackpropNet::CPU_learn()
 	{
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
@@ -387,15 +412,14 @@ namespace NeuronalNet
 		//float* deltaB = new float[m_neuronCount];
 
 		
-
-		for (size_t streamIndex = 0; streamIndex < expectedOutputVec.size(); ++streamIndex)
+		
+		for (size_t streamIndex = 0; streamIndex < m_streamSize; ++streamIndex)
 		{
 			memset(m_deltaWeight[streamIndex].begin(), 0, m_weightsCount * sizeof(float));
 			memset(m_deltaBias[streamIndex].begin(), 0, m_neuronCount * sizeof(float));
-			CPU_learn(streamIndex, expectedOutputVec[streamIndex],
-					  m_deltaWeight[streamIndex].begin(), m_deltaBias[streamIndex].begin());
+			CPU_learn(streamIndex, m_deltaWeight[streamIndex].begin(), m_deltaBias[streamIndex].begin());
 		}
-		for (size_t streamIndex = 0; streamIndex < expectedOutputVec.size(); ++streamIndex)
+		for (size_t streamIndex = 0; streamIndex < m_streamSize; ++streamIndex)
 		{
 			for (size_t w = 0; w < m_weightsCount; ++w)
 			{
@@ -409,13 +433,15 @@ namespace NeuronalNet
 		//delete[] deltaW;
 		//delete[] deltaB;
 	}
-	void BackpropNet::CPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec, float* deltaWeights, float* deltaBiasList)
+	void BackpropNet::CPU_learn(size_t streamIndex, float* deltaWeights, float* deltaBiasList)
 	{
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
-		size_t outputNeuronBeginIndex = m_neuronCount - m_outputs - 1;
+		size_t outputNeuronBeginIndex = m_neuronCount - m_outputs;
+		//size_t outputNeuronBeginIndex = m_neuronCount - m_outputs - 1;
 		SignalVector outputError(m_outputs);
-		getError(streamIndex,expectedOutputVec);
+		//getError(streamIndex, m_expected[streamIndex]);
+		internal_getError(streamIndex);
 		for (size_t y = 0; y < m_outputs; ++y)
 		{
 			float netinput = m_netinputList[streamIndex][outputNeuronBeginIndex + y];
@@ -511,7 +537,7 @@ namespace NeuronalNet
 		}
 	}
 
-	void BackpropNet::GPU_learn(const MultiSignalVector& expectedOutputVec)
+	void BackpropNet::GPU_learn()
 	{
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
@@ -524,7 +550,11 @@ namespace NeuronalNet
 			{
 				//float* exp;
 				//GPU_CUDA_allocMem(exp, m_outputs * sizeof(float));
-				GPU_CUDA_transferToDevice(h_d_expected[i], expectedOutputVec[i].begin(), m_outputs * sizeof(float));
+				if (m_expectedChanged[i])
+				{
+					GPU_CUDA_transferToDevice(h_d_expected[i], m_expected[i].begin(), m_outputs * sizeof(float));
+					m_expectedChanged[i] = false;
+				}
 				//h_d_expected[i] = exp;
 			}
 		}
@@ -558,14 +588,14 @@ namespace NeuronalNet
 		//transferBiasToHost();
 		//transferWeightsToHost();
 	}
-	void BackpropNet::GPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec)
+	void BackpropNet::GPU_learn(size_t streamIndex)
 	{
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
 		float* d_expected;
 
 		GPU_CUDA_allocMem(d_expected, m_outputs * sizeof(float));
-		GPU_CUDA_transferToDevice(d_expected, expectedOutputVec.begin(), m_outputs * sizeof(float));
+		GPU_CUDA_transferToDevice(d_expected, m_expected[streamIndex].begin(), m_outputs * sizeof(float));
 		GPU_CUDA_learnBackpropagation(d_weightsList, h_d_deltaWeight[streamIndex], d_biasList, h_d_deltaWeight[streamIndex], h_d_inputSignalList[streamIndex], h_d_neuronValueList[streamIndex], h_d_netinputList[streamIndex],
 									  m_inputs, m_hiddenX, m_hiddenY, m_outputs, m_neuronCount, m_weightsCount, m_activation,
 									  h_d_outputDifference[streamIndex], d_expected, m_learnParameter);
