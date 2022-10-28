@@ -131,7 +131,7 @@ namespace NeuronalNet
 
 	// Training algorithm
 
-	NET_API __host__ void kernel_learnBackpropagationStream(float* d_weights, float** d_deltaWeights, float* d_biasList, float** d_deltaBiasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
+	NET_API __host__ void internal_learnBackpropagationStream(float* d_weights, float** d_deltaWeights, float* d_biasList, float** d_deltaBiasList, float** d_inputSignals, float** d_neuronOutputs, float** d_neuronNetinputs,
 														size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, size_t neuronCount, size_t weightCount, Activation act,
 														float** d_outputErrorList, float** d_expectedOutput, float learnParam, size_t streamSize);
 

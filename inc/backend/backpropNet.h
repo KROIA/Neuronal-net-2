@@ -17,6 +17,11 @@ namespace NeuronalNet
 		void setLearnParameter(float learnParam);
 		float getLearnParameter() const;
 
+		void setExpectedOutput(const MultiSignalVector& expectedOutputVec);
+		void setExpectedOutput(const SignalVector& expectedOutputVec);
+		void setExpectedOutput(size_t streamIndex, const SignalVector& expectedOutputVec);
+		void learn();
+		void learn(size_t streamIndex);
 		void learn(const MultiSignalVector& expectedOutputVec);
 		void learn(const SignalVector& expectedOutputVec);
 		void learn(size_t streamIndex, const SignalVector& expectedOutputVec);
@@ -36,17 +41,17 @@ namespace NeuronalNet
 		
 		
 
-		void CPU_learn(const MultiSignalVector& expectedOutputVec);
-		void CPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec, float*deltaWeights, float * deltaBiasList);
+		void CPU_learn();
+		void CPU_learn(size_t streamIndex, float*deltaWeights, float * deltaBiasList);
 
-		void GPU_learn(const MultiSignalVector& expectedOutputVec);
-		void GPU_learn(size_t streamIndex, const SignalVector& expectedOutputVec);
+		void GPU_learn();
+		void GPU_learn(size_t streamIndex);
 
 
 		//static float calculateOutputError(float output)
 		inline const SignalVector& internal_getError(size_t streamIndex);
-		inline const MultiSignalVector& internal_getError(const MultiSignalVector& expectedOutputVec);
-		inline const SignalVector& internal_getError(size_t streamIndex, const SignalVector& expectedOutputVec);
+		inline const MultiSignalVector& internal_getError();
+		//inline const SignalVector& internal_getError(size_t streamIndex);
 
 		MultiSignalVector m_outputDifference;
 		float m_learnParameter;
@@ -62,6 +67,9 @@ namespace NeuronalNet
 		float** d_deltaBias;
 		float** h_d_deltaBias;
 
+
+		MultiSignalVector m_expected;
+		vector<bool> m_expectedChanged;
 		float** d_expected;
 		float** h_d_expected;
 	};

@@ -1,0 +1,2 @@
+﻿  DigitsRecognizer.cpp
+E:\Dokumente\Visual Studio 2019\Projects\Neural-net-2\examples\DigitsRecognizer\DigitsRecognizer.cpp(4,10): fatal error C1083: Datei (Include) kann nicht geöffnet werden: "neuronalNet.h": No such file or directory
