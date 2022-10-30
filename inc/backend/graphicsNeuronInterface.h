@@ -6,13 +6,13 @@
 namespace NeuronalNet
 {
 	
-	class NET_API GraphicsNeuronInterface
+    class GraphicsNeuronInterface
 	{
 		public:
 
-		virtual void update(float netinput, float output,
-							float minN, float maxN,
-							float minO, float maxO) = 0;
+        virtual void updateNeuron(float netinput, float output,
+                                  float minN, float maxN,
+                                  float minO, float maxO) = 0;
 
 		void index(const NeuronIndex& index)
 		{

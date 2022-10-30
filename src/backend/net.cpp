@@ -1039,7 +1039,7 @@ void Net::graphics_update(GraphicsNeuronInterface* obj,
 		}
 	}
 
-	obj->update(netinput, neuronOutput, minN, maxN, minO, maxO);
+    obj->updateNeuron(netinput, neuronOutput, minN, maxN, minO, maxO);
 }
 void Net::graphics_outOfRange(GraphicsNeuronInterface* obj) const
 {
@@ -1349,7 +1349,7 @@ inline void Net::graphics_update(GraphicsConnectionInterface* obj,
 
 
 
-	obj->update(weight, signal, minW, maxW, minS, minS);
+    obj->updateConnection(weight, signal, minW, maxW, minS, minS);
 }
 void Net::graphics_outOfRange(GraphicsConnectionInterface* obj) const
 {
@@ -1381,14 +1381,14 @@ void Net::GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd)
 #endif
 }
 
-void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, float* outpuSignals, 
+void Net::CPU_calculateNet(float* weights, float* biasList, float* signalList, float* outpuSignals,
 						   float* connectionSignals, float* netinputList, float* neuronSignalList,
 					       size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation)
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
 	PTR_CHECK_NULLPTR(weights, return)
 	PTR_CHECK_NULLPTR(biasList, return)
-	PTR_CHECK_NULLPTR(signals, return)
+    PTR_CHECK_NULLPTR(signalList, return)
 	PTR_CHECK_NULLPTR(outpuSignals, return)
 	PTR_CHECK_NULLPTR(activation,return)
 
@@ -1401,7 +1401,7 @@ void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, floa
 
 	if (noHiddenLayer)
 	{
-		CPU_calculateLayer(weights, biasList, signals,
+        CPU_calculateLayer(weights, biasList, signalList,
 						   connectionSignals, netinputList, neuronSignalList,
 						   outputCount, inputCount, activation);
 	}
@@ -1410,7 +1410,7 @@ void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, floa
 		float* tmpHiddenOutSignals1 = neuronSignalList;
 		//float* tmpHiddenOutSignals2 = neuronSignalList;
 
-		CPU_calculateLayer(weights, biasList, signals, 
+        CPU_calculateLayer(weights, biasList, signalList,
 						   connectionSignals, netinputList, neuronSignalList,
 						   hiddenY, inputCount, activation);
 		size_t wDeltaIndex = inputCount * hiddenY;

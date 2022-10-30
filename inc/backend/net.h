@@ -131,7 +131,7 @@ namespace NeuronalNet
 
 		void CPU_calculate(size_t streamBegin, size_t streamEnd); // including begin, excluding end
 		void GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd);
-		static void CPU_calculateNet(float* weights, float* biasList, float* signals, float* outpuSignals,
+        static void CPU_calculateNet(float* weights, float* biasList, float* signalList, float* outpuSignals,
 									 float* connectionSignals, float* netinputList, float* neuronSignalList,
 									 size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation);
 		static void CPU_calculateLayer(float* weights, float* biasList, float* inputSignals,
