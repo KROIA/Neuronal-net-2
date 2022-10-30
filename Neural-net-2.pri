@@ -1,7 +1,4 @@
 
-
-#include(Extern/SFML.pri)
-
 inc = $$PWD/inc
 src = $$PWD/src
 
@@ -10,7 +7,6 @@ src = $$PWD/src
 INCLUDEPATH += \
 	$$inc \
 	$$inc/backend \
-        #$$inc/graphics
 	 
 HEADERS += \
     $$inc/neuronalNet.h \
@@ -26,15 +22,6 @@ HEADERS += \
     $$inc/backend/neuronIndex.h \
     $$inc/backend/signalVector.h \
     $$inc/backend/utilities.h \
-    #$$inc/graphics/connectionPainter.h \
-    #$$inc/graphics/display.h \
-    #$$inc/graphics/displayInterface.h \
-    #$$inc/graphics/drawable.h \
-    #$$inc/graphics/drawableInterface.h \
-    #$$inc/graphics/graphicsUtilities.h \
-    #$$inc/graphics/netModel.h \
-    #$$inc/graphics/neuronPainter.h \
-    #$$inc/graphics/pixelPainter.h
 	
 SOURCES += \
     $$src/backend/backpropNet.cpp \
@@ -45,14 +32,7 @@ SOURCES += \
     $$src/backend/neuronIndex.cpp \
     $$src/backend/signalVector.cpp \
     $$src/backend/utilities.cpp \
-    #$$src/graphics/connectionPainter.cpp \
-    #$$src/graphics/display.cpp \
-    #$$src/graphics/drawable.cpp \
-    #$$src/graphics/graphicsUtilities.cpp \
-    #$$src/graphics/netModel.cpp \
-    #$$src/graphics/neuronPainter.cpp \
-    #$$src/graphics/pixelPainter.cpp
-	
+
 # CONFIG(debug, debug|release) {
 # #message( "  Copy debug dll\'s: $$SFML_BIN" )
 #     QMAKE_PRE_LINK += & copy "\"$$PWD\\x64\\Debug\\Neural-net-2.dll\"" "debug\Neural-net-2.dll"
