@@ -11,9 +11,10 @@
 // Dissabeling this check may cause crashes without errors
 #define NET_GRAPHICS_ERRORCHECK
 
-//#define USE_CUDA
-
-//#define MAKE_DLL
+#ifndef QT_NEURAL_NET
+#define USE_CUDA
+#define MAKE_DLL
+#endif
 
 #ifdef MAKE_DLL
 #ifdef DLL_EXPORT
