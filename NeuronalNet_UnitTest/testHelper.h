@@ -3,8 +3,8 @@
 #include <cuda_runtime.h>
 #include <Windows.h>
 #include <string>
-#include "pch.h"
-
+//#include "pch.h"
+#include "neuronalNet.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -21,7 +21,12 @@ class PostTestConsolePlotter
 #define POST_CONSOLE_PLOT PostTestConsolePlotter __plotter;
 
 
-extern void printSignal(const class SignalVector& sig);
-extern void printSignal(const class MultiSignalVector& sig);
-extern bool signalEqual(const class SignalVector& a, const class SignalVector& b);
-extern bool signalEqual(const class MultiSignalVector& a, const class MultiSignalVector& b);
+extern void printSignal(const NeuronalNet::SignalVector& sig);
+extern void printSignal(const NeuronalNet::MultiSignalVector& sig);
+extern bool signalEqual(const NeuronalNet::SignalVector& a, const NeuronalNet::SignalVector& b);
+extern bool signalEqual(const NeuronalNet::MultiSignalVector& a, const NeuronalNet::MultiSignalVector& b);
+
+extern void getNetData(NeuronalNet::Net &net,
+					   std::vector<float>& weights,
+					   std::vector<float>& bias);
+

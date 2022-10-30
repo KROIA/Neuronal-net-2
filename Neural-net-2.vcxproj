@@ -19,6 +19,7 @@
     <ClInclude Include="inc\backend\backpropNet.h" />
     <ClInclude Include="inc\backend\config.h" />
     <ClInclude Include="inc\backend\debug.h" />
+    <ClInclude Include="inc\backend\geneticNet.h" />
     <ClInclude Include="inc\backend\graphicsConnectionInterface.h" />
     <ClInclude Include="inc\backend\graphicsNeuronInterface.h" />
     <ClInclude Include="inc\backend\multiSignalVector.h" />
@@ -41,6 +42,7 @@
   <ItemGroup>
     <ClCompile Include="src\backend\backpropNet.cpp" />
     <ClCompile Include="src\backend\debug.cpp" />
+    <ClCompile Include="src\backend\geneticNet.cpp" />
     <ClCompile Include="src\backend\multiSignalVector.cpp" />
     <ClCompile Include="src\backend\net.cpp" />
     <ClCompile Include="src\backend\neuronIndex.cpp" />
@@ -100,7 +102,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;$(IncludePath)</IncludePath>
+    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;inc/backend;inc/graphics;$(IncludePath)</IncludePath>
     <SourcePath>src;$(SourcePath);src/backend;src/graphics</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

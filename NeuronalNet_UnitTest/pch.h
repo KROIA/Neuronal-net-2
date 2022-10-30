@@ -10,5 +10,5 @@
 #include "testHelper.h"
 
 // Fügen Sie hier Header hinzu, die vorkompiliert werden sollen.
-#include "net.h"
+#include "neuronalNet.h"
 #endif //PCH_H

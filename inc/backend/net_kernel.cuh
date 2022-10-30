@@ -1,4 +1,6 @@
 #pragma once
+#include "config.h"
+#ifdef USE_CUDA
 #include <iostream>
 #include <stdio.h>
 
@@ -9,7 +11,7 @@
 #include <curand.h>
 
 
-#include "config.h"
+
 #include "debug.h"
 #include <cuda.h>
 #include <math.h>
@@ -182,4 +184,6 @@ namespace NeuronalNet
 	NET_API __host__ void cuda_handleError(cudaError_t err);
 	NET_API __device__ void kernel_handleError(cudaError_t err);
 };
+
+#endif
 

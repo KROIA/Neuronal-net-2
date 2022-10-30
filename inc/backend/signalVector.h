@@ -9,7 +9,7 @@
 
 namespace NeuronalNet
 {
-	class SignalVector;
+	//class SignalVector;
 
 	class NET_API SignalVector
 	{

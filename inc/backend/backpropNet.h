@@ -12,7 +12,7 @@ namespace NeuronalNet
 		~BackpropNet();
 
 		//virtual void setHardware(enum Hardware ware);
-		bool build();
+		bool build() override;
 
 		void setLearnParameter(float learnParam);
 		float getLearnParameter() const;
@@ -34,8 +34,8 @@ namespace NeuronalNet
 		
 		protected:
 
-		virtual void buildDevice();
-		virtual void destroyDevice();
+		virtual void buildDevice() override;
+		virtual void destroyDevice() override;
 
 		private:
 		

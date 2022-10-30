@@ -1,4 +1,5 @@
 #include "graphics/connectionPainter.h"
+#include <math.h>
 
 namespace NeuronalNet
 {

@@ -1,4 +1,5 @@
 #include "graphics/neuronPainter.h"
+#include <string>
 
 namespace NeuronalNet
 {
@@ -146,7 +147,7 @@ namespace NeuronalNet
 				char str[10];
 				sprintf_s(str, "%6.3f", output);
 
-				sf::Vector2f textSize((float)std::strlen(str) * m_outputText.getCharacterSize(),
+                sf::Vector2f textSize((float)std::string(str).length() * m_outputText.getCharacterSize(),
 									  m_outputText.getCharacterSize());
 
 				m_outputText.setString(str);

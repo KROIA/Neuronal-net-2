@@ -67,6 +67,9 @@
     <ClInclude Include="inc\graphics\pixelPainter.h">
       <Filter>inc\graphics</Filter>
     </ClInclude>
+    <ClInclude Include="inc\backend\geneticNet.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inc">
@@ -130,6 +133,9 @@
     </ClCompile>
     <ClCompile Include="src\graphics\pixelPainter.cpp">
       <Filter>src\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\geneticNet.cpp">
+      <Filter>src\backend</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

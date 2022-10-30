@@ -1,7 +1,9 @@
 
 
 #include "backend/backpropNet.h"
-
+#ifdef USE_CUDA
+#include "net_kernel.cuh"
+#endif
 namespace NeuronalNet
 {
 	BackpropNet::BackpropNet()
@@ -122,11 +124,13 @@ namespace NeuronalNet
 				CPU_learn();
 				break;
 			}
+#ifdef USE_CUDA
 			case Hardware::gpu_cuda:
 			{
 				GPU_learn();
 				break;
 			}
+#endif
 		}
 	}
 	void BackpropNet::learn(size_t streamIndex)
@@ -156,11 +160,13 @@ namespace NeuronalNet
 				//delete[] deltaB;
 				break;
 			}
+#ifdef USE_CUDA
 			case Hardware::gpu_cuda:
 			{
 				GPU_learn(streamIndex);
 				break;
 			}
+#endif
 		}
 	}
 	void BackpropNet::learn(const MultiSignalVector& expectedOutputVec)
@@ -228,6 +234,7 @@ namespace NeuronalNet
 	{
 		switch (m_hardware)
 		{
+#ifdef USE_CUDA
 			case Hardware::gpu_cuda:
 			{
 				
@@ -236,6 +243,7 @@ namespace NeuronalNet
 					GPU_CUDA_transferToHost(h_d_outputDifference[i], m_outputDifference[i].begin(), m_outputs * sizeof(float));
 				break;
 			}
+#endif
 			default:
 			{
 
@@ -254,6 +262,7 @@ namespace NeuronalNet
 		m_deltaBias.resize(m_streamSize, m_neuronCount);
 		switch (m_hardware)
 		{
+#ifdef USE_CUDA
 			case Hardware::gpu_cuda:
 			{
 				h_d_outputDifference	= DBG_NEW float* [m_streamSize];
@@ -294,6 +303,7 @@ namespace NeuronalNet
 				NeuronalNet::GPU_CUDA_transferToDevice(d_expected, h_d_expected, m_streamSize * sizeof(float*));
 				break;
 			}
+#endif
 			default: {}
 		}
 
@@ -304,6 +314,7 @@ namespace NeuronalNet
 		Net::destroyDevice();
 		switch (m_hardware)
 		{
+#ifdef USE_CUDA
 			case Hardware::gpu_cuda:
 			{
 				NeuronalNet::GPU_CUDA_transferToHost(d_outputDifference, h_d_outputDifference, m_streamSize * sizeof(float*));
@@ -341,6 +352,7 @@ namespace NeuronalNet
 
 				break;
 			}
+#endif
 			default: {}
 		}
 	}
@@ -376,12 +388,14 @@ namespace NeuronalNet
 	{
 		switch (m_hardware)
 		{
+#ifdef USE_CUDA
 			case Hardware::gpu_cuda:
 			{
 				//GPU_CUDA_learnBackpropagation_getOutputError(h_d_outputStream[streamIndex], m_expected[streamIndex].begin(), m_outputDifference[streamIndex].begin(), m_outputs);
 				GPU_CUDA_transferToHost(m_outputDifference[streamIndex].begin(), h_d_outputDifference[streamIndex], m_outputs * sizeof(float));
 				break;
 			}
+#endif
 			case Hardware::cpu:
 			{
 				//size_t outputNeuronBeginIndex = m_neuronCount - m_outputs - 1;
@@ -539,6 +553,7 @@ namespace NeuronalNet
 
 	void BackpropNet::GPU_learn()
 	{
+        #ifdef USE_CUDA
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
 		//float** d_expected;
@@ -587,9 +602,11 @@ namespace NeuronalNet
 		m_biasChangedFromDeviceTraining = true;
 		//transferBiasToHost();
 		//transferWeightsToHost();
+    #endif
 	}
 	void BackpropNet::GPU_learn(size_t streamIndex)
 	{
+        #ifdef USE_CUDA
 		DEBUG_BENCHMARK_STACK
 		DEBUG_FUNCTION_TIME_INTERVAL
 		float* d_expected;
@@ -605,6 +622,7 @@ namespace NeuronalNet
 		m_biasChangedFromDeviceTraining = true;
 		//transferBiasToHost();
 		//transferWeightsToHost();
+    #endif
 	}
 
 };

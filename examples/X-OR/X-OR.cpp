@@ -127,7 +127,6 @@ void xorLoop()
 {
 	Display display(sf::Vector2u(1900,900),"X-OR Example");
 
-	
 	BackpropNet net;
 	
 	MultiSignalVector trainigsSet(4, 2);

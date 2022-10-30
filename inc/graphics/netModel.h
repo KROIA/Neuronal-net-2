@@ -70,7 +70,7 @@ namespace NeuronalNet
 
 			vector<Drawable*> m_drawableList; // All drawable Objects
 
-			Net* m_net;
+			const Net* m_net;
 
 			float m_connectionWidth;
 			float m_signalWidth;
