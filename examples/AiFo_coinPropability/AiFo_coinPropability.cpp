@@ -238,26 +238,10 @@ void AiFo_coinPropability_Loop()
 				float blueTailChance = flipChange[5];
 				float greenTailChance = flipChange[7];
 
-				float predictedRedChance = 0;
-				float predictedBlueChance = 0;
-				float predictedGreenChance = 0;
-
-				for (size_t i = 0; i < coinFlips.size(); ++i)
-				{
-					predictedRedChance += redTailChance * coinFlips[i][1] / tailChance + redHeadChance * coinFlips[i][0] / headChance;
-					predictedBlueChance += blueTailChance * coinFlips[i][1] / tailChance + blueHeadChance * coinFlips[i][0] / headChance;
-					predictedGreenChance += greenTailChance * coinFlips[i][1] / tailChance + greenHeadChance * coinFlips[i][0] / headChance;
-				}
-
-				predictedRedChance /= (float)coinFlips.size();
-				predictedBlueChance /= (float)coinFlips.size();
-				predictedGreenChance /= (float)coinFlips.size();
-
-				float sum = predictedRedChance + predictedBlueChance + predictedGreenChance;
-				predictedRedChance /= sum;
-				predictedBlueChance /= sum;
-				predictedGreenChance /= sum;
-
+				float predictedRedChance = redTailChance * coinFlips[k][1] / tailChance + redHeadChance * coinFlips[k][0] / headChance;
+				float predictedBlueChance = blueTailChance * coinFlips[k][1] / tailChance + blueHeadChance * coinFlips[k][0] / headChance;
+				float predictedGreenChance = greenTailChance * coinFlips[k][1] / tailChance + greenHeadChance * coinFlips[k][0] / headChance;
+				
 				cout << "Predicted red   Chance = " << predictedRedChance << "\n";
 				cout << "Predicted blue  Chance = " << predictedBlueChance << "\n";
 				cout << "Predicted green Chance = " << predictedGreenChance << "\n";
@@ -266,7 +250,7 @@ void AiFo_coinPropability_Loop()
 				//getchar();
 				cout << "Next round...\n";
 
-				chancePredictorNet.setWeight(0, 0, 0, predictedRedChance);
+		        chancePredictorNet.setWeight(0, 0, 0, predictedRedChance);
 				chancePredictorNet.setWeight(0, 1, 0, predictedBlueChance);
 				chancePredictorNet.setWeight(0, 2, 0, predictedGreenChance);
 
