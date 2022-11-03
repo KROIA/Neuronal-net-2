@@ -1,4 +1,5 @@
 #include "backend/net.h"
+#include "net_kernel.cuh"
 
 namespace NeuronalNet
 {
@@ -10,8 +11,10 @@ size_t Net::m_net_instanceCount = 0;
 Net::Net()
 {
 	++m_net_instanceCount;
+#ifdef USE_CUDA
 	if(m_net_instanceCount == 1)
 		NeuronalNet::GPU_CUDA_getSpecs();
+#endif
 
 	//m_inputSignalList	= nullptr;
 	m_weightsList		= nullptr;
@@ -80,7 +83,9 @@ Net::~Net()
 	else if (m_net_instanceCount == 1)
 	{
 		m_net_instanceCount = 0;
+#ifdef USE_CUDA
 		NeuronalNet::GPU_CUDA_deleteSpecs();
+#endif
 	}
 	else
 	{
@@ -204,6 +209,7 @@ void Net::setHardware(enum Hardware ware)
 
 			break;
 		}
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			if (!m_built)
@@ -225,6 +231,7 @@ void Net::setHardware(enum Hardware ware)
 			//destroyHostBias();
 			break;
 		}
+#endif
 	}
 	m_hardware = ware;
 	//auto t2 = now();
@@ -411,12 +418,13 @@ void Net::randomize(float* list, size_t size, float min, float max)
 {
 	if (!list)
 		return;
-
+#ifdef USE_CUDA
 	if (size > 1024)
 	{
 		NeuronalNet::GPU_CUDA_getRandomValues(list, size, min, max);
 	}
 	else
+#endif
 	{
 		for (size_t i = 0; i < size; ++i)
 		{
@@ -560,6 +568,7 @@ MultiSignalVector Net::getNetinputStreamVector() const
 		{
 			return m_netinputList;
 		}
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			MultiSignalVector tmpVec(m_streamSize, m_neuronCount);
@@ -571,6 +580,7 @@ MultiSignalVector Net::getNetinputStreamVector() const
 			return tmpVec;
 			break;
 		}
+#endif
 		default:
 		{
 			PRINT_ERROR("Error: hardware undefined")
@@ -587,6 +597,7 @@ MultiSignalVector Net::getNeuronValueStreamVector() const
 		{
 			return m_neuronValueList;
 		}
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			MultiSignalVector tmpVec(m_streamSize, m_neuronCount);
@@ -598,6 +609,7 @@ MultiSignalVector Net::getNeuronValueStreamVector() const
 			return tmpVec;
 			break;
 		}
+#endif
 		default:
 		{
 			PRINT_ERROR("Error: hardware undefined")
@@ -627,12 +639,14 @@ void Net::setWeight(size_t layer, size_t neuron, size_t input, float weight)
 			//m_weightsList[index] = weight;
 			break;
 		}
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			transferWeightsToDevice();
 			//PRINT_ERROR("Not implemented for GPU yet, use CPU as device")
 			break;
 		}
+#endif
 		default:
 		{PRINT_ERROR("Device not defined " << (int)m_hardware)}
 	}
@@ -659,17 +673,19 @@ void Net::setWeight(const float* list, size_t insertOffset, size_t count)
 			//memcpy(m_weightsList + insertOffset, list, count * sizeof(float));
 			break;
 		}
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			transferWeightsToDevice();
 			//PRINT_ERROR("Not implemented for GPU yet, use CPU as device")
 			break;
 		}
+#endif
 		default:
 			PRINT_ERROR("Device not defined " << (int)m_hardware)
 	}
 }
-float Net::getWeight(size_t layer, size_t neuron, size_t input)
+float Net::getWeight(size_t layer, size_t neuron, size_t input) const
 {
 	size_t index;
 	if (m_hiddenX * m_hiddenY == 0 || layer == 0)
@@ -701,7 +717,7 @@ float Net::getWeight(size_t layer, size_t neuron, size_t input)
 	}
 	return 0;*/
 }
-const float* Net::getWeight()
+const float* Net::getWeight() const
 {
 	if (m_weightsChangedFromDeviceTraining)
 		transferWeightsToHost();
@@ -726,7 +742,7 @@ size_t Net::getWeightSize() const
 {
 	return m_weightsCount;
 }
-const float* Net::getBias()
+const float* Net::getBias() const
 {
 	if (m_biasChangedFromDeviceTraining)
 		transferBiasToHost();
@@ -762,11 +778,13 @@ void Net::calculate(size_t streamBegin, size_t streamEnd)
 			
 			break;
 		}
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			GPU_CUDA_calculate(streamBegin, streamEnd);
 			break;
 		}
+#endif
 		default:
 		{
 			PRINT_ERROR("Error: hardware undefined")
@@ -823,7 +841,7 @@ void Net::clearGraphics()
 }*/
 void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuronInterfaceList,
 						  const vector<GraphicsConnectionInterface*>& graphicsConnectionInterfaceList,
-						  size_t streamIndex)
+						  size_t streamIndex) const
 {
 	//static vector<double> timeBench(1000, 0);
 	//static size_t indx = 0;
@@ -843,19 +861,21 @@ void Net::graphics_update(const vector<GraphicsNeuronInterface*>& graphicsNeuron
 
 			break;
 		}
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			graphics_update_GPU_CUDA(graphicsNeuronInterfaceList, streamIndex);
 			graphics_update_GPU_CUDA(graphicsConnectionInterfaceList, streamIndex);
 			break;
 		}
+#endif
 		default:
 		{
 			PRINT_ERROR("Error: hardware undefined")
 		}
 	}
 }
-void Net::graphics_update_CPU(const vector<GraphicsNeuronInterface*>& objList, size_t streamIndex)
+void Net::graphics_update_CPU(const vector<GraphicsNeuronInterface*>& objList, size_t streamIndex) const
 {
 	float minN = m_neuronValueList[streamIndex][getMinIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
 	float maxN = m_neuronValueList[streamIndex][getMaxIndex(m_neuronValueList[streamIndex].begin(), m_neuronCount)];
@@ -930,9 +950,9 @@ void Net::graphics_update_CPU(const vector<GraphicsNeuronInterface*>& objList, s
 
 	obj->update(netinput, neuronOutput,minN,maxN,minO,maxO);*/
 }
-void Net::graphics_update_GPU_CUDA(const vector<GraphicsNeuronInterface*> &objList, size_t streamIndex)
+void Net::graphics_update_GPU_CUDA(const vector<GraphicsNeuronInterface*> &objList, size_t streamIndex) const
 {
-	
+#ifdef USE_CUDA
 	
 
 	float* netinputData = new float[m_neuronCount];
@@ -955,11 +975,11 @@ void Net::graphics_update_GPU_CUDA(const vector<GraphicsNeuronInterface*> &objLi
 	}
 	delete[] neuronOutputs;
 	delete[] netinputData;
-
+#endif
 }
 void Net::graphics_update(GraphicsNeuronInterface* obj,
 						  float minN, float maxN, float minO, float maxO,
-						  float* inputSignals,  float* neuronOutputData, float* netinputData)
+						  float* inputSignals,  float* neuronOutputData, float* netinputData) const
 {
 	NeuronIndex index = obj->index();
 	size_t neuronIndex;
@@ -1019,15 +1039,15 @@ void Net::graphics_update(GraphicsNeuronInterface* obj,
 		}
 	}
 
-	obj->update(netinput, neuronOutput, minN, maxN, minO, maxO);
+    obj->updateNeuron(netinput, neuronOutput, minN, maxN, minO, maxO);
 }
-void Net::graphics_outOfRange(GraphicsNeuronInterface* obj)
+void Net::graphics_outOfRange(GraphicsNeuronInterface* obj) const
 {
 	NeuronIndex index = obj->index();
 	PRINT_ERROR("NeuronIndex is out of range : type: " << typeToString(index.type) <<
 			" x = " << index.x << " y = " << index.y);
 }
-void Net::graphics_update_CPU(const vector<GraphicsConnectionInterface*>& objList, size_t streamIndex)
+void Net::graphics_update_CPU(const vector<GraphicsConnectionInterface*>& objList, size_t streamIndex) const
 {
 	float minW = m_weightsList[getMinIndex(m_weightsList, m_weightsCount)];
 	float maxW = m_weightsList[getMaxIndex(m_weightsList, m_weightsCount)];
@@ -1164,8 +1184,9 @@ void Net::graphics_update_CPU(const vector<GraphicsConnectionInterface*>& objLis
 
 	obj->update(weight, signal,minW,maxW,minS,minS);*/
 }
-void Net::graphics_update_GPU_CUDA(const vector<GraphicsConnectionInterface*> &objList, size_t streamIndex)
+void Net::graphics_update_GPU_CUDA(const vector<GraphicsConnectionInterface*> &objList, size_t streamIndex) const
 {
+#ifdef USE_CUDA
 #define graphics_update_GPU_CUDA_LAZY
 
 #ifdef graphics_update_GPU_CUDA_LAZY
@@ -1200,10 +1221,11 @@ void Net::graphics_update_GPU_CUDA(const vector<GraphicsConnectionInterface*> &o
 #else
 
 #endif
+#endif
 }
 inline void Net::graphics_update(GraphicsConnectionInterface* obj,
 							float minW, float maxW, float minS, float maxS,
-							float* weightList, float* connectionSignalList)
+							float* weightList, float* connectionSignalList) const
 {
 	ConnectionIndex index = obj->index();
 	size_t weightIndex = 0;
@@ -1327,9 +1349,9 @@ inline void Net::graphics_update(GraphicsConnectionInterface* obj,
 
 
 
-	obj->update(weight, signal, minW, maxW, minS, minS);
+    obj->updateConnection(weight, signal, minW, maxW, minS, minS);
 }
-void Net::graphics_outOfRange(GraphicsConnectionInterface* obj)
+void Net::graphics_outOfRange(GraphicsConnectionInterface* obj) const
 {
 	ConnectionIndex index = obj->index();
 	PRINT_ERROR("Connection is out of range: type: " << typeToString(index.neuron.type) <<
@@ -1348,6 +1370,7 @@ void Net::CPU_calculate(size_t streamBegin, size_t streamEnd)
 
 void Net::GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd)
 {
+#ifdef USE_CUDA
 	DEBUG_FUNCTION_TIME_INTERVAL
 	transferSignalsToDevice();
 	NeuronalNet::GPU_CUDA_calculateNet(d_weightsList, d_biasList, d_inputSignalList+streamBegin, d_outputSingalList + streamBegin,
@@ -1355,16 +1378,17 @@ void Net::GPU_CUDA_calculate(size_t streamBegin, size_t streamEnd)
 									   m_inputs, m_hiddenX, m_hiddenY, m_outputs,m_activation,
 									   NeuronalNet::_d_cudaInfo);
 	transferSignalsToHost();
+#endif
 }
 
-void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, float* outpuSignals, 
+void Net::CPU_calculateNet(float* weights, float* biasList, float* signalList, float* outpuSignals,
 						   float* connectionSignals, float* netinputList, float* neuronSignalList,
 					       size_t inputCount, size_t hiddenX, size_t hiddenY, size_t outputCount, ActFp* activation)
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
 	PTR_CHECK_NULLPTR(weights, return)
 	PTR_CHECK_NULLPTR(biasList, return)
-	PTR_CHECK_NULLPTR(signals, return)
+    PTR_CHECK_NULLPTR(signalList, return)
 	PTR_CHECK_NULLPTR(outpuSignals, return)
 	PTR_CHECK_NULLPTR(activation,return)
 
@@ -1377,7 +1401,7 @@ void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, floa
 
 	if (noHiddenLayer)
 	{
-		CPU_calculateLayer(weights, biasList, signals,
+        CPU_calculateLayer(weights, biasList, signalList,
 						   connectionSignals, netinputList, neuronSignalList,
 						   outputCount, inputCount, activation);
 	}
@@ -1386,7 +1410,7 @@ void Net::CPU_calculateNet(float* weights, float* biasList, float* signals, floa
 		float* tmpHiddenOutSignals1 = neuronSignalList;
 		//float* tmpHiddenOutSignals2 = neuronSignalList;
 
-		CPU_calculateLayer(weights, biasList, signals, 
+        CPU_calculateLayer(weights, biasList, signalList,
 						   connectionSignals, netinputList, neuronSignalList,
 						   hiddenY, inputCount, activation);
 		size_t wDeltaIndex = inputCount * hiddenY;
@@ -1474,6 +1498,7 @@ void Net::transferWeightsToDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			//NeuronalNet::GPU_CUDA_transferToDevice(d_biasList, m_biasList, m_neuronCount * sizeof(float));
@@ -1483,15 +1508,17 @@ void Net::transferWeightsToDevice()
 			
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
 }
-void Net::transferWeightsToHost()
+void Net::transferWeightsToHost() const
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			
@@ -1503,6 +1530,7 @@ void Net::transferWeightsToHost()
 			NeuronalNet::GPU_CUDA_freeMem(tmpW);
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1513,6 +1541,7 @@ void Net::transferSignalsToDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1526,6 +1555,7 @@ void Net::transferSignalsToDevice()
 			}
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1535,6 +1565,7 @@ void Net::transferSignalsToHost()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1544,6 +1575,7 @@ void Net::transferSignalsToHost()
 			}
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1553,25 +1585,29 @@ void Net::transferBiasToDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			NeuronalNet::GPU_CUDA_transferToDevice(d_biasList, m_biasList, m_neuronCount * sizeof(float));
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
 }
-void Net::transferBiasToHost()
+void Net::transferBiasToHost() const
 {
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			NeuronalNet::GPU_CUDA_transferToHost(d_biasList, m_biasList, m_neuronCount * sizeof(float));
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1582,6 +1618,7 @@ void Net::transferNetinputToDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1591,6 +1628,7 @@ void Net::transferNetinputToDevice()
 			}
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1600,6 +1638,7 @@ void Net::transferNetinputToHost()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1611,6 +1650,7 @@ void Net::transferNetinputToHost()
 			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1620,6 +1660,7 @@ void Net::transferNeuronValuesToDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1629,6 +1670,7 @@ void Net::transferNeuronValuesToDevice()
 			}
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1638,6 +1680,7 @@ void Net::transferNeuronValuesToHost()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1649,6 +1692,7 @@ void Net::transferNeuronValuesToHost()
 			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1658,6 +1702,7 @@ void Net::transferWeightSignalProductToDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1670,6 +1715,7 @@ void Net::transferWeightSignalProductToDevice()
 			}
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1679,6 +1725,7 @@ void Net::transferWeightSignalProductToHost()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			for (size_t i = 0; i < m_streamSize; ++i)
@@ -1693,6 +1740,7 @@ void Net::transferWeightSignalProductToHost()
 			//NeuronalNet::GPU_CUDA_transferToHost(d_outputSingalList, m_outputSingalList, m_outputs * sizeof(float));
 			break;
 		}
+#endif
 		default:
 			CONSOLE("Nothing to transfer")
 	}
@@ -1704,6 +1752,7 @@ void Net::buildDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			h_d_inputSignalList = DBG_NEW float* [m_streamSize];
@@ -1749,6 +1798,7 @@ void Net::buildDevice()
 			
 			break;
 		}
+#endif
 		default: {}
 	}
 }
@@ -1757,6 +1807,7 @@ void Net::destroyDevice()
 	DEBUG_FUNCTION_TIME_INTERVAL
 	switch (m_hardware)
 	{
+#ifdef USE_CUDA
 		case Hardware::gpu_cuda:
 		{
 			NeuronalNet::GPU_CUDA_transferToHost(d_inputSignalList, h_d_inputSignalList, m_streamSize * sizeof(float*));
@@ -1794,6 +1845,7 @@ void Net::destroyDevice()
 			h_d_weightSignalProduct = nullptr;
 			break;
 		}
+#endif
 		default: {}
 	}
 	

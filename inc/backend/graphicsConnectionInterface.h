@@ -5,11 +5,11 @@
 namespace NeuronalNet
 {
 
-	class NET_API GraphicsConnectionInterface
+    class GraphicsConnectionInterface
 	{
 		public:
 
-		virtual void update(float weight, float signal, 
+        virtual void updateConnection(float weight, float signal,
 							float minW, float maxW,
 							float minS, float maxS) = 0;
 

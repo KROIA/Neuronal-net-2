@@ -3,7 +3,7 @@
 
 namespace NeuronalNet
 {
-	typedef enum class Activation
+    enum class Activation
 	{
 		linear,
 		finiteLinear,

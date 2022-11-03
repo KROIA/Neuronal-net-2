@@ -19,6 +19,7 @@
     <ClInclude Include="inc\backend\backpropNet.h" />
     <ClInclude Include="inc\backend\config.h" />
     <ClInclude Include="inc\backend\debug.h" />
+    <ClInclude Include="inc\backend\geneticNet.h" />
     <ClInclude Include="inc\backend\graphicsConnectionInterface.h" />
     <ClInclude Include="inc\backend\graphicsNeuronInterface.h" />
     <ClInclude Include="inc\backend\multiSignalVector.h" />
@@ -27,32 +28,17 @@
     <ClInclude Include="inc\backend\neuronIndex.h" />
     <ClInclude Include="inc\backend\signalVector.h" />
     <ClInclude Include="inc\backend\utilities.h" />
-    <ClInclude Include="inc\graphics\connectionPainter.h" />
-    <ClInclude Include="inc\graphics\display.h" />
-    <ClInclude Include="inc\graphics\displayInterface.h" />
-    <ClInclude Include="inc\graphics\drawable.h" />
-    <ClInclude Include="inc\graphics\drawableInterface.h" />
-    <ClInclude Include="inc\graphics\graphicsUtilities.h" />
-    <ClInclude Include="inc\graphics\netModel.h" />
-    <ClInclude Include="inc\graphics\neuronPainter.h" />
-    <ClInclude Include="inc\graphics\pixelPainter.h" />
     <ClInclude Include="inc\neuronalNet.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\backend\backpropNet.cpp" />
     <ClCompile Include="src\backend\debug.cpp" />
+    <ClCompile Include="src\backend\geneticNet.cpp" />
     <ClCompile Include="src\backend\multiSignalVector.cpp" />
     <ClCompile Include="src\backend\net.cpp" />
     <ClCompile Include="src\backend\neuronIndex.cpp" />
     <ClCompile Include="src\backend\signalVector.cpp" />
     <ClCompile Include="src\backend\utilities.cpp" />
-    <ClCompile Include="src\graphics\connectionPainter.cpp" />
-    <ClCompile Include="src\graphics\display.cpp" />
-    <ClCompile Include="src\graphics\drawable.cpp" />
-    <ClCompile Include="src\graphics\graphicsUtilities.cpp" />
-    <ClCompile Include="src\graphics\netModel.cpp" />
-    <ClCompile Include="src\graphics\neuronPainter.cpp" />
-    <ClCompile Include="src\graphics\pixelPainter.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\backend\net_kernel.cu" />
@@ -100,7 +86,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;$(IncludePath)</IncludePath>
+    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;inc/backend;inc/graphics;$(IncludePath)</IncludePath>
     <SourcePath>src;$(SourcePath);src/backend;src/graphics</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

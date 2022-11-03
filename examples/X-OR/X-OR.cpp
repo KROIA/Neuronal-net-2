@@ -19,7 +19,7 @@ using std::vector;
 using std::cout;
 using std::string;
 using namespace NeuronalNet;
-using namespace Graphics;
+//using namespace Graphics;
 
 void printSignal(const SignalVector& sig,size_t maxSize = 10);
 void printSignal(const MultiSignalVector& sig,size_t maxSize = 10);
@@ -125,9 +125,8 @@ void saveVec(const string& filename, const float *begin, size_t size)
 }
 void xorLoop()
 {
-	Display display(sf::Vector2u(1900,900),"X-OR Example");
+	//Display display(sf::Vector2u(1900,900),"X-OR Example");
 
-	
 	BackpropNet net;
 	
 	MultiSignalVector trainigsSet(4, 2);
@@ -145,7 +144,7 @@ void xorLoop()
 	float neuronSize = 15;
 
 
-	size_t visualConfig = NetModel::getStandardVisualConfiguration();
+	/*size_t visualConfig = NetModel::getStandardVisualConfiguration();
 	NetModel netModel1(&net);
 	netModel1.setStreamIndex(0);
 	netModel1.setNeuronSize(neuronSize);
@@ -178,7 +177,7 @@ void xorLoop()
 	netModel4.setVisualConfiguration(visualConfig);
 	display.addDrawable(&netModel4);
 	
-	display.frameRateTarget(60);
+	display.frameRateTarget(60);*/
 	
 	trainigsSet[0] = SignalVector(vector<float>{ 0,0 });
 	trainigsSet[1] = SignalVector(vector<float>{ 0,1 });
@@ -197,9 +196,9 @@ void xorLoop()
 	Debug::Timer learnTimer;
 	trainigTimer.start();
 	MultiSignalVector err;
-	while (display.isOpen())
+	while (1/*display.isOpen()*/)
 	{
-		bool frameUpdate = display.needsFrameUpdate();
+		bool frameUpdate = 1;// = display.needsFrameUpdate();
 		
 		if (frameUpdate)
 		{
@@ -228,8 +227,8 @@ void xorLoop()
 			{
 				net.setHardware(Hardware::cpu);
 			}*/
-			display.processEvents();
-			display.draw();
+			//display.processEvents();
+			//display.draw();
 			//net.setHardware(h);
 			
 		}
@@ -498,16 +497,16 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 	resultSet[3] = SignalVector(vector<float>{ 0 });
 	
 
-	Display* display = nullptr;
-	NetModel* netModel1 = nullptr;
-	NetModel* netModel2 = nullptr;
-	NetModel* netModel3 = nullptr;
-	NetModel* netModel4 = nullptr;
-	if (data.displayEnable)
-	{
-		display = new Display(sf::Vector2u(1900, 900), "X-OR Example");
-		display->frameRateTarget(30);
-	}
+	//Display* display = nullptr;
+	//NetModel* netModel1 = nullptr;
+	//NetModel* netModel2 = nullptr;
+	//NetModel* netModel3 = nullptr;
+	//NetModel* netModel4 = nullptr;
+	//if (data.displayEnable)
+	//{
+	//	display = new Display(sf::Vector2u(1900, 900), "X-OR Example");
+	//	display->frameRateTarget(30);
+	//}
 
 	
 	double learnTime = 0;
@@ -535,7 +534,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 		net.setLearnParameter(1);
 		net.build();
 
-		if (data.displayEnable)
+		/*if (data.displayEnable)
 		{
 			sf::Vector2f displaySize(display->getSize());
 
@@ -572,7 +571,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 			netModel4->setPos(gridStartPos + gridSpacing);
 			netModel4->setNeuronSpacing(spacing);
 			display->addDrawable(netModel4);
-		}
+		}*/
 
 		
 		learnTime = 0;
@@ -586,12 +585,12 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 			net.learn(resultSet);
 			timer.pause();
 
-			if (data.displayEnable)
-			if (display->needsFrameUpdate())
-			{
-				display->processEvents();
-				display->draw();
-			}
+			//if (data.displayEnable)
+			//if (display->needsFrameUpdate())
+			//{
+			//	display->processEvents();
+			//	display->draw();
+			//}
 
 			MultiSignalVector err = net.getError();
 			currentError = err.getRootMeanSquare();
@@ -631,7 +630,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 
 		averageLearnTime += learnTime;
 
-		if (data.displayEnable)
+		/*if (data.displayEnable)
 		{
 			display->clearDrawable();
 			delete netModel1;
@@ -643,14 +642,14 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 			netModel2 = nullptr;
 			netModel3 = nullptr;
 			netModel4 = nullptr;
-		}
+		}*/
 		
 		if(data.enableDebugOutput)
 			cout << "End, Learn time: "<< learnTime << "ms\n";
 
-		if (data.displayEnable)
-		if (!display->isOpen())
-			break;
+		//if (data.displayEnable)
+		//if (!display->isOpen())
+		//	break;
 	}
 	averageLearnTime /= (float)maxIteration;
 	if (data.enableDebugOutput)
@@ -666,8 +665,8 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 	data.minLearnTime = minLearnTime;
 	data.maxLearnTime = maxLearnTime;
 
-	if(display)
-	delete display;
+	//if(display)
+	//delete display;
 }
 
 void printWeights(Net* net)

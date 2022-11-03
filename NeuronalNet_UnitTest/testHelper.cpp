@@ -1,7 +1,8 @@
 #include "testHelper.h"
+#include "neuronalNet.h"
 
 
-
+//using namespace NeuronalNet;
 void CUDA_validate(cudaError_t e)
 {
 	if (e != cudaError_t::cudaSuccess)
@@ -22,15 +23,15 @@ void CUDA_validateLastError()
 void plotConsoleOutput()
 {
 	Logger::WriteMessage("--------------CONSOLE PLOT--------------\n");
-	for (size_t i = 0; i < Debug::_unitTest_consoleBuffer.size(); ++i)
+	for (size_t i = 0; i < NeuronalNet::Debug::_unitTest_consoleBuffer.size(); ++i)
 	{
-		Logger::WriteMessage(Debug::_unitTest_consoleBuffer[i].c_str());
+		Logger::WriteMessage(NeuronalNet::Debug::_unitTest_consoleBuffer[i].c_str());
 	}
 	Logger::WriteMessage("------------CONSOLE PLOT END------------\n");
-	Debug::_unitTest_consoleBuffer.clear();
+	NeuronalNet::Debug::_unitTest_consoleBuffer.clear();
 }
 
-void printSignal(const SignalVector& sig)
+void printSignal(const NeuronalNet::SignalVector& sig)
 {
 	Logger::WriteMessage("Signals: ");
 	for (size_t i = 0; i < sig.size(); ++i)
@@ -41,7 +42,7 @@ void printSignal(const SignalVector& sig)
 	}
 	Logger::WriteMessage("\n");
 }
-void printSignal(const MultiSignalVector& sig)
+void printSignal(const NeuronalNet::MultiSignalVector& sig)
 {
 	Logger::WriteMessage("Streams:\n");
 	for (size_t i = 0; i < sig.size(); ++i)
@@ -55,7 +56,7 @@ void printSignal(const MultiSignalVector& sig)
 }
 
 
-bool signalEqual(const SignalVector& a, const SignalVector& b)
+bool signalEqual(const NeuronalNet::SignalVector& a, const NeuronalNet::SignalVector& b)
 {
 	if (a.size() != b.size())
 		return false;
@@ -67,7 +68,7 @@ bool signalEqual(const SignalVector& a, const SignalVector& b)
 	}
 	return true;
 }
-bool signalEqual(const MultiSignalVector& a, const MultiSignalVector& b)
+bool signalEqual(const NeuronalNet::MultiSignalVector& a, const NeuronalNet::MultiSignalVector& b)
 {
 	if (a.size() != b.size())
 		return false;
@@ -78,4 +79,21 @@ bool signalEqual(const MultiSignalVector& a, const MultiSignalVector& b)
 			return false;
 	}
 	return true;
+}
+
+void getNetData(NeuronalNet::Net &net,
+				std::vector<float>& weights,
+				std::vector<float>& bias)
+{
+	const float* w = net.getWeight();
+	weights.clear();
+	weights.reserve(net.getWeightSize());
+	for (size_t i = 0; i < net.getWeightSize(); ++i)
+		weights.push_back(w[i]);
+
+	const float* b = net.getBias();
+	bias.clear();
+	bias.reserve(net.getNeuronCount());
+	for (size_t i = 0; i < net.getNeuronCount(); ++i)
+		bias.push_back(b[i]);
 }

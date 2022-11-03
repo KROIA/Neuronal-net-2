@@ -5,7 +5,7 @@
 namespace NeuronalNet
 {
 
-	class MultiSignalVector;
+	//class MultiSignalVector;
 
 	class NET_API MultiSignalVector
 	{

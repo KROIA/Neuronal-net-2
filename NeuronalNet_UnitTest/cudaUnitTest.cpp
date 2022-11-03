@@ -4,8 +4,10 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
+
 namespace CudaUnitTest
 {
+	//using namespace NeuronalNet;
 	TEST_CLASS(CudaUnitTest)
 	{
 		public:
@@ -18,7 +20,8 @@ namespace CudaUnitTest
 			net.setActivation(Activation::sigmoid);
 			net.setHardware(Hardware::cpu);
 			net.build();*/
-			SignalVector vec(1);
+
+			NeuronalNet::SignalVector vec(1);
 
 			float* d_buffer = nullptr;
 			size_t elements = 10;

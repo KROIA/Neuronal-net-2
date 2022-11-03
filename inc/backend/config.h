@@ -11,11 +11,19 @@
 // Dissabeling this check may cause crashes without errors
 #define NET_GRAPHICS_ERRORCHECK
 
+#ifndef QT_NEURAL_NET
+#define USE_CUDA
+#define MAKE_DLL
+#endif
 
+#ifdef MAKE_DLL
 #ifdef DLL_EXPORT
 #define NET_API __declspec(dllexport)
 #else
 #define NET_API __declspec(dllimport)
+#endif
+#else
+#define NET_API
 #endif
 
 #if !defined(__PRETTY_FUNCTION__) && !defined(__GNUC__)
