@@ -38,7 +38,7 @@ namespace NeuronalNet
 
 
 		Net();
-		~Net();
+        virtual ~Net();
 
 		virtual void setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
 		virtual void setStreamSize(size_t size);
