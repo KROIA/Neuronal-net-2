@@ -5,14 +5,14 @@
 #include <vector>
 #include <cstddef>
 
-#include "activation.h"
+#include "backend/activation.h"
 
-#include "multiSignalVector.h"
-#include "debug.h"
-#include "GraphicsNeuronInterface.h"
-#include "GraphicsConnectionInterface.h"
-#include "neuronIndex.h"
-#include "utilities.h"
+#include "backend/multiSignalVector.h"
+#include "backend/debug.h"
+#include "backend/GraphicsNeuronInterface.h"
+#include "backend/GraphicsConnectionInterface.h"
+#include "backend/neuronIndex.h"
+#include "backend/utilities.h"
 
 
 

@@ -1,5 +1,5 @@
 #include "backend/net.h"
-#include "net_kernel.cuh"
+#include "backend/net_kernel.cuh"
 
 namespace NeuronalNet
 {

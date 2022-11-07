@@ -4,8 +4,8 @@
 #include <string.h>
 #include <vector>
 
-#include "config.h"
-#include "debug.h"
+#include "backend/config.h"
+#include "backend/debug.h"
 
 namespace NeuronalNet
 {

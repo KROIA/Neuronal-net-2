@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config.h"
+#include "backend/config.h"
 #include <string>
 
 namespace NeuronalNet

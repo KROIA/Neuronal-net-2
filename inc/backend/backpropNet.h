@@ -1,6 +1,6 @@
 #pragma once
 
-#include "net.h"
+#include "backend/net.h"
 #include <vector>
 
 namespace NeuronalNet

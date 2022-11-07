@@ -2,11 +2,11 @@
 inc = $$PWD/inc
 src = $$PWD/src
 
-
+CONFIG += object_parallel_to_source
 
 INCLUDEPATH += \
 	$$inc \
-	$$inc/backend \
+#	$$inc/backend \
 	 
 HEADERS += \
     $$inc/neuronalNet.h \

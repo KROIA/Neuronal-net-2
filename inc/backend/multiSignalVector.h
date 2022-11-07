@@ -1,6 +1,6 @@
 #pragma once
 
-#include "signalVector.h"
+#include "backend/signalVector.h"
 
 namespace NeuronalNet
 {

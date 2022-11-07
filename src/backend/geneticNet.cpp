@@ -1,4 +1,4 @@
-#include "geneticNet.h"
+#include "backend/geneticNet.h"
 #ifdef USE_CUDA
 #include "net_kernel.cuh"
 #endif
