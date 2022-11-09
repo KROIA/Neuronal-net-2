@@ -351,7 +351,7 @@ namespace NeuronalNet
 
 	Net* GeneticNet::getNet(size_t index) const
 	{
-		if (index < m_nets.size())
+        if (index >= m_nets.size())
 			return nullptr;
 		return m_nets[index];
 	}
@@ -411,20 +411,37 @@ namespace NeuronalNet
 
 	void GeneticNet::initiateNets(size_t netCount)
 	{
-
+        m_nets.reserve(netCount);
+        for(size_t i=0; i<netCount; ++i)
+        {
+            m_nets.push_back(new Net());
+        }
 	}
 
 	void GeneticNet::CPU_learn(std::vector<float> ranks)
 	{
 		// Sum the ranks
 		float rankSum = 0;
+        float min = 99999, max = -99999;
 		for (size_t i = 0; i < ranks.size(); ++i)
 		{
-			if (ranks[i] < 0)
-				ranks[i] = 0;
-			else
-				rankSum += ranks[i];
+            if (ranks[i] < min)
+                min = ranks[i];
+            else if(ranks[i] > max)
+                max = ranks[i];
 		}
+        if(min < 0)
+        {
+            for (size_t i = 0; i < ranks.size(); ++i)
+            {
+                ranks[i] -= min;
+            }
+        }
+
+        for (size_t i = 0; i < ranks.size(); ++i)
+        {
+             rankSum += ranks[i];
+        }
 
 		// Sorting ranks
 		struct RankData
@@ -470,6 +487,7 @@ namespace NeuronalNet
 				if (netRanks[j].rank > randVal1)
 					netIndex1 = netRanks[j].netIndex;
 			}
+            size_t tryCount = 10;
 			do {
 				float randVal2 = Net::getRandomValue(0, rankSum);
 				for (size_t j = 0; j < m_nets.size(); ++j)
@@ -477,8 +495,11 @@ namespace NeuronalNet
 					if (netRanks[j].rank > randVal2)
 						netIndex2 = netRanks[j].netIndex;
 				}
-			} while (netIndex2 == netIndex1);
+                --tryCount;
+            } while (netIndex2 == netIndex1 && tryCount != 0);
 
+            /*if(tryCount == 0)
+                continue;*/
 			CPU_learn_createNewPair(m_nets[netIndex1]->getWeight(),
 									m_nets[netIndex2]->getWeight(),
 									newWeights[currentNewWeightIndex],
