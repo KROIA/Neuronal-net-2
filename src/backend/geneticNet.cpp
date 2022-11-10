@@ -11,6 +11,10 @@ namespace NeuronalNet
 		if (netCount < 2)
 			netCount = 2;
 
+        setWeightBounds(3);
+        setMutationFactor(0.05);
+        setMutationChance(0.3);
+
 		initiateNets(netCount);
 	}
 	GeneticNet::~GeneticNet()
@@ -363,6 +367,11 @@ namespace NeuronalNet
 			m_mutationChance = 0;
 		if (m_mutationChance > 1)
 			m_mutationChance = 1;
+
+        if(m_mutationChance == 0)
+            m_mutChanceInverse = 0;
+        else
+            m_mutChanceInverse = 1 / m_mutationChance;
 	}
 	float GeneticNet::getMutatuionChance() const
 	{
@@ -378,6 +387,16 @@ namespace NeuronalNet
 	{
 		return m_mutationFactor;
 	}
+    void GeneticNet::setWeightBounds(float radius)
+    {
+        m_weightBounds = radius;
+        if(m_weightBounds < 0)
+            m_weightBounds = -m_weightBounds;
+    }
+    float GeneticNet::getWeightBounds() const
+    {
+        return m_weightBounds;
+    }
 	void GeneticNet::learn(const std::vector<float> &ranks)
 	{
 		if (ranks.size() != m_nets.size())
@@ -527,8 +546,8 @@ namespace NeuronalNet
 		CPU_learn_crossOver(wOldFirst, wOldSecond,
 							wNewFirst, wNewSecond,
 							count, randomCrossoverPoint);
-		CPU_learn_mutate(wNewFirst, count, m_mutationChance, m_mutationFactor);
-		CPU_learn_mutate(wNewSecond, count, m_mutationChance, m_mutationFactor);
+        CPU_learn_mutate(wNewFirst, count, m_mutChanceInverse, m_mutationFactor);
+        CPU_learn_mutate(wNewSecond, count, m_mutChanceInverse, m_mutationFactor);
 	}
 	void GeneticNet::CPU_learn_crossOver(const float* wOldFirst,
 										 const float* wOldSecond,
@@ -552,19 +571,20 @@ namespace NeuronalNet
 		memcpy(wNewSecond, wOldSecond, cpySize);
 	}
 	void GeneticNet::CPU_learn_mutate(float* weights, size_t count,
-								      float mutChance, float mutFac)
+                                      size_t mutChanceInverse, float mutFac)
 	{
-		if (mutChance <= 0.000001)
-			return;
-
-		size_t iMutChance = 1.f / mutChance;
+        if(!mutChanceInverse) return;
 
 		for (size_t i = 0; i < count; ++i)
 		{
-			if (rand() % iMutChance == 0)
+            if (rand() % mutChanceInverse == 0)
 			{
 				float randDeltaW = Net::getRandomValue(-mutFac, mutFac);
 				weights[i] += randDeltaW;
+                if(weights[i] > m_weightBounds)
+                    weights[i] = m_weightBounds;
+                else if(weights[i] < -m_weightBounds)
+                    weights[i] = -m_weightBounds;
 			}
 		}
 	}

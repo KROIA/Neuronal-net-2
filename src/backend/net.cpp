@@ -390,7 +390,8 @@ float Net::getRandomValue(float min, float max)
 		srand(time(NULL)); //seeding for the first time only!
 		first = false;
 	}
-	float v1 = float(rand() % 100000) / 100000;
+    size_t r = rand() % 30000;
+    float v1 = float(r) / 30000.f;
 
 	if (min > max)
 	{
@@ -398,11 +399,16 @@ float Net::getRandomValue(float min, float max)
 		max = min;
 		min = tmp;
 	}
-	else if (size_t(min) == size_t(max))
+    else if (min == max)
 		return min;
 
-	return v1 + min + float(rand() % (size_t(max) - size_t(min)));
+    return map(v1, 0, 1, min, max);
+    //return v1 + min + float(rand() % (size_t(max) - size_t(min)));
 	
+}
+float Net::map(float x, float inMin,float inMax, float outMin, float outMax)
+{
+    return (x - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
 }
 void Net::randomizeBias()
 {
