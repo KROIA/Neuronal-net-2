@@ -69,6 +69,7 @@ namespace NeuronalNet
 		void randomizeWeights();
 		virtual bool randomizeWeights(size_t from, size_t to);
 		static float getRandomValue(float min, float max);
+        static float map(float x, float inMin,float inMax, float outMin, float outMax);
 		void randomizeBias();
 		static void randomize(float* list, size_t size, float min, float max);
 

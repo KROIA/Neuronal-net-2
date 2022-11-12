@@ -80,6 +80,8 @@ namespace NeuronalNet
 		float getMutationFactor() const;
 		
 		void calculate();
+        void setWeightBounds(float radius); // a +- value to limit the mutation of each weight
+        float getWeightBounds() const;
 		void learn(const std::vector<float> &ranks); // Ranks must be positive otherwise they will be set to 0
 
 		
@@ -101,13 +103,16 @@ namespace NeuronalNet
 							     size_t count,
 								 size_t crossoverPoint);
 		void CPU_learn_mutate(float* weights, size_t count,
-						      float mutChance, float mutFac);
+                              size_t mutChanceInverse, float mutFac);
 		
 
 
 		std::vector<Net*> m_nets;
 		float m_mutationFactor;
 		float m_mutationChance;
+        float m_weightBounds;
+
+        size_t m_mutChanceInverse;
 
 		size_t m_randomSeed;
 	};
