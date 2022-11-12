@@ -43,6 +43,24 @@
     <ClInclude Include="inc\backend\geneticNet.h">
       <Filter>inc\backend</Filter>
     </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityNet.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityConfig.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unitySignalVector.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityMultiSignalVector.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityBackpropNet.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityGeneticNet.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inc">
@@ -57,11 +75,11 @@
     <Filter Include="src\backend">
       <UniqueIdentifier>{b2cc6103-e540-4a1b-bcd3-bba9cae8c166}</UniqueIdentifier>
     </Filter>
-    <Filter Include="inc\graphics">
-      <UniqueIdentifier>{b5153ceb-64a5-4a1a-843b-eb60812ec573}</UniqueIdentifier>
+    <Filter Include="inc\unityInterface">
+      <UniqueIdentifier>{1260e338-6d05-4787-8e48-6fe590dd2854}</UniqueIdentifier>
     </Filter>
-    <Filter Include="src\graphics">
-      <UniqueIdentifier>{21c3bc9d-7041-4be2-9aa4-f85ea6437c96}</UniqueIdentifier>
+    <Filter Include="src\unityInterface">
+      <UniqueIdentifier>{b15c1f50-27b9-4ac1-88d7-e466a8271380}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -89,10 +107,28 @@
     <ClCompile Include="src\backend\geneticNet.cpp">
       <Filter>src\backend</Filter>
     </ClCompile>
+    <ClCompile Include="src\unityInterface\unityNet.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unitySignalVector.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityMultiSignalVector.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityBackpropNet.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityGeneticNet.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\backend\net_kernel.cu">
       <Filter>src\backend</Filter>
     </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

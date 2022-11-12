@@ -29,6 +29,12 @@
     <ClInclude Include="inc\backend\signalVector.h" />
     <ClInclude Include="inc\backend\utilities.h" />
     <ClInclude Include="inc\neuronalNet.h" />
+    <ClInclude Include="inc\unityInterface\unityBackpropNet.h" />
+    <ClInclude Include="inc\unityInterface\unityConfig.h" />
+    <ClInclude Include="inc\unityInterface\unityGeneticNet.h" />
+    <ClInclude Include="inc\unityInterface\unityMultiSignalVector.h" />
+    <ClInclude Include="inc\unityInterface\unityNet.h" />
+    <ClInclude Include="inc\unityInterface\unitySignalVector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\backend\backpropNet.cpp" />
@@ -39,9 +45,17 @@
     <ClCompile Include="src\backend\neuronIndex.cpp" />
     <ClCompile Include="src\backend\signalVector.cpp" />
     <ClCompile Include="src\backend\utilities.cpp" />
+    <ClCompile Include="src\unityInterface\unityBackpropNet.cpp" />
+    <ClCompile Include="src\unityInterface\unityGeneticNet.cpp" />
+    <ClCompile Include="src\unityInterface\unityMultiSignalVector.cpp" />
+    <ClCompile Include="src\unityInterface\unityNet.cpp" />
+    <ClCompile Include="src\unityInterface\unitySignalVector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\backend\net_kernel.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{941A844E-DAD7-4436-AABB-9B41D0568D98}</ProjectGuid>
@@ -86,7 +100,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;inc/backend;inc/graphics;$(IncludePath)</IncludePath>
+    <IncludePath>inc;C:/Program Files/NVIDIA Corporation/Nsight Systems 2022.1.1/target-windows-x64/nvtx/include;inc/backend;inc/unityInterface;$(IncludePath)</IncludePath>
     <SourcePath>src;$(SourcePath);src/backend;src/graphics</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

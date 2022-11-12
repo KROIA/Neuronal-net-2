@@ -11,6 +11,8 @@ namespace NeuronalNet
 		GeneticNet(size_t netCount);
 		~GeneticNet();
 
+		size_t getNetCount() const;
+
 		// Net interface
 		void setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
 		void setStreamSize(size_t size);
@@ -36,33 +38,38 @@ namespace NeuronalNet
 	    bool randomizeWeights(size_t from, size_t to);
 		void randomizeBias();
 
-		void setInputVector(size_t netInedex, float* signalList);
-		void setInputVector(size_t netInedex, size_t stream, float* signalList);
-		void setInputVector(size_t netInedex, const SignalVector& signalList);
-		void setInputVector(size_t netInedex, size_t stream, const SignalVector& signalList);
-		void setInputVector(size_t netInedex, const MultiSignalVector& streamVector);
+		void setInputVector(size_t netIndex, float* signalList);
+		void setInputVector(size_t netIndex, size_t stream, float* signalList);
+		void setInputVector(size_t netIndex, const SignalVector& signalList);
+		void setInputVector(size_t netIndex, size_t stream, const SignalVector& signalList);
+		void setInputVector(size_t netIndex, const MultiSignalVector& streamVector);
 
-		void setInput(size_t netInedex, size_t input, float signal);
-		void setInput(size_t netInedex, size_t stream, size_t input, float signal);
-		float getInput(size_t netInedex,  size_t input) const;
-		float getInput(size_t netInedex,  size_t stream, size_t input) const;
-		const SignalVector& getInputVector(size_t netInedex,  size_t stream = 0);
-		const MultiSignalVector& getInputStreamVector(size_t netInedex);
-		const SignalVector& getOutputVector(size_t netInedex, size_t stream = 0);
-		const MultiSignalVector& getOutputStreamVector(size_t netInedex);
+		void setInput(size_t netIndex, size_t input, float signal);
+		void setInput(size_t netIndex, size_t stream, size_t input, float signal);
+		float getInput(size_t netIndex,  size_t input) const;
+		float getInput(size_t netIndex,  size_t stream, size_t input) const;
+		const SignalVector& getInputVector(size_t netIndex,  size_t stream = 0);
+		const MultiSignalVector& getInputStreamVector(size_t netIndex);
+		const SignalVector& getOutputVector(size_t netIndex, size_t stream = 0);
+		const MultiSignalVector& getOutputStreamVector(size_t netIndex);
+		float getOutput(size_t netIndex, size_t output);
+		float getOutput(size_t netIndex, size_t stream, size_t output);
 
-		MultiSignalVector getNetinputStreamVector(size_t netInedex) const;
-		MultiSignalVector getNeuronValueStreamVector(size_t netInedex) const;
+		MultiSignalVector getNetinputStreamVector(size_t netIndex) const;
+		MultiSignalVector getNeuronValueStreamVector(size_t netIndex) const;
 
-		void setWeight(size_t netInedex, size_t layer, size_t neuron, size_t input, float weight);
-		void setWeight(size_t netInedex, const std::vector<float>& list);
-		void setWeight(size_t netInedex, const float* list);
-		void setWeight(size_t netInedex, const float* list, size_t to);
-		void setWeight(size_t netInedex, const float* list, size_t insertOffset, size_t count);
-		float getWeight(size_t netInedex, size_t layer, size_t neuron, size_t input) const;
-		const float* getWeight(size_t netInedex) const;
+		void setWeight(size_t netIndex, size_t layer, size_t neuron, size_t input, float weight);
+		void setWeight(size_t netIndex, const std::vector<float>& list);
+		void setWeight(size_t netIndex, const float* list);
+		void setWeight(size_t netIndex, const float* list, size_t to);
+		void setWeight(size_t netIndex, const float* list, size_t insertOffset, size_t count);
+		float getWeight(size_t netIndex, size_t layer, size_t neuron, size_t input) const;
+		const float* getWeight(size_t netIndex) const;
 		size_t getWeightSize() const;
-		const float* getBias(size_t netInedex) const;
+		void setBias(size_t netIndex, size_t layer, size_t neuron, float bias);
+		void setBias(size_t netIndex, float *list);
+		float getBias(size_t netIndex, size_t layer, size_t neuron);
+		const float* getBias(size_t netIndex) const;
 
 
 
@@ -71,8 +78,11 @@ namespace NeuronalNet
 		float getMutatuionChance() const;
 		void setMutationFactor(float radius); // a +- value for the min max range of random mutation. w = deltaW + oldW
 		float getMutationFactor() const;
+		
+		void calculate();
 		void learn(const std::vector<float> &ranks); // Ranks must be positive otherwise they will be set to 0
 
+		
 
 
 		private:

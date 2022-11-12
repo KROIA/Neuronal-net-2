@@ -93,6 +93,24 @@ Net::~Net()
 	}
 	
 }
+std::string Net::getVersion() 
+{
+	return std::to_string(getVersion_major()) + "." +
+		   std::to_string(getVersion_minor()) + "." +
+		   std::to_string(getVersion_patch());
+}
+size_t Net::getVersion_major()
+{
+	return NEURAL_NET_VERSION_MAJOR;
+}
+size_t Net::getVersion_minor()
+{
+	return NEURAL_NET_VERSION_MINOR;
+}
+size_t Net::getVersion_patch()
+{
+	return NEURAL_NET_VERSION_PATCH;
+}
 
 void Net::setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs)
 {
@@ -560,6 +578,19 @@ const MultiSignalVector &Net::getOutputStreamVector()
 	}*/
 	return m_outputStream;
 }
+float Net::getOutput(size_t output)
+{
+	if (output >= m_outputs)
+		return 0;
+	return m_outputStream[0][output];
+}
+float Net::getOutput(size_t stream, size_t output)
+{
+	if (output >= m_outputs || stream >= m_streamSize)
+		return 0;
+	return m_outputStream[stream][output];
+}
+
 MultiSignalVector Net::getNetinputStreamVector() const
 {
 	switch (m_hardware)
@@ -696,7 +727,7 @@ float Net::getWeight(size_t layer, size_t neuron, size_t input) const
 	{
 		index = m_inputs * m_hiddenY + (layer - 1) * m_hiddenX * m_hiddenY + m_hiddenY * neuron + input;
 	}
-	VERIFY_RANGE(0, index, m_weightsCount, return 0)
+	VERIFY_RANGE(0, index, m_weightsCount, return 0);
 	if (m_weightsChangedFromDeviceTraining)
 		transferWeightsToHost();
 	return m_weightsList[index];
@@ -741,6 +772,78 @@ const float* Net::getWeight() const
 size_t Net::getWeightSize() const
 {
 	return m_weightsCount;
+}
+void Net::setBias(size_t layer, size_t neuron, float bias)
+{
+	
+	size_t index;
+	/*if (m_hiddenX * m_hiddenY == 0 || layer == 0)
+	{
+		index = neuron;
+	}
+	else
+	{
+		index = m_hiddenY + (layer - 1) * m_hiddenY + neuron;
+	}*/
+	index = layer * m_hiddenY + neuron;
+	VERIFY_RANGE(0, index, m_neuronCount, return);
+	if (m_biasChangedFromDeviceTraining)
+		transferBiasToHost();
+	m_biasList[index] = bias;
+	switch (m_hardware)
+	{
+		case Hardware::cpu:
+		{
+			break;
+		}
+#ifdef USE_CUDA
+		case Hardware::gpu_cuda:
+		{
+			transferBiasToDevice();
+			break;
+		}
+#endif
+		default:
+			PRINT_ERROR("Device not defined " << (int)m_hardware)
+	}
+}
+void Net::setBias(float* list)
+{
+	for (size_t i = 0; i < m_neuronCount; ++i)
+		m_biasList[i] = list[i];
+	switch (m_hardware)
+	{
+		case Hardware::cpu:
+		{
+			break;
+		}
+#ifdef USE_CUDA
+		case Hardware::gpu_cuda:
+		{
+			transferBiasToDevice();
+			break;
+		}
+#endif
+		default:
+			PRINT_ERROR("Device not defined " << (int)m_hardware)
+	}
+}
+float Net::getBias(size_t layer, size_t neuron)
+{
+	size_t index;
+	/*if (m_hiddenX * m_hiddenY == 0 || layer == 0)
+	{
+		index = neuron;
+	}
+	else
+	{
+		index = m_hiddenY + (layer - 1) * m_hiddenY + neuron;
+	}*/
+	index = layer * m_hiddenY + neuron;
+	VERIFY_RANGE(0, index, m_neuronCount, return 0);
+	if (m_biasChangedFromDeviceTraining)
+		transferBiasToHost();
+	return m_biasList[index];
 }
 const float* Net::getBias() const
 {

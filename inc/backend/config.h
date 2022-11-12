@@ -1,4 +1,8 @@
 #pragma once
+#define NEURAL_NET_VERSION_MAJOR 2
+#define NEURAL_NET_VERSION_MINOR 0
+#define NEURAL_NET_VERSION_PATCH 0
+
 
 //#define NET_DEBUG
 //#define UNIT_TEST
@@ -10,6 +14,8 @@
 // No user accassable code.
 // Dissabeling this check may cause crashes without errors
 #define NET_GRAPHICS_ERRORCHECK
+
+
 
 #ifndef QT_NEURAL_NET
 #define USE_CUDA

@@ -18,6 +18,11 @@ namespace NeuronalNet
 
 	}
 
+	size_t GeneticNet::getNetCount() const
+	{
+		return m_nets.size();
+	}
+
 	void GeneticNet::setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs)
 	{
 		FOR_EVERY_NET(setDimensions(inputs, hiddenX, hiddenY, outputs));
@@ -104,230 +109,250 @@ namespace NeuronalNet
 		FOR_EVERY_NET(randomizeBias());
 	}
 
-	void GeneticNet::setInputVector(size_t netInedex, float* signalList)
+	void GeneticNet::setInputVector(size_t netIndex, float* signalList)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setInputVector(signalList);
 	}
-	void GeneticNet::setInputVector(size_t netInedex, size_t stream, float* signalList)
+	void GeneticNet::setInputVector(size_t netIndex, size_t stream, float* signalList)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setInputVector(stream, signalList);
 	}
-	void GeneticNet::setInputVector(size_t netInedex, const SignalVector& signalList)
+	void GeneticNet::setInputVector(size_t netIndex, const SignalVector& signalList)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setInputVector(signalList);
 	}
-	void GeneticNet::setInputVector(size_t netInedex, size_t stream, const SignalVector& signalList)
+	void GeneticNet::setInputVector(size_t netIndex, size_t stream, const SignalVector& signalList)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setInputVector(stream, signalList);
 	}
-	void GeneticNet::setInputVector(size_t netInedex, const MultiSignalVector& streamVector)
+	void GeneticNet::setInputVector(size_t netIndex, const MultiSignalVector& streamVector)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setInputVector(streamVector);
 	}
 
-	void GeneticNet::setInput(size_t netInedex, size_t input, float signal)
+	void GeneticNet::setInput(size_t netIndex, size_t input, float signal)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setInput(input, signal);
 	}
-	void GeneticNet::setInput(size_t netInedex, size_t stream, size_t input, float signal)
+	void GeneticNet::setInput(size_t netIndex, size_t stream, size_t input, float signal)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setInput(stream, input, signal);
 	}
-	float GeneticNet::getInput(size_t netInedex, size_t input) const
+	float GeneticNet::getInput(size_t netIndex, size_t input) const
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return 0;
 		}
 		return n->getInput(input);
 	}
-	float GeneticNet::getInput(size_t netInedex, size_t stream, size_t input) const
+	float GeneticNet::getInput(size_t netIndex, size_t stream, size_t input) const
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return 0;
 		}
 		return n->getInput(stream, input);
 	}
-	const SignalVector& GeneticNet::getInputVector(size_t netInedex, size_t stream)
+	const SignalVector& GeneticNet::getInputVector(size_t netIndex, size_t stream)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return 0;
 		}
 		return n->getInputVector(stream);
 	}
-	const MultiSignalVector& GeneticNet::getInputStreamVector(size_t netInedex)
+	const MultiSignalVector& GeneticNet::getInputStreamVector(size_t netIndex)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			const static MultiSignalVector dummy;
 			return dummy;
 		}
 		return n->getInputStreamVector();
 	}
-	const SignalVector& GeneticNet::getOutputVector(size_t netInedex, size_t stream)
+	const SignalVector& GeneticNet::getOutputVector(size_t netIndex, size_t stream)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			const static SignalVector dummy;
 			return dummy;
 		}
 		return n->getOutputVector(stream);
 	}
-	const MultiSignalVector& GeneticNet::getOutputStreamVector(size_t netInedex)
+	const MultiSignalVector& GeneticNet::getOutputStreamVector(size_t netIndex)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			const static MultiSignalVector dummy;
 			return dummy;
 		}
 		return n->getOutputStreamVector();
 	}
-
-	MultiSignalVector GeneticNet::getNetinputStreamVector(size_t netInedex) const
+	float GeneticNet::getOutput(size_t netIndex, size_t output)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
+			return 0;
+		}
+		return n->getOutput(output);
+	}
+	float GeneticNet::getOutput(size_t netIndex, size_t stream, size_t output)
+	{
+		Net* n = getNet(netIndex);
+		if (!n)
+		{
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
+			return 0;
+		}
+		return n->getOutput(stream, output);
+	}
+
+	MultiSignalVector GeneticNet::getNetinputStreamVector(size_t netIndex) const
+	{
+		Net* n = getNet(netIndex);
+		if (!n)
+		{
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			const static MultiSignalVector dummy;
 			return dummy;
 		}
 		return n->getNetinputStreamVector();
 	}
-	MultiSignalVector GeneticNet::getNeuronValueStreamVector(size_t netInedex) const
+	MultiSignalVector GeneticNet::getNeuronValueStreamVector(size_t netIndex) const
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			const static MultiSignalVector dummy;
 			return dummy;
 		}
 		return n->getNeuronValueStreamVector();
 	}
 
-	void GeneticNet::setWeight(size_t netInedex, size_t layer, size_t neuron, size_t input, float weight)
+	void GeneticNet::setWeight(size_t netIndex, size_t layer, size_t neuron, size_t input, float weight)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setWeight(layer, neuron, input, weight);
 	}
-	void GeneticNet::setWeight(size_t netInedex, const std::vector<float>& list)
+	void GeneticNet::setWeight(size_t netIndex, const std::vector<float>& list)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setWeight(list);
 	}
-	void GeneticNet::setWeight(size_t netInedex, const float* list)
+	void GeneticNet::setWeight(size_t netIndex, const float* list)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setWeight(list);
 	}
-	void GeneticNet::setWeight(size_t netInedex, const float* list, size_t to)
+	void GeneticNet::setWeight(size_t netIndex, const float* list, size_t to)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setWeight(list, to);
 	}
-	void GeneticNet::setWeight(size_t netInedex, const float* list, size_t insertOffset, size_t count)
+	void GeneticNet::setWeight(size_t netIndex, const float* list, size_t insertOffset, size_t count)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return;
 		}
 		n->setWeight(list, insertOffset, count);
 	}
-	float GeneticNet::getWeight(size_t netInedex, size_t layer, size_t neuron, size_t input) const
+	float GeneticNet::getWeight(size_t netIndex, size_t layer, size_t neuron, size_t input) const
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return 0;
 		}
 		return n->getWeight(layer, neuron, input);
 	}
-	const float* GeneticNet::getWeight(size_t netInedex) const
+	const float* GeneticNet::getWeight(size_t netIndex) const
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return nullptr;
 		}
 		return n->getWeight();
@@ -336,12 +361,42 @@ namespace NeuronalNet
 	{
 		return m_nets[0]->getWeightSize();
 	}
-	const float* GeneticNet::getBias(size_t netInedex) const
+	void GeneticNet::setBias(size_t netIndex, size_t layer, size_t neuron, float bias)
 	{
-		Net* n = getNet(netInedex);
+		Net* n = getNet(netIndex);
 		if (!n)
 		{
-			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netInedex);
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
+			return;
+		}
+		m_nets[netIndex]->setBias(layer, neuron, bias);
+	}
+	void GeneticNet::setBias(size_t netIndex, float* list)
+	{
+		Net* n = getNet(netIndex);
+		if (!n)
+		{
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
+			return;
+		}
+		m_nets[netIndex]->setBias(list);
+	}
+	float GeneticNet::getBias(size_t netIndex, size_t layer, size_t neuron)
+	{
+		Net* n = getNet(netIndex);
+		if (!n)
+		{
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
+			return 0;
+		}
+		return m_nets[netIndex]->getBias(layer, neuron);
+	}
+	const float* GeneticNet::getBias(size_t netIndex) const
+	{
+		Net* n = getNet(netIndex);
+		if (!n)
+		{
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
 			return nullptr;
 		}
 		return n->getBias();
@@ -378,6 +433,13 @@ namespace NeuronalNet
 	{
 		return m_mutationFactor;
 	}
+	void GeneticNet::calculate()
+	{
+		for (size_t i = 0; i < m_nets.size(); ++i)
+		{
+			m_nets[i]->calculate();
+		}
+	}
 	void GeneticNet::learn(const std::vector<float> &ranks)
 	{
 		if (ranks.size() != m_nets.size())
@@ -408,7 +470,7 @@ namespace NeuronalNet
 			}
 		}
 	}
-
+	
 	void GeneticNet::initiateNets(size_t netCount)
 	{
         m_nets.reserve(netCount);

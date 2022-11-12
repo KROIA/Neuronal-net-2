@@ -40,6 +40,12 @@ namespace NeuronalNet
 		Net();
         virtual ~Net();
 
+		static std::string getVersion();
+		static size_t getVersion_major();
+		static size_t getVersion_minor();
+		static size_t getVersion_patch();
+
+
 		virtual void setDimensions(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
 		virtual void setStreamSize(size_t size);
 		size_t getStreamSize() const;
@@ -64,7 +70,7 @@ namespace NeuronalNet
 		virtual bool randomizeWeights(size_t from, size_t to);
 		static float getRandomValue(float min, float max);
 		void randomizeBias();
-		void randomize(float* list, size_t size, float min, float max);
+		static void randomize(float* list, size_t size, float min, float max);
 
 		virtual void setInputVector(float* signalList);
 		virtual void setInputVector(size_t stream, float* signalList);
@@ -80,6 +86,8 @@ namespace NeuronalNet
 		const MultiSignalVector& getInputStreamVector();
 		const SignalVector& getOutputVector(size_t stream = 0);
 		const MultiSignalVector& getOutputStreamVector();
+		float getOutput(size_t output);
+		float getOutput(size_t stream, size_t output);
 
 		MultiSignalVector getNetinputStreamVector() const;
 		MultiSignalVector getNeuronValueStreamVector() const;
@@ -93,6 +101,9 @@ namespace NeuronalNet
 		float getWeight(size_t layer, size_t neuron, size_t input) const;
 		const float* getWeight() const;
 		size_t getWeightSize() const;
+		virtual void setBias(size_t layer, size_t neuron, float bias);
+		virtual void setBias(float* list);
+		virtual float getBias(size_t layer, size_t neuron);
 		const float* getBias() const;
 
 
