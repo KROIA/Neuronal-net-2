@@ -77,6 +77,8 @@ namespace NeuronalNet
         [DllImport(Net.neuralNetDllName)] static extern float GeneticNet_getMutationChance(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setMutationFactor(IntPtr ptr, float radius);
         [DllImport(Net.neuralNetDllName)] static extern float GeneticNet_getMutationFactor(IntPtr ptr);
+        [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setWeightBounds(IntPtr ptr, float radius);
+        [DllImport(Net.neuralNetDllName)] static extern float GeneticNet_getWeightBounds(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_calculate(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_learn1(IntPtr ptr, IntPtr ranks); //const std::vector<float>* ranks
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_learn2(IntPtr ptr, IntPtr ranks);  //const float* ranks
@@ -481,6 +483,25 @@ namespace NeuronalNet
         public float GetMutationFactor()
         {
             return GeneticNet_getMutationFactor(net);
+        }
+        public float weightBounds
+        {
+            get
+            {
+                return GeneticNet_getWeightBounds(net);
+            }
+            set
+            {
+                GeneticNet_setWeightBounds(net, value);
+            }
+        }
+        public void SetWeightBounds(float radius)
+        {
+            GeneticNet_setWeightBounds(net, radius);
+        }
+        public float GetWeightBounds()
+        {
+            return GeneticNet_getWeightBounds(net);
         }
 
         public void Calculate()

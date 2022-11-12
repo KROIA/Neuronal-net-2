@@ -74,6 +74,8 @@ UNITY_NET_API void GeneticNet_setMutationChance(NET_PARAM, float chance); // 0 n
 UNITY_NET_API float GeneticNet_getMutationChance(NET_PARAM);
 UNITY_NET_API void GeneticNet_setMutationFactor(NET_PARAM, float radius); // a +- value for the min max range of random mutation. w = deltaW + oldW
 UNITY_NET_API float GeneticNet_getMutationFactor(NET_PARAM);
+UNITY_NET_API void GeneticNet_setWeightBounds(NET_PARAM, float radius); // a +- value to limit the mutation of each weight
+UNITY_NET_API float GeneticNet_getWeightBounds(NET_PARAM);
 UNITY_NET_API void GeneticNet_calculate(NET_PARAM);
 UNITY_NET_API void GeneticNet_learn1(NET_PARAM, const std::vector<float>* ranks); // Ranks must be positive otherwise they will be set to 0
 UNITY_NET_API void GeneticNet_learn2(NET_PARAM, const float* ranks); // Ranks must be positive otherwise they will be set to 0

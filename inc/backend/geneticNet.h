@@ -78,10 +78,11 @@ namespace NeuronalNet
 		float getMutatuionChance() const;
 		void setMutationFactor(float radius); // a +- value for the min max range of random mutation. w = deltaW + oldW
 		float getMutationFactor() const;
+		void setWeightBounds(float radius); // a +- value to limit the mutation of each weight
+		float getWeightBounds() const;
 		
 		void calculate();
-        void setWeightBounds(float radius); // a +- value to limit the mutation of each weight
-        float getWeightBounds() const;
+        
 		void learn(const std::vector<float> &ranks); // Ranks must be positive otherwise they will be set to 0
 
 		

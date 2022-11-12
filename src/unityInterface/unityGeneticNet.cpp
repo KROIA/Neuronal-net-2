@@ -289,6 +289,16 @@ float GeneticNet_getMutationFactor(NET_PARAM)
 	NULL_PTR_RETURN(net, 0);
 	return net->getMutationFactor();
 }
+void GeneticNet_setWeightBounds(NET_PARAM, float radius)
+{
+	NULL_PTR_RETURN_VOID(net);
+	net->setWeightBounds(radius);
+}
+float GeneticNet_getWeightBounds(NET_PARAM)
+{
+	NULL_PTR_RETURN(net, 0);
+	return net->getWeightBounds();
+}
 void GeneticNet_calculate(NET_PARAM)
 {
 	NULL_PTR_RETURN_VOID(net);
