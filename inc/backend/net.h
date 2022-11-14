@@ -27,8 +27,9 @@ namespace NeuronalNet
 	{
 		cpu,
 #ifdef USE_CUDA
-		gpu_cuda
+		gpu_cuda,
 #endif
+		count = 2
 	};
 
 
@@ -103,7 +104,8 @@ namespace NeuronalNet
 		const float* getWeight() const;
 		size_t getWeightSize() const;
 		virtual void setBias(size_t layer, size_t neuron, float bias);
-		virtual void setBias(float* list);
+		virtual void setBias(const std::vector<float>& list);
+		virtual void setBias(const float* list);
 		virtual float getBias(size_t layer, size_t neuron);
 		const float* getBias() const;
 

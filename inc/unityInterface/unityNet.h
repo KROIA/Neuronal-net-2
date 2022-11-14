@@ -69,7 +69,8 @@ UNITY_NET_API float Net_getWeight1(NET_PARAM, size_t layer, size_t neuron, size_
 UNITY_NET_API const float* Net_getWeight2(NET_PARAM);
 UNITY_NET_API size_t Net_getWeightSize(NET_PARAM);
 UNITY_NET_API void Net_setBias1(NET_PARAM, size_t layer, size_t neuron, float bias);
-UNITY_NET_API void Net_setBias2(NET_PARAM, float* list);
+UNITY_NET_API void Net_setBias2(NET_PARAM, const std::vector<float>* list);
+UNITY_NET_API void Net_setBias3(NET_PARAM, const float* list);
 UNITY_NET_API float Net_getBias1(NET_PARAM, size_t layer, size_t neuron);
 UNITY_NET_API const float* Net_getBias2(NET_PARAM);
 

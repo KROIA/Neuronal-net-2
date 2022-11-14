@@ -22,6 +22,7 @@ HEADERS += \
     $$inc/backend/neuronIndex.h \
     $$inc/backend/signalVector.h \
     $$inc/backend/utilities.h \
+    $$inc/backend/netSerializer.h \
 	
 SOURCES += \
     $$src/backend/backpropNet.cpp \
@@ -32,6 +33,7 @@ SOURCES += \
     $$src/backend/neuronIndex.cpp \
     $$src/backend/signalVector.cpp \
     $$src/backend/utilities.cpp \
+    $$src/backend/netSerializer.cpp \
 
 # CONFIG(debug, debug|release) {
 # #message( "  Copy debug dll\'s: $$SFML_BIN" )

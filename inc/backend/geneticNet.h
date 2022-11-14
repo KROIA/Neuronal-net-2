@@ -11,6 +11,7 @@ namespace NeuronalNet
 		GeneticNet(size_t netCount);
 		~GeneticNet();
 
+		void setNetCount(size_t netCount);
 		size_t getNetCount() const;
 
 		// Net interface
@@ -67,7 +68,8 @@ namespace NeuronalNet
 		const float* getWeight(size_t netIndex) const;
 		size_t getWeightSize() const;
 		void setBias(size_t netIndex, size_t layer, size_t neuron, float bias);
-		void setBias(size_t netIndex, float *list);
+		void setBias(size_t netIndex, const std::vector<float>& list);
+		void setBias(size_t netIndex, const float *list);
 		float getBias(size_t netIndex, size_t layer, size_t neuron);
 		const float* getBias(size_t netIndex) const;
 

@@ -17,6 +17,12 @@ void GeneticNet_dealocate(NET_PARAM)
 	delete net;
 }
 
+
+void GeneticNet_setNetCount(NET_PARAM, size_t netCount)
+{
+	NULL_PTR_RETURN_VOID(net);
+	net->setNetCount(netCount);
+}
 size_t GeneticNet_getNetCount(NET_PARAM)
 {
 	NULL_PTR_RETURN(net, 0);
@@ -246,7 +252,12 @@ void GeneticNet_setBias1(NET_PARAM, size_t netIndex, size_t layer, size_t neuron
 	NULL_PTR_RETURN_VOID(net);
 	net->setBias(netIndex, layer, neuron, bias);
 }
-void GeneticNet_setBias2(NET_PARAM, size_t netIndex, float* list)
+void GeneticNet_setBias2(NET_PARAM, size_t netIndex, const std::vector<float>* list)
+{
+	NULL_PTR_RETURN_VOID(net);
+	net->setBias(netIndex, *list);
+}
+void GeneticNet_setBias3(NET_PARAM, size_t netIndex, float* list)
 {
 	NULL_PTR_RETURN_VOID(net);
 	net->setBias(netIndex, list);

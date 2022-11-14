@@ -202,7 +202,11 @@ void Net::setHardware(enum Hardware ware)
 	switch (ware)
 	{
 		default:
+		{
+			PRINT_ERROR("Hardware: " << (int)ware << " not known or not available");
 			ware = Hardware::cpu;
+
+		}
 		case Hardware::cpu:
 		{
 			if (!m_built)
@@ -232,7 +236,7 @@ void Net::setHardware(enum Hardware ware)
 		{
 			if (!m_built)
 				break;
-			m_hardware = ware;
+			//m_hardware = ware;
 			for (size_t i = 0; i < m_streamSize; ++i)
 				memset(m_outputStream[i].begin(), 0, m_outputs * sizeof(float));
 			CONSOLE("Hardware: GPU CUDA device")
@@ -291,9 +295,15 @@ bool Net::isBiasEnabled() const
 
 bool Net::build()
 {
-	DEBUG_FUNCTION_TIME_INTERVAL
+	DEBUG_FUNCTION_TIME_INTERVAL;
 	if (m_built)
-		return 1;
+	{
+		destroyHostWeights();
+		destroyHostBias();
+		destroyDevice();
+		return true;
+	}
+		
 	
 	//CONSOLE("begin")
 	//auto t1 = now();
@@ -813,7 +823,11 @@ void Net::setBias(size_t layer, size_t neuron, float bias)
 			PRINT_ERROR("Device not defined " << (int)m_hardware)
 	}
 }
-void Net::setBias(float* list)
+void Net::setBias(const std::vector<float>& list)
+{
+	setBias(list.data());
+}
+void Net::setBias(const float* list)
 {
 	for (size_t i = 0; i < m_neuronCount; ++i)
 		m_biasList[i] = list[i];
