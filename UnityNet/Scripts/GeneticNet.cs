@@ -106,6 +106,11 @@ namespace NeuronalNet
                 GeneticNet_dealocate(net);
         }
 
+        public IntPtr GetPtr()
+        {
+            return net;
+        }
+
         public static string GetVersion()
         {
             return Net.GetVersion();

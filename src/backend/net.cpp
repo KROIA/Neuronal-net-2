@@ -231,9 +231,11 @@ void Net::setHardware(enum Hardware ware)
 
 			break;
 		}
-#ifdef USE_CUDA
+
 		case Hardware::gpu_cuda:
 		{
+
+#ifdef USE_CUDA
 			if (!m_built)
 				break;
 			//m_hardware = ware;
@@ -252,8 +254,12 @@ void Net::setHardware(enum Hardware ware)
 			//destroyHostWeights();
 			//destroyHostBias();
 			break;
-		}
+#else
+            PRINT_ERROR("Hardware::gpu_cuda not available without using CUDA. Activate the macro USE_CUDA to use cuda hardware");
+            return;
 #endif
+		}
+
 	}
 	m_hardware = ware;
 	//auto t2 = now();

@@ -26,9 +26,7 @@ namespace NeuronalNet
 	enum class Hardware
 	{
 		cpu,
-#ifdef USE_CUDA
 		gpu_cuda,
-#endif
 		count = 2
 	};
 

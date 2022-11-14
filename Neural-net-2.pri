@@ -4,6 +4,8 @@ src = $$PWD/src
 
 CONFIG += object_parallel_to_source
 
+DEFINES += QT_NEURAL_NET
+
 INCLUDEPATH += \
 	$$inc \
 #	$$inc/backend \

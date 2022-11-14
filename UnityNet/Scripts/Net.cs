@@ -109,6 +109,11 @@ namespace NeuronalNet
                 Net_dealocate(net);
         }
 
+        public IntPtr GetPtr()
+        {
+            return net;
+        }
+
         public static string GetVersion()
         {
             return GetVersion_major() + "." +

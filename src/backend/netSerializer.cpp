@@ -41,8 +41,40 @@ bool NetSerializer::saveToFile(Net* net)
 	}
 	std::string weights = getWeigtStr(net);
 	std::string bias = getBiasStr(net);
+    std::vector<std::string> lines{
+        metadata,
+        configData,
+        weights
+    };
+    if(net->isBiasEnabled())
+        lines.push_back(bias);
 
-	return writeToFile({ metadata,configData,weights,bias });
+    return writeToFile(lines);
+}
+
+
+bool NetSerializer::saveToFile(GeneticNet* net)
+{
+	if (!net)
+	{
+		PRINT_ERROR("Can't save net, because it is nullptr");
+		return false;
+	}
+	std::string metadata = getMetadataString();
+	std::string configData = getGeneticNetConfigurationStr(net);
+	std::vector<std::string> lines{
+		metadata,
+		configData
+	};
+	lines.reserve(net->getNetCount() * 2 + 50);
+	for (size_t i = 0; i < net->getNetCount(); ++i)
+	{
+		Net* n = net->getNet(i);
+		lines.push_back("[" + std::to_string(i) + "]" + getWeigtStr(n));
+        if(net->isBiasEnabled())
+            lines.push_back("[" + std::to_string(i) + "]" + getBiasStr(n));
+	}
+	return writeToFile(lines);
 }
 
 bool NetSerializer::readFromFile(Net* net)
@@ -76,7 +108,7 @@ bool NetSerializer::readFromFile(Net* net)
 		return false;
 	}
 
-	NetConfiguration config;
+    NetConfiguration config = data.net;
 	if (data.isBackpropNet && backpropNet)
 	{
 		config = data.backpropNet.net;
@@ -92,10 +124,13 @@ bool NetSerializer::readFromFile(Net* net)
 	if (successBuild)
 	{
 		net->setWeight(data.weights);
-		net->setBias(data.bias);
+        if(config.biasEnabled)
+			net->setBias(data.bias);
 	}
 	return successBuild;
 }
+
+
 bool NetSerializer::readFromFile(GeneticNet* net)
 {
 	if (!net)
@@ -133,13 +168,16 @@ bool NetSerializer::readFromFile(GeneticNet* net)
 					<< data.weightsArray.size() << " provided");
 		return false;
 	}
-	if (data.geneticNet.netCount > data.biasArray.size())
-	{
-		PRINT_ERROR("The file: \"" << m_filePath << "\" has missing bias data. Bias values for "
-					<< data.geneticNet.netCount << " nets needed and only "
-					<< data.biasArray.size() << " provided");
-		return false;
-	}
+    if (data.geneticNet.net.biasEnabled)
+    {
+        if (data.geneticNet.netCount > data.biasArray.size())
+        {
+            PRINT_ERROR("The file: \"" << m_filePath << "\" has missing bias data. Bias values for "
+                        << data.geneticNet.netCount << " nets needed and only "
+                        << data.biasArray.size() << " provided");
+            return false;
+        }
+    }
 
 	net->setNetCount(data.geneticNet.netCount);
 
@@ -160,7 +198,8 @@ bool NetSerializer::readFromFile(GeneticNet* net)
 		for (size_t i = 0; i < data.geneticNet.netCount; ++i)
 		{
 			net->setWeight(i,data.weightsArray[i]);
-			net->setBias(i,data.biasArray[i]);
+			if (data.geneticNet.net.biasEnabled)
+				net->setBias(i,data.biasArray[i]);
 		}
 	}
 	return successBuild;
@@ -168,6 +207,9 @@ bool NetSerializer::readFromFile(GeneticNet* net)
 NetSerializer::LoadingData NetSerializer::getFileData(std::vector<std::string> lines)
 {
 	LoadingData data;
+    data.isBackpropNet = false;
+    data.isGeneticNet = false;
+    data.isNet = false;
 
 	std::string configStr;
 	int brackedsOpenCount = 0;
@@ -186,9 +228,19 @@ NetSerializer::LoadingData NetSerializer::getFileData(std::vector<std::string> l
 			lines[i] = lines[i].substr(0, lines[i].find("//"));
 		}
 		if (lines[i].find("BackpropNet") != std::string::npos)
+        {
+            readConfig = true;
 			data.isBackpropNet = true;
+        }
 		if (lines[i].find("GeneticNet") != std::string::npos)
+        {
+            readConfig = true;
 			data.isGeneticNet = true;
+        }
+        if (lines[i].find("Net") != std::string::npos)
+        {
+            readConfig = true;
+        }
 		
 		for (size_t j = 0; j < lines[i].size(); ++j)
 		{
@@ -197,7 +249,7 @@ NetSerializer::LoadingData NetSerializer::getFileData(std::vector<std::string> l
 				if (firstBracketLine == std::string::npos)
 					firstBracketLine = i;
 				brackedsOpenCount++;
-				readConfig = true;
+
 			}
 			else if (lines[i][j] == '}')
 			{
@@ -214,11 +266,11 @@ NetSerializer::LoadingData NetSerializer::getFileData(std::vector<std::string> l
 		{
 			if (data.isGeneticNet)
 			{
-				if (lines[i].find("W") != std::string::npos)
+				if (lines[i].find("["+std::to_string(data.weightsArray.size())+"]W") != std::string::npos)
 				{
 					data.weightsArray.push_back(getWeightFromString(lines[i]));
 				}
-				else if (lines[i].find("B") != std::string::npos)
+				else if (lines[i].find("[" + std::to_string(data.biasArray.size()) + "]B") != std::string::npos)
 				{
 					data.biasArray.push_back(getBiasFromString(lines[i]));
 				}
@@ -235,7 +287,7 @@ NetSerializer::LoadingData NetSerializer::getFileData(std::vector<std::string> l
 				}
 			}
 		}
-		if (bracketsCloseCount == brackedsOpenCount)
+        if (bracketsCloseCount == brackedsOpenCount && brackedsOpenCount > 0)
 			readConfig = false;
 
 	}
@@ -273,6 +325,7 @@ std::string NetSerializer::getNetConfigurationStr(const Net* net)
 	str += getKeyValueStringPair(std::to_string(net->getStreamSize()), "streamSize") + "\n";
 	str += getKeyValueStringPair(std::to_string((int)net->isBiasEnabled()), "biasEnabled") + "\n";
 	str += "}\n";
+	return str;
 }
 NetSerializer::NetConfiguration NetSerializer::getNetConfigurationFromString(const std::string& config)
 {
@@ -286,11 +339,11 @@ NetSerializer::NetConfiguration NetSerializer::getNetConfigurationFromString(con
 	conf.streamSize = 1;
 	conf.biasEnabled = true;
 
-	if (config.find("Net") == std::string::npos)
+    if (config.find("Net") == std::string::npos)
 	{
 		PRINT_ERROR("Can't find configuration data with key: \"Net\" in the string");
 		return conf;
-	}
+    }
 
 	bool success = true;
 
@@ -377,9 +430,17 @@ NetSerializer::NetConfiguration NetSerializer::getNetConfigurationFromString(con
 
 	std::string biasStr = extractValueOfKey(config, "biasEnabled", success);
 	long long bias = 0;
-	if (success) bias = std::atoll(biasStr.c_str());
+    if (success) {bias = std::atoll(biasStr.c_str());}
+
 	if (bias)
+    {
 		conf.biasEnabled = true;
+    }
+    else
+    {
+        conf.biasEnabled = false;
+    }
+
 	return conf;
 }
 
@@ -508,9 +569,14 @@ std::vector<float> NetSerializer::getFloatsFromString(std::string biasStr, char 
 		PRINT_ERROR("Can't find data with key: \""<<key<<"\" in the string");
 		return values;
 	}
-	size_t bKey = biasStr.find(key);
+    size_t bKey = biasStr.find(key)+1;
 	size_t endKey = biasStr.find(":");
-	std::string countStr = biasStr.substr(bKey, endKey - bKey);
+    if(endKey == std::string::npos)
+    {
+        PRINT_ERROR("Can't find key: \":\" in the string");
+        return values;
+    }
+    std::string countStr = biasStr.substr(bKey, endKey - bKey);
 	long long count = std::atoll(countStr.c_str());
 	if (count < 0)
 	{
@@ -519,7 +585,7 @@ std::vector<float> NetSerializer::getFloatsFromString(std::string biasStr, char 
 	}
 	biasStr = biasStr.substr(endKey + 1);
 	values.reserve(count);
-	for (size_t i = 0; i < count; ++i)
+    for (size_t i = 0; (long long)i < count; ++i)
 	{
 		size_t commaIndex = biasStr.find(",");
 		if (commaIndex == std::string::npos)
