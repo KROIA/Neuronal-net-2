@@ -84,7 +84,8 @@ namespace NeuronalNet
         [DllImport(neuralNetDllName)] static extern IntPtr Net_getWeight2(IntPtr ptr); // returns const float*
         [DllImport(neuralNetDllName)] static extern ulong Net_getWeightSize(IntPtr ptr);
         [DllImport(neuralNetDllName)] static extern void Net_setBias1(IntPtr ptr, ulong layer, ulong neuron, float bias);
-        [DllImport(neuralNetDllName)] static extern void Net_setBias2(IntPtr ptr, IntPtr list); // float* list
+        [DllImport(neuralNetDllName)] static extern void Net_setBias2(IntPtr ptr, IntPtr list); // const std::vector<float>* list
+        [DllImport(neuralNetDllName)] static extern void Net_setBias3(IntPtr ptr, IntPtr list); // float* list
         [DllImport(neuralNetDllName)] static extern float Net_getBias1(IntPtr ptr, ulong layer, ulong neuron);
         [DllImport(neuralNetDllName)] static extern IntPtr Net_getBias2(IntPtr ptr); // returns const float*
 
@@ -106,6 +107,11 @@ namespace NeuronalNet
         {
             if (thisOwner)
                 Net_dealocate(net);
+        }
+
+        public IntPtr GetPtr()
+        {
+            return net;
         }
 
         public static string GetVersion()
@@ -425,7 +431,7 @@ namespace NeuronalNet
             try
             {
                 // retrieve the address as a pointer and use it to call the native method
-                Net_setBias2(net, handle.AddrOfPinnedObject());
+                Net_setBias3(net, handle.AddrOfPinnedObject());
             }
             finally
             {

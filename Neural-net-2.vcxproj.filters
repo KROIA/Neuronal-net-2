@@ -61,6 +61,12 @@
     <ClInclude Include="inc\unityInterface\unityGeneticNet.h">
       <Filter>inc\unityInterface</Filter>
     </ClInclude>
+    <ClInclude Include="inc\backend\netSerializer.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityNetSerializer.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="inc">
@@ -120,6 +126,12 @@
       <Filter>src\unityInterface</Filter>
     </ClCompile>
     <ClCompile Include="src\unityInterface\unityGeneticNet.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\netSerializer.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityNetSerializer.cpp">
       <Filter>src\unityInterface</Filter>
     </ClCompile>
   </ItemGroup>

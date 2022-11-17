@@ -11,8 +11,12 @@ namespace NeuronalNet
         bool thisOwner = false;
 
 
-        [DllImport(Net.neuralNetDllName)] static extern IntPtr GeneticNet_instantiate();
+        [DllImport(Net.neuralNetDllName)] static extern IntPtr GeneticNet_instantiate(ulong netCount);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_dealocate(IntPtr net);
+
+
+        [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setNetCount(IntPtr ptr, ulong netCount);
+        [DllImport(Net.neuralNetDllName)] static extern ulong GeneticNet_getNetCount(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setDimensions(IntPtr ptr, ulong inputs, ulong hiddenX, ulong hiddenY, ulong outputs);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setStreamSize(IntPtr ptr, ulong size);
         [DllImport(Net.neuralNetDllName)] static extern ulong GeneticNet_getStreamSize(IntPtr ptr);
@@ -66,7 +70,8 @@ namespace NeuronalNet
         [DllImport(Net.neuralNetDllName)] static extern IntPtr GeneticNet_getWeight2(IntPtr ptr, ulong netIndex); // returns const float*
         [DllImport(Net.neuralNetDllName)] static extern ulong GeneticNet_getWeightSize(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setBias1(IntPtr ptr, ulong netIndex, ulong layer, ulong neuron, float bias);
-        [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setBias2(IntPtr ptr, ulong netIndex, IntPtr list); // float* list
+        [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setBias2(IntPtr ptr, ulong netIndex, IntPtr list); // const std::vector<float>* list
+        [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_setBias3(IntPtr ptr, ulong netIndex, IntPtr list); // float* list
         [DllImport(Net.neuralNetDllName)] static extern float GeneticNet_getBias1(IntPtr ptr, ulong netIndex, ulong layer, ulong neuron);
         [DllImport(Net.neuralNetDllName)] static extern IntPtr GeneticNet_getBias2(IntPtr ptr, ulong netIndex); // returns const float*
 
@@ -85,9 +90,9 @@ namespace NeuronalNet
 
 
 
-        public GeneticNet()
+        public GeneticNet(ulong netCount)
         {
-            net = GeneticNet_instantiate();
+            net = GeneticNet_instantiate(netCount);
             thisOwner = true;
         }
         public GeneticNet(IntPtr otherNet)
@@ -99,6 +104,11 @@ namespace NeuronalNet
         {
             if (thisOwner)
                 GeneticNet_dealocate(net);
+        }
+
+        public IntPtr GetPtr()
+        {
+            return net;
         }
 
         public static string GetVersion()
@@ -116,6 +126,15 @@ namespace NeuronalNet
         public static int GetVersion_patch()
         {
             return Net.GetVersion_patch();
+        }
+
+        public void SetNetCount(ulong netCount)
+        {
+            GeneticNet_setNetCount(net, netCount);
+        }
+        public ulong GetNetCount()
+        {
+            return GeneticNet_getNetCount(net);
         }
 
         public void SetDimensions(ulong inputs, ulong hiddenX, ulong hiddenY, ulong outputs)
@@ -415,7 +434,7 @@ namespace NeuronalNet
             try
             {
                 // retrieve the address as a pointer and use it to call the native method
-                GeneticNet_setBias2(net, netIndex, handle.AddrOfPinnedObject());
+                GeneticNet_setBias3(net, netIndex, handle.AddrOfPinnedObject());
             }
             finally
             {
@@ -438,12 +457,12 @@ namespace NeuronalNet
 
 
 
-        public GeneticNet GetNet(ulong index)
+        public Net GetNet(ulong index)
         {
             IntPtr genNet = GeneticNet_getNet(net, index);
             if (genNet == IntPtr.Zero)
                 return null;
-            return new GeneticNet(genNet);
+            return new Net(genNet);
         }
         public float mutationChance
         {

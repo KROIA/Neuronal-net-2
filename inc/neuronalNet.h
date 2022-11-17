@@ -9,3 +9,4 @@
 
 #include "backend/signalVector.h"
 #include "backend/multiSignalVector.h"
+#include "backend/netSerializer.h"

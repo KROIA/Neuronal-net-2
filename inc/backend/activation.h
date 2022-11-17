@@ -9,7 +9,9 @@ namespace NeuronalNet
 		finiteLinear,
 		binary,
 		sigmoid,
-		gauss
+		gauss,
+
+		count
 	};
 
 #define NET_ACTIVATION_LINEAR(x) x

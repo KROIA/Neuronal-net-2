@@ -24,6 +24,7 @@
     <ClInclude Include="inc\backend\graphicsNeuronInterface.h" />
     <ClInclude Include="inc\backend\multiSignalVector.h" />
     <ClInclude Include="inc\backend\net.h" />
+    <ClInclude Include="inc\backend\netSerializer.h" />
     <ClInclude Include="inc\backend\net_kernel.cuh" />
     <ClInclude Include="inc\backend\neuronIndex.h" />
     <ClInclude Include="inc\backend\signalVector.h" />
@@ -34,6 +35,7 @@
     <ClInclude Include="inc\unityInterface\unityGeneticNet.h" />
     <ClInclude Include="inc\unityInterface\unityMultiSignalVector.h" />
     <ClInclude Include="inc\unityInterface\unityNet.h" />
+    <ClInclude Include="inc\unityInterface\unityNetSerializer.h" />
     <ClInclude Include="inc\unityInterface\unitySignalVector.h" />
   </ItemGroup>
   <ItemGroup>
@@ -42,6 +44,7 @@
     <ClCompile Include="src\backend\geneticNet.cpp" />
     <ClCompile Include="src\backend\multiSignalVector.cpp" />
     <ClCompile Include="src\backend\net.cpp" />
+    <ClCompile Include="src\backend\netSerializer.cpp" />
     <ClCompile Include="src\backend\neuronIndex.cpp" />
     <ClCompile Include="src\backend\signalVector.cpp" />
     <ClCompile Include="src\backend\utilities.cpp" />
@@ -49,6 +52,7 @@
     <ClCompile Include="src\unityInterface\unityGeneticNet.cpp" />
     <ClCompile Include="src\unityInterface\unityMultiSignalVector.cpp" />
     <ClCompile Include="src\unityInterface\unityNet.cpp" />
+    <ClCompile Include="src\unityInterface\unityNetSerializer.cpp" />
     <ClCompile Include="src\unityInterface\unitySignalVector.cpp" />
   </ItemGroup>
   <ItemGroup>

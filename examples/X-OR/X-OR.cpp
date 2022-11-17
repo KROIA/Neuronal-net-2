@@ -13,8 +13,6 @@
 
 #include "neuronalNet.h"
 
-#include "SFML/Graphics.hpp"
-
 using std::vector;
 using std::cout;
 using std::string;
@@ -25,9 +23,9 @@ void printSignal(const SignalVector& sig,size_t maxSize = 10);
 void printSignal(const MultiSignalVector& sig,size_t maxSize = 10);
 bool signalEqual(const SignalVector& a, const SignalVector& b);
 bool signalEqual(const MultiSignalVector& a, const MultiSignalVector& b);
-void saveWeightsToImage(const SignalVector& w, size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs, const std::string &label);
-void saveWeightsToImage(const float* list, size_t width, size_t height, const std::string& label);
-void saveNetinputToImage(const float* list, size_t width, size_t height, const std::string& label);
+//void saveWeightsToImage(const SignalVector& w, size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs, const std::string &label);
+//void saveWeightsToImage(const float* list, size_t width, size_t height, const std::string& label);
+//void saveNetinputToImage(const float* list, size_t width, size_t height, const std::string& label);
 void saveDifference(const SignalVector& a, const SignalVector& b, size_t width, size_t height, const std::string& label);
 
 vector<float> generateWeights(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
@@ -60,55 +58,7 @@ void printWeights(Net* net);
 
 int main()
 {
-	//vector<float> test1({ 0.1,0.2,-10.3,0.4,-0.1,-0.2,0.9 });
-
-	//std::cout << "min: " << test1[getMinIndex<float>(test1.data(), test1.size())];
-	//std::cout << "  max: " << test1[getMaxIndex<float>(test1.data(), test1.size())];
-
-	//getchar();
-	
-	//xorBenchmarkMain();
 	xorLoop();
-
-	/*
-	{
-		using namespace std::chrono_literals;
-		Debug::DebugFuncStackTimeTrace trace("init");
-		
-		//std::this_thread::sleep_for(100ms);
-		
-		{
-			Debug::DebugFuncStackTimeTrace trace1("t1");
-			//std::this_thread::sleep_for(100ms);
-			{
-				Debug::DebugFuncStackTimeTrace trace1("t2");
-				//std::this_thread::sleep_for(100ms);
-				{
-					Debug::DebugFuncStackTimeTrace trace1("t3");
-					//std::this_thread::sleep_for(100ms);
-					{
-						Debug::DebugFuncStackTimeTrace trace1("t4");
-						//std::this_thread::sleep_for(10ms);
-
-					}
-				}
-				{
-					Debug::DebugFuncStackTimeTrace trace1("t5");
-					std::this_thread::sleep_for(100ms);
-
-				}
-				{
-					Debug::DebugFuncStackTimeTrace trace1("t6");
-					std::this_thread::sleep_for(100ms);
-					{
-						Debug::DebugFuncStackTimeTrace trace1("t7");
-						std::this_thread::sleep_for(100ms);
-
-					}
-				}
-			}
-		}
-	}*/
 	return 0;
 }
 
@@ -125,8 +75,6 @@ void saveVec(const string& filename, const float *begin, size_t size)
 }
 void xorLoop()
 {
-	//Display display(sf::Vector2u(1900,900),"X-OR Example");
-
 	BackpropNet net;
 	
 	MultiSignalVector trainigsSet(4, 2);
@@ -139,45 +87,6 @@ void xorLoop()
 	net.setLearnParameter(1.0);
 	net.enableBias(true);
 	net.build();
-
-	sf::Vector2f spacing(80, 20);
-	float neuronSize = 15;
-
-
-	/*size_t visualConfig = NetModel::getStandardVisualConfiguration();
-	NetModel netModel1(&net);
-	netModel1.setStreamIndex(0);
-	netModel1.setNeuronSize(neuronSize);
-	netModel1.setPos(sf::Vector2f(100, 100));
-	netModel1.setNeuronSpacing(spacing);
-	netModel1.setVisualConfiguration(visualConfig);
-	display.addDrawable(&netModel1);
-
-	NetModel netModel2(&net);
-	netModel2.setStreamIndex(1);
-	netModel2.setNeuronSize(neuronSize);
-	netModel2.setPos(sf::Vector2f(100, 500));
-	netModel2.setNeuronSpacing(spacing);
-	netModel2.setVisualConfiguration(visualConfig);
-	display.addDrawable(&netModel2);
-
-	NetModel netModel3(&net);
-	netModel3.setStreamIndex(2);
-	netModel3.setNeuronSize(neuronSize);
-	netModel3.setPos(sf::Vector2f(1100, 100));
-	netModel3.setNeuronSpacing(spacing);
-	netModel3.setVisualConfiguration(visualConfig);
-	display.addDrawable(&netModel3);
-
-	NetModel netModel4(&net);
-	netModel4.setStreamIndex(3);
-	netModel4.setNeuronSize(neuronSize);
-	netModel4.setPos(sf::Vector2f(1100, 500));
-	netModel4.setNeuronSpacing(spacing);
-	netModel4.setVisualConfiguration(visualConfig);
-	display.addDrawable(&netModel4);
-	
-	display.frameRateTarget(60);*/
 	
 	trainigsSet[0] = SignalVector(vector<float>{ 0,0 });
 	trainigsSet[1] = SignalVector(vector<float>{ 0,1 });
@@ -196,67 +105,44 @@ void xorLoop()
 	Debug::Timer learnTimer;
 	trainigTimer.start();
 	MultiSignalVector err;
-	while (1/*display.isOpen()*/)
+	while (1)
 	{
-		bool frameUpdate = 1;// = display.needsFrameUpdate();
+
+		++iteration;
+
+		trainigTimer.unpause();
+		net.setInputVector(trainigsSet);
+		net.calculate();
+		if(iteration == 1)
+			learnTimer.start();
+		learnTimer.unpause();
+		net.learn(resultSet);
+		learnTimer.pause();
+		trainigTimer.pause();
+
+		err = net.getError();
+		currentError = err.getRootMeanSquare();
 		
-		if (frameUpdate)
-		{
-			++iteration;
-
-			trainigTimer.unpause();
-			net.setInputVector(trainigsSet);
-			net.calculate();
-			if(iteration == 1)
-				learnTimer.start();
-			learnTimer.unpause();
-			net.learn(resultSet);
-			learnTimer.pause();
-			trainigTimer.pause();
-
-			err = net.getError();
-			currentError = err.getRootMeanSquare();
-		}
 		net.setLearnParameter(currentError);
 
-		if (frameUpdate)
-		{
-			
-			/*Hardware h = net.getHardware();
-			if (h != Hardware::cpu)
-			{
-				net.setHardware(Hardware::cpu);
-			}*/
-			//display.processEvents();
-			//display.draw();
-			//net.setHardware(h);
-			
-		}
+
 
 		
 
 		static Debug::Timer timer(true);
-		//if (timer.getMillis() > 1000)
-		if (iteration%100 == 0 && frameUpdate)
+		if (iteration%100 == 0)
 		{
 			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: " 
 				      << trainigTimer.getMillis() << " ms\tlearnTime: "<< learnTimer.getMicros()/(double)iteration<< " us/training " <<"\n";
 			timer.reset();
 			timer.start();
 		}
-		/*Hardware h = net.getHardware();
-		if (h != Hardware::cpu)
-		{
-			net.setHardware(Hardware::cpu);
-		}
-		printWeights(&net);
-		net.setHardware(h);
-		getchar();*/
-		if (currentError < 0.05 && frameUpdate)
+
+		if (currentError < 0.05)
 		{
 			std::cout << "iteration [" << iteration << "]\t Error: " << currentError << "\tTrainigtime: "
 				      << trainigTimer.getMillis() << "ms learnTime: " << learnTimer.getMicros() / (double)iteration << "us/training\n";
-			//net.setHardware(Hardware::gpu_cuda);
+
 			net.setInputVector(trainigsSet);
 			net.calculate();
 			for (size_t i = 0; i < trainigsSet.size(); ++i)
@@ -271,24 +157,10 @@ void xorLoop()
 				std::cout << "\n";
 			}
 			std::cout << "\n";
-			/*net.setHardware(Hardware::gpu_cuda);
-			net.setInputVector(trainigsSet);
-			net.calculate();
-			for (size_t i = 0; i < trainigsSet.size(); ++i)
-			{
-				SignalVector output = net.getOutputVector(i);
-				std::cout << "GPU Set [" << i << "]\t";
-				for (size_t j = 0; j < output.size(); ++j)
-				{
-					std::cout << output[j] << "\t";
-
-				}
-				std::cout << "\n";
-			}
-			net.setHardware(Hardware::cpu);
-			printWeights(&net);*/
+			NetSerializer serializer;
+			serializer.setFilePath("netSave.net");
+			std::cout << "Savestate: "<<serializer.saveToFile(&net);
 			getchar();
-			
 		}
 	}
 }
@@ -495,18 +367,6 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 	resultSet[1] = SignalVector(vector<float>{ 1 });
 	resultSet[2] = SignalVector(vector<float>{ 1 });
 	resultSet[3] = SignalVector(vector<float>{ 0 });
-	
-
-	//Display* display = nullptr;
-	//NetModel* netModel1 = nullptr;
-	//NetModel* netModel2 = nullptr;
-	//NetModel* netModel3 = nullptr;
-	//NetModel* netModel4 = nullptr;
-	//if (data.displayEnable)
-	//{
-	//	display = new Display(sf::Vector2u(1900, 900), "X-OR Example");
-	//	display->frameRateTarget(30);
-	//}
 
 	
 	double learnTime = 0;
@@ -534,45 +394,7 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 		net.setLearnParameter(1);
 		net.build();
 
-		/*if (data.displayEnable)
-		{
-			sf::Vector2f displaySize(display->getSize());
-
-			sf::Vector2f spacing(60, 6);
-
-			sf::Vector2f gridStartPos(100,100);
-			sf::Vector2f gridSpacing(900, 400);
-			float neuronSize = 5;
-
-			netModel1 = new NetModel(&net);
-			netModel1->setStreamIndex(0);
-			netModel1->setNeuronSize(neuronSize);
-			netModel1->setPos(gridStartPos);
-			netModel1->setNeuronSpacing(spacing);
-			display->addDrawable(netModel1);
-
-			netModel2 = new NetModel(&net);
-			netModel2->setStreamIndex(1);
-			netModel2->setNeuronSize(neuronSize);
-			netModel2->setPos(sf::Vector2f(gridStartPos.x, gridStartPos.y + gridSpacing.y));
-			netModel2->setNeuronSpacing(spacing);
-			display->addDrawable(netModel2);
-
-			netModel3 = new NetModel(&net);
-			netModel3->setStreamIndex(2);
-			netModel3->setNeuronSize(neuronSize);
-			netModel3->setPos(sf::Vector2f(gridStartPos.x + gridSpacing.x, gridStartPos.y));
-			netModel3->setNeuronSpacing(spacing);
-			display->addDrawable(netModel3);
-
-			netModel4 = new NetModel(&net);
-			netModel4->setStreamIndex(3);
-			netModel4->setNeuronSize(neuronSize);
-			netModel4->setPos(gridStartPos + gridSpacing);
-			netModel4->setNeuronSpacing(spacing);
-			display->addDrawable(netModel4);
-		}*/
-
+		
 		
 		learnTime = 0;
 		timer.start();
@@ -585,40 +407,11 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 			net.learn(resultSet);
 			timer.pause();
 
-			//if (data.displayEnable)
-			//if (display->needsFrameUpdate())
-			//{
-			//	display->processEvents();
-			//	display->draw();
-			//}
-
 			MultiSignalVector err = net.getError();
 			currentError = err.getRootMeanSquare();
 
 
-			/*if (averageError < 0.1)
-			{
-				std::cout << "iteration [" << iteration << "]\t Error: " << averageError << "\n";
-				net.setInputVector(trainigsSet);
-				net.calculate();
-
-				for (size_t i = 0; i < trainigsSet.size(); ++i)
-				{
-
-					SignalVector output = net.getOutputVector(i);
-					std::cout << "Set [" << i << "]\t";
-					for (size_t j = 0; j < output.size(); ++j)
-					{
-						std::cout << output[j] << "\t";
-
-					}
-					std::cout << "\n";
-
-				}
-				getchar();
-				printWeights(&net);
-
-			}*/
+			
 		} while (currentError > 0.05 && 
 				 timeout > timer.getMillis());
 		timer.stop();
@@ -630,26 +423,11 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 
 		averageLearnTime += learnTime;
 
-		/*if (data.displayEnable)
-		{
-			display->clearDrawable();
-			delete netModel1;
-			delete netModel2;
-			delete netModel3;
-			delete netModel4;
-
-			netModel1 = nullptr;
-			netModel2 = nullptr;
-			netModel3 = nullptr;
-			netModel4 = nullptr;
-		}*/
+		
 		
 		if(data.enableDebugOutput)
 			cout << "End, Learn time: "<< learnTime << "ms\n";
 
-		//if (data.displayEnable)
-		//if (!display->isOpen())
-		//	break;
 	}
 	averageLearnTime /= (float)maxIteration;
 	if (data.enableDebugOutput)
@@ -665,8 +443,6 @@ void xorBenchmark(size_t maxIteration, BenchmarkData& data)
 	data.minLearnTime = minLearnTime;
 	data.maxLearnTime = maxLearnTime;
 
-	//if(display)
-	//delete display;
 }
 
 void printWeights(Net* net)
@@ -819,7 +595,7 @@ bool signalEqual(const MultiSignalVector& a, const MultiSignalVector& b)
 	return true;
 }
 
-
+/*
 void saveWeightsToImage(const float* list, size_t width, size_t height, const std::string& label)
 {
 	if (width * height == 0)
@@ -838,11 +614,6 @@ void saveWeightsToImage(const float* list, size_t width, size_t height, const st
 	{
 		for (size_t x = 0; x < width; ++x)
 		{
-			//printf("%1.0f", list[y * width + x]);
-			/*pixels[counter] = list[y * width + x]; // obviously, assign the values you need here to form your color
-			pixels[counter + 1] = 0;
-			pixels[counter + 2] = 0;
-			pixels[counter + 3] = 255;*/
 			float value = list[y * width + x];
 			sf::Color color(0, 0, 0, 255);
 			if (value > 0)
@@ -851,9 +622,7 @@ void saveWeightsToImage(const float* list, size_t width, size_t height, const st
 				color.r = -value * 255;
 			
 			image.setPixel(x, y, color);
-			//counter+=4;
 		}
-		//cout << "\n";
 	}
 	texture.loadFromImage(image);
 	static int fileCounter = 0;
@@ -879,11 +648,6 @@ void saveNetinputToImage(const float* list, size_t width, size_t height, const s
 	{
 		for (size_t x = 0; x < width; ++x)
 		{
-			//printf("%1.0f", list[y * width + x]);
-			/*pixels[counter] = list[y * width + x]; // obviously, assign the values you need here to form your color
-			pixels[counter + 1] = 0;
-			pixels[counter + 2] = 0;
-			pixels[counter + 3] = 255;*/
 			float value = list[x * height + y];
 			sf::Color color(0, 0, 0, 255);
 			if (value > 0)
@@ -892,9 +656,7 @@ void saveNetinputToImage(const float* list, size_t width, size_t height, const s
 				color.r = -value * 255;
 
 			image.setPixel(x, y, color);
-			//counter+=4;
 		}
-		//cout << "\n";
 	}
 	texture.loadFromImage(image);
 	static int fileCounter = 0;
@@ -925,20 +687,15 @@ void saveWeightsToImage(const SignalVector& w, size_t inputs, size_t hiddenX, si
 		}
 		saveWeightsToImage(weights, hiddenY, outputs, label+"__Hidden_" + std::to_string(hiddenX) + "_To_Output_Layer");
 	}
-}
+}*/
 
 void saveDifference(const SignalVector& a, const SignalVector& b, size_t width, size_t height, const std::string& label)
 {
+	/*
 	SignalVector res(a.size());
 	for (size_t i = 0; i < a.size(); ++i)
 	{
 		res[i] = sqrt(pow(a[i] - b[i],2))*100.f;
-		//res[i] = a[i] - b[i];
-		//if (res[i] < 0)
-		//	res[i] = -res[i];
-		
-		//if(res[i]>0.1)
-		//	cout << res[i]<<"\n";
 	}
 	saveNetinputToImage(res.begin(), width, height, label);
 	
@@ -958,7 +715,7 @@ void saveDifference(const SignalVector& a, const SignalVector& b, size_t width, 
 	{
 		res[i] *= 10;
 	}
-	saveNetinputToImage(res.begin(), width, height, label + "_scale100");
+	saveNetinputToImage(res.begin(), width, height, label + "_scale100");*/
 }
 
 vector<float> generateWeights(size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs)
@@ -987,11 +744,7 @@ vector<float> generateWeights(size_t inputs, size_t hiddenX, size_t hiddenY, siz
 			float count = 0.0;
 			for (size_t y = 0; y < hiddenY; ++y)
 			{
-				//weights[y * hiddenX + x] = (sin((float)x*3.f/ (float)hiddenX) + sin((float)x * 3.f / (float)hiddenY))/2.f;
-				//weights[index] = count;
-				//count += 0.1;
 				weights[index] = sin(((float)x * 3.f) / (float)hiddenX);
-				//weights[index] = 1;
 				++index;
 			}
 		}

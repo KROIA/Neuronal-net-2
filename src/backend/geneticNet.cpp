@@ -8,20 +8,23 @@ namespace NeuronalNet
 {
 	GeneticNet::GeneticNet(size_t netCount)
 	{
-		if (netCount < 2)
-			netCount = 2;
-
         setWeightBounds(3);
         setMutationFactor(0.05);
         setMutationChance(0.3);
 
-		initiateNets(netCount);
+		setNetCount(netCount);
 	}
 	GeneticNet::~GeneticNet()
 	{
 
 	}
 
+	void GeneticNet::setNetCount(size_t netCount)
+	{
+		if (netCount < 2)
+			netCount = 2;
+		initiateNets(netCount);
+	}
 	size_t GeneticNet::getNetCount() const
 	{
 		return m_nets.size();
@@ -375,7 +378,17 @@ namespace NeuronalNet
 		}
 		m_nets[netIndex]->setBias(layer, neuron, bias);
 	}
-	void GeneticNet::setBias(size_t netIndex, float* list)
+	void GeneticNet::setBias(size_t netIndex, const std::vector<float>& list)
+	{
+		Net* n = getNet(netIndex);
+		if (!n)
+		{
+			PRINT_ERROR_NET_INDEX_OUTOFRANGE(netIndex);
+			return;
+		}
+		m_nets[netIndex]->setBias(list);
+	}
+	void GeneticNet::setBias(size_t netIndex, const float* list)
 	{
 		Net* n = getNet(netIndex);
 		if (!n)
@@ -492,6 +505,14 @@ namespace NeuronalNet
 	
 	void GeneticNet::initiateNets(size_t netCount)
 	{
+		if (m_nets.size())
+		{
+			for (size_t i = 0; i < m_nets.size(); ++i)
+			{
+				delete m_nets[i];
+			}
+			m_nets.clear();
+		}
         m_nets.reserve(netCount);
         for(size_t i=0; i<netCount; ++i)
         {

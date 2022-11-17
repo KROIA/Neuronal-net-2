@@ -264,7 +264,12 @@ void Net_setBias1(NET_PARAM, size_t layer, size_t neuron, float bias)
 	NULL_PTR_RETURN_VOID(net);
 	net->setBias(layer, neuron, bias);
 }
-void Net_setBias2(NET_PARAM, float* list)
+void Net_setBias2(NET_PARAM, const std::vector<float>* list)
+{
+	NULL_PTR_RETURN_VOID(net);
+	net->setBias(*list);
+}
+void Net_setBias3(NET_PARAM, const float* list)
 {
 	NULL_PTR_RETURN_VOID(net);
 	net->setBias(list);

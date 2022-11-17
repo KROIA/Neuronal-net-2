@@ -8,6 +8,7 @@
 UNITY_NET_API void* GeneticNet_instantiate(size_t netCount);
 UNITY_NET_API void GeneticNet_dealocate(NET_PARAM);
 
+UNITY_NET_API void GeneticNet_setNetCount(NET_PARAM, size_t netCount);
 UNITY_NET_API size_t GeneticNet_getNetCount(NET_PARAM);
 
 UNITY_NET_API void GeneticNet_setDimensions(NET_PARAM, size_t inputs, size_t hiddenX, size_t hiddenY, size_t outputs);
@@ -63,7 +64,8 @@ UNITY_NET_API float GeneticNet_getWeight1(NET_PARAM, size_t netIndex, size_t lay
 UNITY_NET_API const float* GeneticNet_getWeight2(NET_PARAM, size_t netIndex);
 UNITY_NET_API size_t GeneticNet_getWeightSize(NET_PARAM);
 UNITY_NET_API void GeneticNet_setBias1(NET_PARAM, size_t netIndex, size_t layer, size_t neuron, float bias);
-UNITY_NET_API void GeneticNet_setBias2(NET_PARAM, size_t netIndex, float* list);
+UNITY_NET_API void GeneticNet_setBias2(NET_PARAM, size_t netIndex, const std::vector<float>* list);
+UNITY_NET_API void GeneticNet_setBias3(NET_PARAM, size_t netIndex, float* list);
 UNITY_NET_API float GeneticNet_getBias1(NET_PARAM, size_t netIndex, size_t layer, size_t neuron);
 UNITY_NET_API const float* GeneticNet_getBias2(NET_PARAM, size_t netIndex);
 
