@@ -16,6 +16,11 @@ void BackpropNet_dealocate(NET_PARAM)
 	delete net;
 }
 
+void BackpropNet_unbuild(NET_PARAM)
+{
+	NULL_PTR_RETURN_VOID(net);
+	return net->unbuild();
+}
 bool BackpropNet_build(NET_PARAM)
 {
 	NULL_PTR_RETURN(net, false);

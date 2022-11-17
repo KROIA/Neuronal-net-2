@@ -33,6 +33,7 @@ namespace NeuronalNet
 		void enableBias(bool enable);
 		bool isBiasEnabled() const;
 
+        void unbuild();
 		bool build();
 		bool isBuilt() const;
 		void randomizeWeights();

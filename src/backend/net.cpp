@@ -1,5 +1,6 @@
 #include "backend/net.h"
 #include "backend/net_kernel.cuh"
+#include "backend/graphicsError.h"
 
 namespace NeuronalNet
 {
@@ -299,15 +300,20 @@ bool Net::isBiasEnabled() const
 	return m_useBias;
 }
 
+void Net::unbuild()
+{
+    destroyHostWeights();
+    destroyHostBias();
+    destroyDevice();
+    m_built = false;
+    m_dimensionConfigStr = "";
+}
 bool Net::build()
 {
 	DEBUG_FUNCTION_TIME_INTERVAL;
 	if (m_built)
 	{
-		destroyHostWeights();
-		destroyHostBias();
-		destroyDevice();
-		return true;
+        unbuild();
 	}
 		
 	
@@ -316,6 +322,7 @@ bool Net::build()
 	bool success = true;
 
 	success &= m_inputs > 0 && m_outputs > 0;
+
 	
 	if (success)
 	{
@@ -376,16 +383,26 @@ bool Net::build()
 		//	destroyHostWeights();
 		//	destroyHostBias();
 		//}
-		
+
+        if(success)
+        {
+            m_dimensionConfigStr = std::to_string(m_inputs)+"."+std::to_string(m_hiddenX)+"."
+                                  +std::to_string(m_hiddenY)+"."+std::to_string(m_outputs);
+        }
 	}
 
 	//auto t2 = now();
 	//CONSOLE("end. return "<<success<< " time: "<<milliseconds(t2-t1)<<"ms")
 	return success;
 }
+
 bool Net::isBuilt() const
 {
 	return m_built;
+}
+const std::string &Net::getDimensionConfigString() const
+{
+    return m_dimensionConfigStr;
 }
 void Net::randomizeWeights()
 {
@@ -1172,6 +1189,7 @@ void Net::graphics_update(GraphicsNeuronInterface* obj,
 }
 void Net::graphics_outOfRange(GraphicsNeuronInterface* obj) const
 {
+    GraphicsError::errorOccured();
 	NeuronIndex index = obj->index();
 	PRINT_ERROR("NeuronIndex is out of range : type: " << typeToString(index.type) <<
 			" x = " << index.x << " y = " << index.y);
@@ -1482,6 +1500,7 @@ inline void Net::graphics_update(GraphicsConnectionInterface* obj,
 }
 void Net::graphics_outOfRange(GraphicsConnectionInterface* obj) const
 {
+    GraphicsError::errorOccured();
 	ConnectionIndex index = obj->index();
 	PRINT_ERROR("Connection is out of range: type: " << typeToString(index.neuron.type) <<
 			" x = " << index.neuron.x << " y = " << index.neuron.y << " Input: "<< index.inputConnection);

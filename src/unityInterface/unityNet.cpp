@@ -101,6 +101,11 @@ bool Net_isBiasEnabled(NET_PARAM)
 	return net->isBiasEnabled();
 }
 
+bool Net_unbuild(NET_PARAM)
+{
+	NULL_PTR_RETURN(net, false);
+	return net->unbuild();
+}
 bool Net_build(NET_PARAM)
 {
 	NULL_PTR_RETURN(net, false);

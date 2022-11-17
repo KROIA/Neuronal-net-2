@@ -13,6 +13,7 @@ namespace NeuronalNet
         [DllImport(Net.neuralNetDllName)] static extern IntPtr BackpropNet_instantiate();
         [DllImport(Net.neuralNetDllName)] static extern void BackpropNet_dealocate(IntPtr ptr);
 
+        [DllImport(Net.neuralNetDllName)] static extern void BackpropNet_unbuild(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern bool BackpropNet_build(IntPtr ptr);
 
         [DllImport(Net.neuralNetDllName)] static extern void BackpropNet_setLearnParameter(IntPtr ptr, float learnParam);
@@ -48,10 +49,14 @@ namespace NeuronalNet
                 BackpropNet_dealocate(net);
         }
 
-        /*public void Build()
+		public void Unbuild()
         {
-            BackpropNet_build(net);
-        }*/
+            BackpropNet_unbuild(net);
+        }
+        public bool Build()
+        {
+            return BackpropNet_build(net);
+        }
 
         public float learnParameter
         {

@@ -3,14 +3,14 @@
 namespace NeuronalNet
 {
 	MultiSignalVector::MultiSignalVector()
-		: m_list(nullptr)
+        : m_grid(nullptr)
+        , m_list(nullptr)
 		, m_vecCount(0)
 		, m_signalCount(0)
-		, m_grid(nullptr)
 	{}
 	MultiSignalVector::MultiSignalVector(const MultiSignalVector& other)
-		: m_list(nullptr)
-		, m_grid(nullptr)
+        : m_grid(nullptr)
+        , m_list(nullptr)
 	{
 		m_vecCount = other.m_vecCount;
 		m_signalCount = other.m_signalCount;
@@ -23,8 +23,8 @@ namespace NeuronalNet
 		}
 	}
 	MultiSignalVector::MultiSignalVector(const std::vector<SignalVector>& other)
-		: m_list(nullptr)
-		, m_grid(nullptr)
+        : m_grid(nullptr)
+        , m_list(nullptr)
 	{
 		m_vecCount = other.size();
 		if (m_vecCount == 0)
@@ -42,8 +42,8 @@ namespace NeuronalNet
 		}
 	}
 	MultiSignalVector::MultiSignalVector(const std::vector<std::vector<float> >& other)
-		: m_list(nullptr)
-		, m_grid(nullptr)
+        : m_grid(nullptr)
+        , m_list(nullptr)
 	{
 		m_vecCount = other.size();
 		if (m_vecCount == 0)
@@ -61,8 +61,8 @@ namespace NeuronalNet
 		}
 	}
 	MultiSignalVector::MultiSignalVector(size_t vectorCount, size_t signalCount)
-		: m_list(nullptr)
-		, m_grid(nullptr)
+        : m_grid(nullptr)
+        , m_list(nullptr)
 	{
 		m_vecCount = vectorCount;
 		m_signalCount = signalCount;
@@ -142,7 +142,8 @@ namespace NeuronalNet
 	}
 	void MultiSignalVector::resize(size_t vectorCount, size_t signalCount)
 	{
-		if (vectorCount == m_vecCount)
+        if (vectorCount == m_vecCount &&
+            signalCount == m_signalCount)
 			return;
 
 		SignalVector** oldData = m_list;
@@ -150,16 +151,30 @@ namespace NeuronalNet
 		size_t oldVecCount = m_vecCount;
 		size_t oldSigCount = m_signalCount;
 
-		m_vecCount = vectorCount;
-		m_signalCount = signalCount;
-		m_list = DBG_NEW SignalVector * [m_vecCount];
-		m_grid = DBG_NEW float* [m_vecCount];
+
+        if(vectorCount == m_vecCount)
+        {
+            /*oldData = nullptr;
+            oldGrid = nullptr;
+            oldVecCount = 0;
+            oldSigCount = 0;*/
+        }
+        else
+        {
+            m_list = DBG_NEW SignalVector * [vectorCount];
+            m_grid = DBG_NEW float* [vectorCount];
+        }
+        m_vecCount = vectorCount;
+        m_signalCount = signalCount;
+
+
 		for (size_t i = 0; i < m_vecCount; ++i)
 		{
 			if (i < oldVecCount && oldSigCount == m_signalCount)
 			{
-				m_list[i] = DBG_NEW SignalVector(*oldData[i]);
-				m_grid[i] = m_list[i]->begin();
+                m_list[i] = oldData[i];
+                //m_list[i] = DBG_NEW SignalVector(*oldData[i]);
+                //m_grid[i] = m_list[i]->begin();
 			}
 			else
 			{
@@ -179,12 +194,15 @@ namespace NeuronalNet
 			}
 		}
 
-		for (size_t i = 0; i < oldVecCount; ++i)
-		{
-			delete oldData[i];
-		}
-		delete oldData;
-		delete oldGrid;
+        if(oldData != m_list)
+        {
+            for (size_t i = 0; i < oldVecCount; ++i)
+            {
+                delete oldData[i];
+            }
+            delete oldData;
+            delete oldGrid;
+        }
 	}
 	void MultiSignalVector::fill(const SignalVector** begin, size_t vecCount)
 	{

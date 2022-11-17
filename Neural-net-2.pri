@@ -11,6 +11,7 @@ INCLUDEPATH += \
 #	$$inc/backend \
 	 
 HEADERS += \
+    $$PWD/inc/backend/graphicsError.h \
     $$inc/neuronalNet.h \
     $$inc/backend/activation.h \
     $$inc/backend/backpropNet.h \
@@ -27,6 +28,7 @@ HEADERS += \
     $$inc/backend/netSerializer.h \
 	
 SOURCES += \
+    $$PWD/src/backend/graphicsError.cpp \
     $$src/backend/backpropNet.cpp \
     $$src/backend/debug.cpp \
     $$src/backend/geneticNet.cpp \

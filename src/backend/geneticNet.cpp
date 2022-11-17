@@ -90,6 +90,10 @@ namespace NeuronalNet
 		return m_nets[0]->isBiasEnabled();
 	}
 
+    void GeneticNet::unbuild()
+    {
+        FOR_EVERY_NET(unbuild());
+    }
 	bool GeneticNet::build()
 	{
 		bool success = m_nets[0]->getInputCount() > 0 && m_nets[0]->getOutputCount() > 0;

@@ -35,6 +35,7 @@ namespace NeuronalNet
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_enableBias(IntPtr ptr, bool enable);
         [DllImport(Net.neuralNetDllName)] static extern bool GeneticNet_isBiasEnabled(IntPtr ptr);
 
+        [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_unbuild(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern bool GeneticNet_build(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern bool GeneticNet_isBuilt(IntPtr ptr);
         [DllImport(Net.neuralNetDllName)] static extern void GeneticNet_randomizeWeights1(IntPtr ptr);
@@ -230,7 +231,10 @@ namespace NeuronalNet
             return GeneticNet_isBiasEnabled(net);
         }
 
-
+		public void Unbuild()
+        {
+            GeneticNet_unbuild(net);
+        }
         public bool Build()
         {
             return GeneticNet_build(net);

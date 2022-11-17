@@ -30,6 +30,7 @@ UNITY_NET_API NeuronalNet::Hardware Net_getHardware(NET_PARAM);
 UNITY_NET_API void Net_enableBias(NET_PARAM, bool enable);
 UNITY_NET_API bool Net_isBiasEnabled(NET_PARAM);
 
+UNITY_NET_API void Net_unbuild(NET_PARAM);
 UNITY_NET_API bool Net_build(NET_PARAM);
 UNITY_NET_API bool Net_isBuilt(NET_PARAM);
 UNITY_NET_API void Net_randomizeWeights1(NET_PARAM);

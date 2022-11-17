@@ -63,8 +63,10 @@ namespace NeuronalNet
 		virtual void enableBias(bool enable);
 		bool isBiasEnabled() const;
 
+        void unbuild();
 		virtual bool build();
 		bool isBuilt() const;
+        const std::string &getDimensionConfigString() const;
 		void randomizeWeights();
 		virtual bool randomizeWeights(size_t from, size_t to);
 		static float getRandomValue(float min, float max);
@@ -123,6 +125,8 @@ namespace NeuronalNet
 
 		protected:
 		typedef float ActFp(float);
+
+
 
 		
 		void graphics_update_CPU(const vector<GraphicsNeuronInterface*>& objList, size_t streamIndex) const;
@@ -199,6 +203,7 @@ namespace NeuronalNet
 		float* m_biasList;
 		//float** m_outputSingalList;
 		bool   m_built;
+        std::string m_dimensionConfigStr;
 
 		// Extern hardware
 		Hardware m_hardware;

@@ -29,6 +29,7 @@ UNITY_NET_API NeuronalNet::Hardware GeneticNet_getHardware(NET_PARAM);
 UNITY_NET_API void GeneticNet_enableBias(NET_PARAM, bool enable);
 UNITY_NET_API bool GeneticNet_isBiasEnabled(NET_PARAM);
 
+UNITY_NET_API void GeneticNet_unbuild(NET_PARAM);
 UNITY_NET_API bool GeneticNet_build(NET_PARAM);
 UNITY_NET_API bool GeneticNet_isBuilt(NET_PARAM);
 UNITY_NET_API void GeneticNet_randomizeWeights1(NET_PARAM);

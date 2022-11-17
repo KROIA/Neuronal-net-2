@@ -8,6 +8,7 @@
 UNITY_NET_API void* BackpropNet_instantiate();
 UNITY_NET_API void BackpropNet_dealocate(NET_PARAM);
 
+UNITY_NET_API void BackpropNet_unbuild(NET_PARAM);
 UNITY_NET_API bool BackpropNet_build(NET_PARAM);
 
 UNITY_NET_API void BackpropNet_setLearnParameter(NET_PARAM, float learnParam);

@@ -102,6 +102,11 @@ bool GeneticNet_isBiasEnabled(NET_PARAM)
 	return net->isBiasEnabled();
 }
 
+void GeneticNet_unbuild(NET_PARAM)
+{
+	NULL_PTR_RETURN_VOID(net);
+	return net->unbuild();
+}
 bool GeneticNet_build(NET_PARAM)
 {
 	NULL_PTR_RETURN(net, false);

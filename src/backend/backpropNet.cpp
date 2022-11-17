@@ -77,6 +77,8 @@ namespace NeuronalNet
 		m_expected.resize(m_streamSize, m_outputs);
 		m_expectedChanged.resize(m_streamSize, true);
 		m_outputDifference.resize(m_streamSize,m_outputs);
+        m_deltaWeight.resize(m_streamSize, m_weightsCount);
+        m_deltaBias.resize(m_streamSize, m_neuronCount);
 		return ret;
 	}
 
@@ -258,8 +260,7 @@ namespace NeuronalNet
 		DEBUG_FUNCTION_TIME_INTERVAL
 		Net::buildDevice();
 		
-		m_deltaWeight.resize(m_streamSize, m_weightsCount);
-		m_deltaBias.resize(m_streamSize, m_neuronCount);
+
 		switch (m_hardware)
 		{
 #ifdef USE_CUDA

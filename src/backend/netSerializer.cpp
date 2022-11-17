@@ -115,6 +115,7 @@ bool NetSerializer::readFromFile(Net* net)
 		backpropNet->setLearnParameter(data.backpropNet.learnParameter);
 	}
 
+    net->unbuild();
 	net->setDimensions(config.inputs, config.hiddenX, config.hiddenY, config.outputs);
 	net->setActivation(config.activation);
 	net->setHardware(config.hardware);
@@ -180,7 +181,7 @@ bool NetSerializer::readFromFile(GeneticNet* net)
     }
 
 	net->setNetCount(data.geneticNet.netCount);
-
+    net->unbuild();
 	net->setDimensions(config.inputs, config.hiddenX, config.hiddenY, config.outputs);
 	net->setActivation(config.activation);
 	net->setHardware(config.hardware);

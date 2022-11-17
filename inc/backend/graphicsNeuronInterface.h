@@ -2,11 +2,12 @@
 
 
 #include "backend/neuronIndex.h"
+#include "backend/graphicsError.h"
 
 namespace NeuronalNet
 {
 	
-    class GraphicsNeuronInterface
+    class GraphicsNeuronInterface//: public GraphicsError
 	{
 		public:
 
@@ -22,7 +23,6 @@ namespace NeuronalNet
 		{
 			return m_index;
 		}
-
 
 		protected:
 		NeuronIndex m_index;
