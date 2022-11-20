@@ -1,0 +1,149 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="src\backend\backpropNet.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\debug.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\geneticNet.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\multiSignalVector.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\net.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\netSerializer.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\neuronIndex.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\signalVector.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\utilities.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityBackpropNet.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityGeneticNet.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityMultiSignalVector.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityNet.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unityNetSerializer.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\unityInterface\unitySignalVector.cpp">
+      <Filter>src\unityInterface</Filter>
+    </ClCompile>
+    <ClCompile Include="src\backend\graphicsError.cpp">
+      <Filter>src\backend</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inc\backend\activation.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\backpropNet.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\config.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\debug.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\geneticNet.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\graphicsConnectionInterface.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\graphicsNeuronInterface.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\multiSignalVector.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\net.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\net_kernel.cuh">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\netSerializer.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\neuronalNet.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\neuronIndex.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\signalVector.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\utilities.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityBackpropNet.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityConfig.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityGeneticNet.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityMultiSignalVector.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityNet.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unityNetSerializer.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\unityInterface\unitySignalVector.h">
+      <Filter>inc\unityInterface</Filter>
+    </ClInclude>
+    <ClInclude Include="inc\backend\graphicsError.h">
+      <Filter>inc\backend</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="inc">
+      <UniqueIdentifier>{0c4a02a3-60b5-47ab-9371-e92abdd7cce9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="inc\backend">
+      <UniqueIdentifier>{98a1145a-6497-4f51-bbbd-8fe1d0b47a9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="inc\unityInterface">
+      <UniqueIdentifier>{8dad3132-4d4e-4c39-842a-ea7c90a7edd0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{5efa3dc4-7702-4e07-b3d7-a1f3131c35d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\backend">
+      <UniqueIdentifier>{95a19bf6-1073-4328-a32d-ff25810b29d6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\unityInterface">
+      <UniqueIdentifier>{8578e44d-20e3-4850-a594-2d75b279f6c1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="src\backend\net_kernel.cu">
+      <Filter>src\backend</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>

@@ -21,6 +21,7 @@
     <ClInclude Include="inc\backend\debug.h" />
     <ClInclude Include="inc\backend\geneticNet.h" />
     <ClInclude Include="inc\backend\graphicsConnectionInterface.h" />
+    <ClInclude Include="inc\backend\graphicsError.h" />
     <ClInclude Include="inc\backend\graphicsNeuronInterface.h" />
     <ClInclude Include="inc\backend\multiSignalVector.h" />
     <ClInclude Include="inc\backend\net.h" />
@@ -42,6 +43,7 @@
     <ClCompile Include="src\backend\backpropNet.cpp" />
     <ClCompile Include="src\backend\debug.cpp" />
     <ClCompile Include="src\backend\geneticNet.cpp" />
+    <ClCompile Include="src\backend\graphicsError.cpp" />
     <ClCompile Include="src\backend\multiSignalVector.cpp" />
     <ClCompile Include="src\backend\net.cpp" />
     <ClCompile Include="src\backend\netSerializer.cpp" />
@@ -57,9 +59,6 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="src\backend\net_kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{941A844E-DAD7-4436-AABB-9B41D0568D98}</ProjectGuid>
